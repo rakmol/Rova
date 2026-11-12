@@ -1,3 +1,4 @@
+import {databaseConnection} from './database.js';
 import { readFile,writeFile,stat } from "node:fs/promises";
 import { resolve } from "node:path";
 import { Client } from "pg";
@@ -20,7 +21,7 @@ async function main(){
   // Operator tooling is local-only until production reviewer authentication exists.
   if(config.NODE_ENV==="production"||!["localhost","127.0.0.1","[::1]"].includes(url.hostname)||!/^\/rova(?:_test_[a-z0-9_]+)?$/.test(url.pathname)||url.port!=="54329")throw new Error("Staging CLI is restricted to the local ROVA database on port 54329.");
   const actor=process.env.ROVA_DATA_OPERATOR;if(!actor)throw new Error("Set ROVA_DATA_OPERATOR to the actual operator identity; no reviewer identity is invented.");
-  const client=new Client({connectionString:config.DATABASE_URL,connectionTimeoutMillis:5000});await client.connect();
+  const client=new Client(databaseConnection(config));await client.connect();
   try{const result=await stageOsmRoads(client,prepared,hash(raw),actor);console.log(JSON.stringify({...counts(),...result}));}finally{await client.end();}
 }
 main().catch((error)=>{console.error(error instanceof Error&&!(error as {code?:string}).code?error.message:"Map-data operation failed; inspect source shape and database setup.");process.exitCode=1;});

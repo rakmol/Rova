@@ -1,10 +1,11 @@
+import {databaseConnection} from './database.js';
 import { readFile } from "node:fs/promises";
 import { Client } from "pg";
 import { assertDemoSeedAllowed, readConfig } from "./config.js";
 import { loadMigrations, migrate } from "./migrations.js";
 const command = process.argv[2];
 const config = readConfig();
-const client = new Client({ connectionString: config.DATABASE_URL, ssl: config.DATABASE_SSL === "true" ? { rejectUnauthorized: true } : undefined, connectionTimeoutMillis: 5000 });
+const client = new Client({...databaseConnection(config),statement_timeout:60000,query_timeout:65000});
 try {
   if (command === "seed-demo") assertDemoSeedAllowed(config);
   await client.connect();

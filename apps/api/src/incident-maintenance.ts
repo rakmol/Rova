@@ -1,7 +1,8 @@
+import {databaseConnection} from './database.js';
 import { Pool } from 'pg';
 import { readConfig } from './config.js';
 // Operator scheduled maintenance. Expiry filtering also applies at read time.
-const config=readConfig();const pool=new Pool({connectionString:config.DATABASE_URL,ssl:config.DATABASE_SSL==='true'?{rejectUnauthorized:true}:undefined});
+const config=readConfig();const pool=new Pool(databaseConnection(config));
 const client=await pool.connect();
 try{
   await client.query('BEGIN');

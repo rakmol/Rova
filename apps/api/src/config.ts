@@ -5,6 +5,9 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   HOST: z.string().min(1).default("127.0.0.1"), PORT: z.coerce.number().int().min(1).max(65535).default(4000),
   DATABASE_URL: z.string().url().refine((value) => { try { return ["postgres:", "postgresql:"].includes(new URL(value).protocol); } catch { return false; } }).optional(),
+  DATABASE_POOL_MAX:z.coerce.number().int().min(1).max(10).optional(),
+  DATABASE_CA_BASE64:z.preprocess(v=>v===''?undefined:v,z.string().regex(/^[A-Za-z0-9+/=\r\n]+$/).max(32768).optional()),
+  CRON_SECRET:z.preprocess(v=>v===''?undefined:v,z.string().min(32).max(128).optional()),
   DATABASE_SSL: z.enum(["true", "false"]).default("false"),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
   CORS_ORIGINS: z.string().optional(), TRUST_PROXY_CIDRS: z.string().default("").refine((value) => !value || value.split(",").every((part) => {
@@ -52,7 +55,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env) {
     try { const url = new URL(origin); if (url.origin !== origin || !["http:", "https:"].includes(url.protocol) || (config.NODE_ENV === "production" && url.protocol !== "https:")) throw new Error(); }
     catch { throw new Error("CORS_ORIGINS must contain explicit origins; production requires HTTPS."); }
   }
-  return { ...config, PILOT_REGION_GATING_ENABLED:config.PILOT_REGION_GATING_ENABLED??(config.NODE_ENV==='production'?'true':'false'), DATABASE_URL: config.DATABASE_URL ?? "postgres://rova:rova_local_only@127.0.0.1:54329/rova", corsOrigins: origins, trustProxy: config.TRUST_PROXY_CIDRS ? config.TRUST_PROXY_CIDRS.split(",").map((value) => value.trim()) : false as false };
+  return { ...config, DATABASE_POOL_MAX:config.DATABASE_POOL_MAX??(config.NODE_ENV==='production'?2:10), PILOT_REGION_GATING_ENABLED:config.PILOT_REGION_GATING_ENABLED??(config.NODE_ENV==='production'?'true':'false'), DATABASE_URL: config.DATABASE_URL ?? "postgres://rova:rova_local_only@127.0.0.1:54329/rova", corsOrigins: origins, trustProxy: config.TRUST_PROXY_CIDRS ? config.TRUST_PROXY_CIDRS.split(",").map((value) => value.trim()) : false as false };
 }
 export type ApiConfig = ReturnType<typeof readConfig>;
 export function assertDemoSeedAllowed(config: ApiConfig, allow = process.env.ALLOW_SYNTHETIC_SEED) {

@@ -1,3 +1,5 @@
+import {databasePool} from './database.js';
+import {registerHostedMaintenance} from './hosting.js';
 import {registerPilot} from './pilot.js';
 import {postgresUsage} from './provider-usage.js';
 import { randomUUID } from "node:crypto";
@@ -24,8 +26,8 @@ import {registerOfflineSafety} from './offline.js';
 class PrivateLogController extends LogController { constructor() { super({ disableRequestLogging: true }); } }
 export async function buildApp(options: { config?: ApiConfig; database?: Pool; logger?: boolean; driverAuth?: DriverAuthProvider; adminAuth?:AdminAuthProvider } = {}) {
   const config = options.config ?? readConfig();
-  const database = options.database ?? new Pool({ connectionString: config.DATABASE_URL, ssl: config.DATABASE_SSL === "true" ? { rejectUnauthorized: true } : undefined, max: 10, connectionTimeoutMillis: 2000, statement_timeout: 5000, query_timeout: 6000 });
-  const app = Fastify({ logger: options.logger === false ? false : { level: config.LOG_LEVEL, redact: ["req.headers.authorization", "req.headers.cookie", "res.headers.set-cookie"] }, logController: new PrivateLogController(), genReqId: () => randomUUID(), requestIdHeader: false, trustProxy: config.trustProxy, bodyLimit: 1048576, requestTimeout: 15000, forceCloseConnections: true });
+  const database = options.database ?? new Pool(databasePool(config));
+  const app = Fastify({ logger: options.logger === false ? false : { level: config.LOG_LEVEL, redact: ["req.headers.authorization", "req.headers.cookie", "res.headers.set-cookie"] }, logController: new PrivateLogController(), genReqId: () => randomUUID(), requestIdHeader: false, trustProxy: process.env.VERCEL === "1" && ["production","preview"].includes(process.env.VERCEL_ENV??"") ? (_address:string,hop:number)=>hop===0 : config.trustProxy, bodyLimit: 1048576, requestTimeout: 15000, forceCloseConnections: true });
   app.addHook("onClose", async () => { await database.end(); });
   database.on?.("error", () => app.log.error({ dependency: "database" }, "Idle database connection failed"));
   app.addHook("onRequest", async (request, reply) => { reply.header("x-request-id", request.id); reply.header("Cache-Control", "no-store"); });
@@ -47,7 +49,7 @@ export async function buildApp(options: { config?: ApiConfig; database?: Pool; l
   app.get("/health", { config: { rateLimit: false } }, async () => ({ service: "rova-api", status: "ok" }));
   app.get("/ready", async (_request, reply) => {
     try {
-      const result = await database.query("SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname='postgis') AS postgis, to_regclass('public.speed_limit_rules') IS NOT NULL AS schema_ready, EXISTS (SELECT 1 FROM schema_migrations WHERE version='014_accra_pilot.sql') AS migrated");
+      const result = await database.query("SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname='postgis') AS postgis, to_regclass('public.speed_limit_rules') IS NOT NULL AS schema_ready, EXISTS (SELECT 1 FROM schema_migrations WHERE version='015_hosting.sql') AS migrated");
       if (!result.rows[0]?.postgis || !result.rows[0]?.schema_ready || !result.rows[0]?.migrated) throw new Error("Database setup incomplete");
       return { status: "ready" };
     } catch { app.log.warn({ dependency: "database" }, "Readiness check failed"); return reply.code(503).send({ status: "not_ready", dependency: "database" }); }
@@ -55,6 +57,7 @@ export async function buildApp(options: { config?: ApiConfig; database?: Pool; l
   app.get("/openapi.json", async () => openapi);
   const opsAccess=registerAdminDashboard(app,database,options.adminAuth??managedAdminAuth(config.SUPABASE_URL,config.SUPABASE_PUBLISHABLE_KEY,config.SUPABASE_SECRET_KEY),config.ADMIN_COVERAGE_AGGREGATION_ENABLED==='true');
   registerPilot(app,database,config,opsAccess);
+  registerHostedMaintenance(app,database,config);
   registerProviderCostDashboard(app,opsAccess,config,database);
   registerSpeedLimitRoute(app, database,Date.now,config.ADMIN_COVERAGE_AGGREGATION_ENABLED==='true',config.PILOT_REGION_GATING_ENABLED==='true');
   registerOfflineSafety(app,database,config);
