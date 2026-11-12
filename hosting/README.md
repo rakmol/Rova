@@ -2,9 +2,11 @@
 
 Target: existing Vercel account `msofficemay2023-2341`, team `girliehood`, project `rova-api`; new dedicated Supabase project `qmdbvjuezizdfjepgwag`. No paid upgrade, purchased domain or Firebase activation is part of this setup.
 
+The build bundles the API and shared workspace TypeScript into `dist/serverless.mjs`, keeping published Node dependencies external. A native-Node import test guards against unresolved workspace sources. No secret environment values are substituted into the bundle.
+
 The API runs in a Node24 Vercel Function using the existing Fastify application. A warm instance shares one application and bounded PostgreSQL pool. Requests use the same authenticated/validated routes as local development. Supabase provides PostgreSQL/PostGIS and optional Auth. The database URI, CA, server keys and cron secret stay in private configuration/Vercel sensitive environment variables; mobile builds receive only public endpoint URLs and their existing public map token.
 
-Source files: `apps/api/api/index.ts`, `src/serverless.ts`, `src/database.ts`, `src/hosting.ts`, `vercel.json`, and migration015. The Vercel project root is `apps/api`, with workspace dependencies available from the repository root. Never upload local `.env` files, credentials, private evidence or generated native projects.
+Source files: `apps/api/api/index.js`, `scripts/build-api.mjs`, `src/serverless.ts`, `src/database.ts`, `src/hosting.ts`, `vercel.json`, and migration015. The Vercel project root is `apps/api`, with workspace dependencies available from the repository root. Never upload local `.env` files, credentials, private evidence or generated native projects.
 
 ## Database and privacy
 
