@@ -2,6 +2,7 @@ import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Keyboard, Linking, Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { ActionButton, ContentFrame, Page, PageHeader, Surface } from "../components/ui";
+import { RovaIcon } from "../components/RovaIcon";
 import { MapboxMap } from "../map/MapboxMap";
 import { mapboxProvider, accraDevelopmentCenter } from "../map/mapboxProvider";
 import { useRoutePreview } from "../map/RouteProvider";
@@ -69,11 +70,20 @@ export default function DestinationSearchScreen() {
   return <Page><ContentFrame>
     <ActionButton title="Back to map" secondary onPress={() => router.back()} />
     <PageHeader eyebrow="Accra & Ghana" title="Where are you going?" subtitle={landmarkSearchEnabled ? "Search streets, markets, hospitals, malls and landmarks by name. Availability depends on mapped data." : "Search streets, addresses and suburbs. Landmark search will be available once the places backend is configured."} />
-    <TextInput accessibilityLabel="Search Ghana places" autoFocus autoCorrect={false} maxLength={256} value={query} onChangeText={edit} placeholder={landmarkSearchEnabled ? "Street, landmark, market or suburb" : "Street, suburb or place name"} placeholderTextColor={theme.colors.inkMuted} style={[styles.input, ink, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]} />
+    <View style={[styles.searchField,{borderColor:theme.colors.border,backgroundColor:theme.colors.surface}]}>
+      <RovaIcon name="search" color={theme.colors.brandStrong} size={22}/>
+      <TextInput accessibilityLabel="Search Ghana places" autoFocus autoCorrect={false} maxLength={256} value={query} onChangeText={edit} placeholder={landmarkSearchEnabled ? "Street, landmark, market or suburb" : "Street, suburb or place name"} placeholderTextColor={theme.colors.inkSubtle} style={[styles.input, ink]} />
+    </View>
     {status === "loading" && <Text accessibilityLiveRegion="polite" style={[styles.message, muted]}>Searching Ghana places…</Text>}
     {error && <View><Text accessibilityRole="alert" style={[styles.message, { color: theme.colors.danger }]}>{error}</Text><ActionButton title="Try search again" secondary onPress={() => setRetry((value) => value + 1)} /></View>}
     {status === "done" && !results.length && !selected && <Text style={[styles.message, muted]}>No matches found. Try a nearby street or suburb, or check the spelling. This provider may not list that landmark.</Text>}
-    {results.map((place) => <Pressable accessibilityRole="button" accessibilityLabel={`View ${place.name}`} key={place.id} onPress={() => void select(place)} style={[styles.result, { borderBottomColor: theme.colors.border }]}><Text style={[styles.name, ink]}>{place.name}</Text><Text style={muted}>{place.detail}</Text></Pressable>)}
+    {!!results.length&&<Surface style={styles.results}>
+      {results.map((place) => <Pressable accessibilityRole="button" accessibilityLabel={`View ${place.name}`} key={place.id} onPress={() => void select(place)} style={[styles.result, { borderBottomColor: theme.colors.border }]}>
+        <View style={[styles.resultIcon,{backgroundColor:theme.colors.brandTint}]}><RovaIcon name="locate" color={theme.colors.brandStrong} size={20}/></View>
+        <View style={styles.resultCopy}><Text style={[styles.name, ink]}>{place.name}</Text><Text style={muted}>{place.detail}</Text></View>
+        <RovaIcon name="chevron" color={theme.colors.inkSubtle} size={18}/>
+      </Pressable>)}
+    </Surface>}
     {selected && <Surface style={styles.details}>
       <Text style={[styles.name, ink]}>{selected.name}</Text><Text style={muted}>{selected.detail}</Text>
       <Text style={muted}>Latitude {selected.coordinate[1].toFixed(5)} · Longitude {selected.coordinate[0].toFixed(5)}</Text>
@@ -109,9 +119,13 @@ export default function DestinationSearchScreen() {
   </ContentFrame></Page>;
 }
 const styles = StyleSheet.create({
-  input: { borderWidth: 1, borderRadius: 16, padding: 16, fontSize: 16 },
+  searchField:{minHeight:58,borderWidth:1,borderRadius:17,paddingHorizontal:14,flexDirection:'row',alignItems:'center',gap:10},
+  input: { flex:1,minHeight:54,paddingVertical:10,fontSize:16 },
   message: { marginVertical: 14, lineHeight: 21 },
-  result: { paddingVertical: 15, borderBottomWidth: StyleSheet.hairlineWidth, gap: 5 },
+  results:{paddingVertical:4,paddingHorizontal:12,gap:0},
+  result: { minHeight:70,paddingVertical:12,borderBottomWidth:StyleSheet.hairlineWidth,flexDirection:'row',alignItems:'center',gap:12 },
+  resultIcon:{width:38,height:38,borderRadius:13,alignItems:'center',justifyContent:'center'},
+  resultCopy:{flex:1,minWidth:0,gap:4},
   name: { fontSize: 16, fontWeight: "700" },
   details: { marginTop: 18, gap: 12 },
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" },

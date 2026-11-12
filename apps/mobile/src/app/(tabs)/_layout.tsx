@@ -1,20 +1,22 @@
 import {tx} from "../../i18n";
 import { Tabs } from "expo-router";
-import { StyleSheet, Text, useWindowDimensions } from "react-native";
+import { StyleSheet, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { RovaIcon } from "../../components/RovaIcon";
 import { useRovaTheme } from "../../theme/ThemeProvider";
 
 const tabItems = {
-  map: { title: tx('tab.map'), symbol: "⌖" },
-  reports: { title: tx('tab.reports'), symbol: "!" },
-  saved: { title: tx('tab.saved'), symbol: "♡" },
-  settings: { title: tx('tab.settings'), symbol: "⚙" },
+  map: { title: tx('tab.map'), icon: "map" },
+  reports: { title: tx('tab.reports'), icon: "reports" },
+  saved: { title: tx('tab.saved'), icon: "saved" },
+  settings: { title: tx('tab.settings'), icon: "settings" },
 } as const;
 
 export default function TabLayout() {
   const { theme } = useRovaTheme();
   const insets = useSafeAreaInsets();
   const {fontScale}=useWindowDimensions();
+  const iconSize = Math.min(25, 18 + fontScale * 2);
 
   return (
     <Tabs
@@ -27,25 +29,16 @@ export default function TabLayout() {
           tabBarStyle: {
             backgroundColor: theme.colors.surface,
             borderTopColor: theme.colors.border,
-            height: Math.max(66,Math.ceil(36+24*fontScale)) + insets.bottom,
-            paddingTop: 7,
-            paddingBottom: 8 + insets.bottom,
+            height: Math.max(70, Math.ceil(62 * Math.min(fontScale, 2))) + insets.bottom,
+            paddingTop: 6,
+            paddingBottom: 6 + insets.bottom,
           },
-          tabBarLabelStyle: [styles.label,fontScale>=1.5&&{fontSize:11}],
+          tabBarLabelStyle: styles.label,
           tabBarAllowFontScaling: true,
           tabBarItemStyle: {minHeight:48},
           tabBarAccessibilityLabel: item.title,
-          tabBarIcon: ({ color, focused }) => (
-            <Text
-              accessible={false}
-              style={[
-                styles.icon,
-                { color },
-                focused && { backgroundColor: theme.colors.brandTint },
-              ]}
-            >
-              {item.symbol}
-            </Text>
+          tabBarIcon: ({ color }) => (
+            <RovaIcon name={item.icon} color={color ?? theme.colors.inkMuted} size={iconSize} />
           ),
         };
       }}
@@ -59,17 +52,8 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  icon: {
-    width: 34,
-    height: 28,
-    borderRadius: 14,
-    textAlign: "center",
-    textAlignVertical: "center",
-    fontSize: 20,
-    overflow: "hidden",
-  },
   label: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
   },
 });

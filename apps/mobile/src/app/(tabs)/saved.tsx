@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Text, View } from 'react-native';
-import { ActionButton, ContentFrame, Page, PageHeader, Surface } from '../../components/ui';
+import { StyleSheet, Text, View } from 'react-native';
+import { ActionButton, ContentFrame, Page, PageHeader, Pill, Surface } from '../../components/ui';
+import { RovaIcon } from '../../components/RovaIcon';
 import { useRovaTheme } from '../../theme/ThemeProvider';
 import { useRoutePreview } from '../../map/RouteProvider';
 import { updateDriverData, useDriverData } from '../../account/local';
@@ -9,19 +10,38 @@ export default function SavedScreen(){
   const {theme}=useRovaTheme();const {setPickedDestination}=useRoutePreview();const data=useDriverData();const [message,setMessage]=useState('');
   return <Page><ContentFrame>
     <PageHeader eyebrow="Your places" title="Saved" subtitle="Home, Work and favorites. Sign-in is optional."/>
-    <Surface style={{gap:12}}>
-      <Text style={{color:theme.colors.inkMuted}}>Search for a destination and choose Save as Home, Work or favorite. Places stay on this phone unless you explicitly back them up to an account in Settings.</Text>
+    <Surface style={styles.intro}>
+      <View style={[styles.introIcon,{backgroundColor:theme.colors.brandTint}]}>
+        <RovaIcon name="saved" color={theme.colors.brandStrong} size={22}/>
+      </View>
+      <Text style={[styles.copy,{color:theme.colors.inkMuted}]}>Search for a destination and choose Save as Home, Work or favorite. Places stay on this phone unless you explicitly back them up to an account in Settings.</Text>
       <ActionButton title="Find a place to save" onPress={()=>router.push('/destination-search')}/>
-      {!data.places.length&&<Text style={{color:theme.colors.ink}}>Nothing saved yet</Text>}
-      {data.places.map(place=><View key={place.clientKey} style={{gap:8,paddingVertical:12,borderTopWidth:1,borderColor:theme.colors.border}}>
-        <Text style={{color:theme.colors.brandStrong,fontWeight:'800'}}>{place.kind==='favorite'?'FAVORITE':place.kind.toUpperCase()}</Text>
-        <Text style={{color:theme.colors.ink,fontSize:18,fontWeight:'700'}}>{place.label}</Text>
-        <Text style={{color:theme.colors.inkMuted}}>{place.address}</Text>
-        <Text style={{color:theme.colors.inkMuted}}>{place.attribution}</Text>
+    </Surface>
+    {!data.places.length&&<Surface style={styles.empty}>
+      <Text style={[styles.placeTitle,{color:theme.colors.ink}]}>Nothing saved yet</Text>
+      <Text style={[styles.copy,{color:theme.colors.inkMuted}]}>Places you save on this phone will appear here.</Text>
+    </Surface>}
+    {data.places.map(place=><Surface key={place.clientKey} style={styles.place}>
+        <View style={styles.placeHeading}>
+          <Pill>{place.kind==='favorite'?'FAVORITE':place.kind.toUpperCase()}</Pill>
+          <RovaIcon name="saved" color={theme.colors.brandStrong} size={20}/>
+        </View>
+        <Text style={[styles.placeTitle,{color:theme.colors.ink}]}>{place.label}</Text>
+        <Text style={[styles.copy,{color:theme.colors.inkMuted}]}>{place.address}</Text>
+        <Text style={[styles.attribution,{color:theme.colors.inkSubtle}]}>{place.attribution}</Text>
         <ActionButton title={`Navigate to ${place.label}`} onPress={()=>{setPickedDestination({name:place.label,detail:place.address,coordinate:[place.lon,place.lat]});router.navigate('/(tabs)/map');}}/>
         <ActionButton title={`Remove ${place.label}`} secondary onPress={()=>{void updateDriverData(d=>({...d,places:d.places.filter(p=>p.clientKey!==place.clientKey)})).then(()=>setMessage('Removed from this phone. Account copies change only when you sync.')).catch(()=>setMessage('Could not remove the saved place.'));}}/>
-      </View>)}
+      </Surface>)}
       {!!message&&<Text accessibilityLiveRegion="polite" style={{color:theme.colors.inkMuted}}>{message}</Text>}
-    </Surface>
   </ContentFrame></Page>;
 }
+const styles = StyleSheet.create({
+  intro:{gap:14,marginBottom:16},
+  introIcon:{width:44,height:44,borderRadius:15,alignItems:'center',justifyContent:'center'},
+  place:{gap:10,marginBottom:12},
+  placeHeading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
+  placeTitle:{fontSize:19,lineHeight:26,fontWeight:'800'},
+  copy:{fontSize:15,lineHeight:22},
+  attribution:{fontSize:13,lineHeight:19},
+  empty:{gap:8,marginBottom:12},
+});

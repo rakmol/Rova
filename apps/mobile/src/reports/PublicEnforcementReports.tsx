@@ -13,11 +13,13 @@ export function PublicEnforcementReports() {
   const ink = { color: theme.colors.ink }; const note = { color: theme.colors.inkMuted, fontSize: 12, lineHeight: 18 };
   const open = (url: string) => { setLinkError(false); void Linking.openURL(url).catch(() => setLinkError(true)); };
   return <View style={{ gap: 12, marginBottom: 24 }}>
-    <Text style={[ink, { fontSize: 20, fontWeight: "800" }]}>Reported enforcement areas</Text>
-    <Pill tone="warning">PUBLIC REPORTS · UNVERIFIED</Pill>
-    <Text style={note}>Checked {publicResearchDate}. {publicEnforcementReports.length} named areas from published reports. This is a dated research snapshot, not a live camera feed or a complete camera list.</Text>
-    <Text style={note}>Read before driving. Reported speeds apply to individual sightings, not necessarily the whole named road. Some equipment moves. Follow current signs everywhere; an unlisted area does not mean no enforcement.</Text>
-    <Text style={note}>During navigation, mapped reported roads can give an unverified road-level prompt. Some areas still lack usable geometry. These prompts do not confirm a camera position or the applicable speed limit.</Text>
+    <Surface style={{ gap: 10 }}>
+      <Text accessibilityRole="header" style={[ink, { fontSize: 20, fontWeight: "800" }]}>Reported enforcement areas</Text>
+      <Pill tone="warning">PUBLIC REPORTS · UNVERIFIED</Pill>
+      <Text style={note}>Checked {publicResearchDate}. {publicEnforcementReports.length} named areas from published reports. This is a dated research snapshot, not a live camera feed or a complete camera list.</Text>
+      <Text style={note}>Read before driving. Reported speeds apply to individual sightings, not necessarily the whole named road. Some equipment moves. Follow current signs everywhere; an unlisted area does not mean no enforcement.</Text>
+      <Text style={note}>During navigation, mapped reported roads can give an unverified road-level prompt. Some areas still lack usable geometry. These prompts do not confirm a camera position or the applicable speed limit.</Text>
+    </Surface>
     <Surface style={{ gap: 8 }}>
       <Text style={[ink, { fontWeight: "800" }]}>Broader city-level reporting</Text>
       <Text style={note}>{reportedDeploymentCities.join(", ")}. The {enforcementSources.deployments.publishedAt} news report attributes deployments to MTTD. It does not establish exact operating sites or coverage.</Text>
@@ -31,9 +33,9 @@ export function PublicEnforcementReports() {
       <Text style={note}>This is general information. Posted and vehicle-specific restrictions can differ. Navigation uses a verified road match before showing an applicable limit.</Text>
       <ActionButton secondary title="Read Ghana Police guidance" onPress={() => open(enforcementSources.police.url)} />
     </Surface>
-    <TextInput accessibilityLabel="Search reported enforcement areas" placeholder="Search road, suburb or reported speed" placeholderTextColor={theme.colors.inkMuted} value={query} onChangeText={(text) => { setQuery(text); setCount(10); }} style={{ color: theme.colors.ink, borderColor: theme.colors.border, borderWidth: 1, borderRadius: 12, padding: 14, backgroundColor: theme.colors.surface }} autoCorrect={false} />
-    <View accessibilityRole="radiogroup" accessibilityLabel="Reported area region" style={{ flexDirection: "row", gap: 8 }}>
-      {([['all','All'],['accra','Accra area'],['kumasi','Kumasi']] as const).map(([value,label]) => <Pressable key={value} accessibilityRole="radio" accessibilityState={{ checked: city === value }} onPress={() => { setCity(value); setCount(10); }} style={{ flex: 1, minHeight: 44, justifyContent: "center", alignItems: "center", borderRadius: 12, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: city === value ? theme.colors.brandTint : theme.colors.surface }}><Text style={ink}>{label}</Text></Pressable>)}
+    <TextInput accessibilityLabel="Search reported enforcement areas" placeholder="Search road, suburb or reported speed" placeholderTextColor={theme.colors.inkSubtle} value={query} onChangeText={(text) => { setQuery(text); setCount(10); }} style={{ color: theme.colors.ink, borderColor: theme.colors.border, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, minHeight: 56, fontSize: 16, backgroundColor: theme.colors.surface }} autoCorrect={false} />
+    <View accessibilityRole="radiogroup" accessibilityLabel="Reported area region" style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+      {([['all','All'],['accra','Accra area'],['kumasi','Kumasi']] as const).map(([value,label]) => <Pressable key={value} accessibilityRole="radio" accessibilityState={{ checked: city === value }} onPress={() => { setCity(value); setCount(10); }} style={{ flex: 1, minWidth: 92, minHeight: 48, paddingHorizontal: 10, justifyContent: "center", alignItems: "center", borderRadius: 14, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: city === value ? theme.colors.brandTint : theme.colors.surface }}><Text style={ink}>{label}</Text></Pressable>)}
     </View>
     <Text accessibilityLiveRegion="polite" style={note}>{results.length} matching named areas · {Math.min(count, results.length)} shown</Text>
     {results.length === 0 && <Text style={note}>No matching published report in this snapshot. Enforcement may still operate here.</Text>}

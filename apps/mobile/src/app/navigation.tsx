@@ -32,17 +32,18 @@ export default function NavigationScreen(){
  const eta=new Date(session.updatedAt+seconds*1000).toLocaleTimeString('en-GH',{hour:'2-digit',minute:'2-digit'}),active=s.state==='navigating'&&s.gpsReliable;
  const large=fontScale>=1.3||height<650||width>height||(s.progress?.instruction?.length??0)>120;
  const compact=motion.locked&&!motion.passenger;
+ const mapHeight=Math.max(180,Math.min(320,height*(large?0.3:0.36)));
  const controls=<View style={[styles.row,{flexWrap:fontScale>=1.8?'wrap':'nowrap'}]}><View style={styles.control}><ActionButton title={session.muted?tx('nav.unmute'):tx('nav.mute')} secondary onPress={session.toggleMuted}/></View>{s.state==='error'&&<View style={styles.control}><ActionButton title={tx('nav.retry')} onPress={session.retry}/></View>}<View style={styles.control}><ActionButton title={s.state==='arrived'?tx('nav.done'):tx('nav.end')} onPress={end}/></View></View>;
  return <SafeAreaView style={[styles.screen,{backgroundColor:theme.colors.background}]}>
   <ScrollView testID="navigation-accessible-content" scrollEnabled contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
    <Surface style={styles.card}>
     <NetworkNotice/>
-    <View style={[styles.row,{flexWrap:'wrap'}]}><Text numberOfLines={1} accessibilityLabel={route.destinationLabel} style={[styles.title,ink]}>{route.destinationLabel}</Text><Pill tone={active?'brand':'warning'}>{(s.state==='navigating'&&!s.gpsReliable)||s.state==='paused'?tx('nav.state.paused'):tx(('nav.state.'+s.state) as import('../i18n').MessageKey)}</Pill></View>
+    <View style={[styles.row,{flexWrap:'wrap'}]}><Text accessibilityLabel={route.destinationLabel} style={[styles.title,ink]}>{route.destinationLabel}</Text><Pill tone={active?'brand':'warning'}>{(s.state==='navigating'&&!s.gpsReliable)||s.state==='paused'?tx('nav.state.paused'):tx(('nav.state.'+s.state) as import('../i18n').MessageKey)}</Pill></View>
     {['idle','previewing','error','off-route','rerouting'].includes(s.state)&&<Text accessibilityLiveRegion="polite" style={[styles.note,muted]}>{s.message}</Text>}
     {large&&controls}
     <NavigationInstruction snapshot={s} ink={theme.colors.ink} muted={theme.colors.inkMuted}/>
    </Surface>
-   <View style={[styles.map,large&&{flex:0,height:220}]} testID="navigation-map-area">
+   <View style={[styles.map,{height:mapHeight}]} testID="navigation-map-area">
     {mapReady?<MapboxMap fill center={s.progress?.coordinate??route.origin} routeGeometry={displayRoute.geometry} destination={route.destination} locationEnabled={s.gpsReliable&&!['paused','arrived','idle','error'].includes(s.state)} onMapLoaded={()=>setMapError(null)} onMapError={setMapError}/>:<Text style={muted}>{mapError??'Preparing navigation map...'}</Text>}
    </View>
    <Surface style={styles.card}>
@@ -64,4 +65,4 @@ export default function NavigationScreen(){
   </ScrollView>
  </SafeAreaView>;
 }
-const styles=StyleSheet.create({screen:{flex:1},content:{flexGrow:1},empty:{flex:1,padding:24,justifyContent:'center',gap:16},card:{marginHorizontal:10,marginVertical:6,padding:12,gap:8},row:{flexDirection:'row',gap:8,alignItems:'center'},title:{flex:1,fontSize:18,fontWeight:'800'},instruction:{fontSize:28,lineHeight:36,fontWeight:'800'},map:{flex:1,minHeight:160,overflow:'hidden',justifyContent:'center'},metric:{flex:1,minWidth:0},control:{flex:1,minWidth:110},value:{fontSize:22,fontWeight:'800'},label:{fontSize:13,marginTop:3},note:{fontSize:16,lineHeight:24},credit:{fontSize:12,lineHeight:18}});
+const styles=StyleSheet.create({screen:{flex:1},content:{flexGrow:1},empty:{flex:1,padding:24,justifyContent:'center',gap:16},card:{marginHorizontal:12,marginVertical:8,padding:16,gap:12},row:{flexDirection:'row',gap:8,alignItems:'center'},title:{flex:1,minWidth:160,fontSize:18,lineHeight:26,fontWeight:'800'},instruction:{fontSize:28,lineHeight:36,fontWeight:'800'},map:{minHeight:180,overflow:'hidden',justifyContent:'center',marginVertical:4},metric:{flex:1,minWidth:0},control:{flex:1,minWidth:110},value:{fontSize:22,fontWeight:'800'},label:{fontSize:13,marginTop:3},note:{fontSize:16,lineHeight:24},credit:{fontSize:12,lineHeight:18}});
