@@ -3,13 +3,23 @@ import RouteOptionsScreen from "../app/route-options";
 import { ThemeProvider } from "../theme/ThemeProvider";
 import { routingProvider } from "../routing/runtime";
 import type { RoutingOption } from "@rova/shared";
+import { vehicleLabels } from '../navigation/SmartAlertPanel';
 const mockSelect = jest.fn();
+const mockVehicle = jest.fn();
 jest.mock("expo-router", () => ({ router: { back: jest.fn() }, useLocalSearchParams: () => ({ origin: "-0.187,5.6037", destination: "-0.173,5.622", title: "Test destination" }) }));
-jest.mock("../map/RouteProvider", () => ({ useRoutePreview: () => ({ setSelectedRoutingOption: mockSelect }) }));
+jest.mock("../map/RouteProvider", () => ({ useRoutePreview: () => ({ setSelectedRoutingOption: mockSelect, vehicleType: 'private_car', setVehicleType: mockVehicle }) }));
 jest.mock("../routing/runtime", () => ({ routingProvider: { routes: jest.fn() } }));
 jest.mock("../routing/MapLibreRouteMap", () => ({ MapLibreRouteMap: () => null }));
 const option: RoutingOption = { id: "test-balanced", label: "Balanced route", geometry: { type: "LineString", coordinates: [[-0.187, 5.6037], [-0.173, 5.622]] }, distanceMeters: 4000, durationSeconds: 600, maneuvers: [{ instruction: "Test turn", distanceMeters: 50, durationSeconds: null }], trafficAware: false, etaKind: "static_estimate", tolls: "unknown", isSample: false, attribution: "Test fixture" };
 beforeEach(() => { jest.clearAllMocks(); });
+
+test('vehicle choice is available while previewing and updates the navigation session class', async () => {
+  jest.mocked(routingProvider.routes).mockResolvedValue({ provider: 'geoapify', routes: [option], warnings: [], fetchedAt: '2026-11-12T00:00:00Z' });
+  const view = await render(<ThemeProvider><RouteOptionsScreen /></ThemeProvider>);
+  await fireEvent.press(view.getByRole('radio', { name: vehicleLabels.bus }));
+  expect(mockVehicle).toHaveBeenCalledWith('bus');
+  expect(view.getByText(/Routes are general driving routes/)).toBeTruthy();
+});
 test("selecting a supported alternative updates distance/ETA and stores the same selected geometry", async () => {
   const shorter = { ...option, id: "test-short", label: "Shorter distance", distanceMeters: 3000, durationSeconds: 720 };
   jest.mocked(routingProvider.routes).mockResolvedValue({ provider: "geoapify", routes: [option, shorter], warnings: [], fetchedAt: "2026-11-07T00:00:00Z" });

@@ -62,7 +62,11 @@ describe("mobile screen foundation", () => {
     try {
       await fireEvent.press(view.getByRole("button", { name: "Use fixture destination" }));
       expect(handoff).toBeDefined();
-      await act(async () => { handoff!(Date.now()); });
+      // Restore native scheduling before mounting vehicle controls; intercepting
+      // every subsequent frame can prevent React's act scope from settling.
+      const deliverDestination = handoff!;
+      frame.mockRestore();
+      await act(async () => { deliverDestination(Date.now()); });
       expect(view.getByText("Test suburb")).toBeTruthy();
       expect(mapboxProvider.requestRoute).toHaveBeenCalledWith([-0.187, 5.6037], [-0.2, 5.6]);
       expect(view.getByLabelText("Search destinations in Ghana").props.value).toBe("Test suburb");
@@ -104,10 +108,23 @@ describe("mobile screen foundation", () => {
   it("allows switching to an explicit dark theme", async () => {
     const view = await renderWithTheme(<SettingsScreen />);
 
+    await fireEvent.press(view.getByRole("button", { name: "Appearance" }));
     await fireEvent.press(view.getByRole("radio", { name: "Dark" }));
 
     expect(view.getByRole("radio", { name: "Dark" }).props.accessibilityState.checked).toBe(true);
     expect(view.getByRole("radio", { name: "System" }).props.accessibilityState.checked).toBe(false);
+  });
+
+  it("opens only the selected settings category and returns to the compact menu", async () => {
+    const view = await renderWithTheme(<SettingsScreen />);
+    expect(view.queryByText('Voice and units')).toBeNull();
+    await fireEvent.press(view.getByRole('button', { name: 'Navigation & voice' }));
+    expect(view.getByText('Voice and units')).toBeTruthy();
+    expect(view.queryByText('Location and privacy')).toBeNull();
+    await fireEvent.press(view.getByRole('button', { name: 'All settings' }));
+    await fireEvent.press(view.getByRole('button', { name: 'Location & privacy' }));
+    expect(view.getByText('Location and privacy')).toBeTruthy();
+    expect(view.queryByText('Voice and units')).toBeNull();
   });
 
   it("renders a clear permission-denied state without implying location access", async () => {
