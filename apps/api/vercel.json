@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
+  "outputDirectory": "public",
   "installCommand": "npm ci --include=dev --no-audit --no-fund --prefix ../..",
   "buildCommand": "npm run build --workspace @rova/api --prefix ../..",
   "functions": {"api/index.ts": {"maxDuration": 60}},
