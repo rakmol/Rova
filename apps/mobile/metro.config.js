@@ -12,18 +12,19 @@ config.server.enhanceMiddleware = (middleware, server) => {
     const isStream = isIncident && incidentPath === '/stream';
     const accountPath = url.pathname.startsWith('/rova-api/') ? url.pathname.slice('/rova-api'.length) : '';
     const isAccount = /^\/v1\/(?:auth\/(?:status|code|verify|refresh|sign-out)|me(?:\/(?:sync|erase-data|delete-account))?)$/.test(accountPath);
+    const isPilot = /^\/v1\/pilot\/(?:status|telemetry\/(?:session|batches|erase))$/.test(accountPath);
     const isNotification = /^\/v1\/notifications\/(?:status|session|preferences|erase|inbox)$/.test(accountPath);
     const isEraseDevice = url.pathname === '/rova-api/incidents/erase-device';
-    const target = isNotification ? accountPath : isAccount ? accountPath : isEraseDevice ? '/v1/incidents/erase-device' : isIncident ? `/v1/incidents${incidentPath}` : url.pathname === "/rova-api/places/search" ? "/v1/places/search" : url.pathname === "/rova-api/routes" ? "/routes" : url.pathname === "/rova-api/safety/offline-pack" ? "/safety/offline-pack" : url.pathname === "/rova-api/safety/alert-context" ? "/safety/alert-context" : null;
+    const target = isPilot ? accountPath : isNotification ? accountPath : isAccount ? accountPath : isEraseDevice ? '/v1/incidents/erase-device' : isIncident ? `/v1/incidents${incidentPath}` : url.pathname === "/rova-api/places/search" ? "/v1/places/search" : url.pathname === "/rova-api/routes" ? "/routes" : url.pathname === "/rova-api/safety/offline-pack" ? "/safety/offline-pack" : url.pathname === "/rova-api/safety/alert-context" ? "/safety/alert-context" : null;
     if (!target) return next(request, response, fallback);
     response.setHeader("Cache-Control", "no-store");
     response.setHeader("Content-Type", "application/json");
-    const method = isNotification ? ['/v1/notifications/status','/v1/notifications/inbox'].includes(accountPath) ? 'GET' : accountPath.endsWith('/preferences') ? request.method : 'POST' : isAccount ? ['/v1/auth/status','/v1/me'].includes(accountPath) ? 'GET' : 'POST' : isEraseDevice ? 'POST' : isIncident ? ['/nearby','/approved','/stream'].includes(incidentPath) ? 'GET' : 'POST' : target === "/safety/alert-context" ? "POST" : "GET";
+    const method = isPilot ? accountPath.endsWith('/status') ? 'GET' : 'POST' : isNotification ? ['/v1/notifications/status','/v1/notifications/inbox'].includes(accountPath) ? 'GET' : accountPath.endsWith('/preferences') ? request.method : 'POST' : isAccount ? ['/v1/auth/status','/v1/me'].includes(accountPath) ? 'GET' : 'POST' : isEraseDevice ? 'POST' : isIncident ? ['/nearby','/approved','/stream'].includes(incidentPath) ? 'GET' : 'POST' : target === "/safety/alert-context" ? "POST" : "GET";
     if (!['GET','POST'].includes(method) || request.method !== method) { response.statusCode = 405; response.end('{"error":"Method not allowed."}'); return; }
     // Development only: expose search, routing, bounded compliance and public community incident routes.
     // Keys and all other backend/admin routes remain on the separate API process.
     const headers = method === 'POST' ? { 'Content-Type': 'application/json' } : {};
-    if ((isIncident || isAccount || isEraseDevice || isNotification) && request.headers.authorization) headers.Authorization = request.headers.authorization;
+    if ((isIncident || isAccount || isEraseDevice || isNotification || isPilot) && request.headers.authorization) headers.Authorization = request.headers.authorization;
     const upstream = http.request({ hostname: "127.0.0.1", port: 4000, method, headers, path: `${target}${url.search}` }, (result) => {
       response.statusCode = result.statusCode || 502;
       if (isStream) { response.setHeader('Content-Type', result.headers['content-type'] || 'application/json'); response.setHeader('Cache-Control','no-store, no-transform'); response.flushHeaders(); }

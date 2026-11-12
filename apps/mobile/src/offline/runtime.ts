@@ -6,6 +6,7 @@ import type {Fix} from '../navigation/session';
 const host=Constants.expoConfig?.hostUri;
 const tunnel=__DEV__&&typeof host==='string'&&['.on.expo.app','.exp.direct','.ngrok-free.app'].some(s=>host.endsWith(s))?`https://${host}/rova-api/safety/offline-pack`:undefined;
 export async function downloadSafetyPack(lon:number,lat:number,vehicleType:VehicleClass){
+ if(process.env.EXPO_PUBLIC_PILOT_MODE==='true')throw new Error('Pilot safety data requires current corridor approval online. Offline numeric limits are disabled.');
  if(networkSnapshot().status==='offline')throw new Error('Offline. Reconnect before downloading safety data.');
  const endpoint=process.env.EXPO_PUBLIC_OFFLINE_SAFETY_API_URL||tunnel;if(!endpoint)throw new Error('Offline safety download is not configured.');
  const url=new URL(endpoint);if(url.protocol!=='https:'&&!['localhost','127.0.0.1'].includes(url.hostname))throw new Error('Offline download requires HTTPS.');
@@ -24,7 +25,7 @@ export async function downloadSafetyPack(lon:number,lat:number,vehicleType:Vehic
  }finally{clearTimeout(timer);}
 }
 export function offlineCompliance(fix:Fix,vehicleType:VehicleClass):ComplianceContext{
- const now=Date.now();const result=offlineSpeedLimit(offlineData().safety,{lon:fix.coordinate[0],lat:fix.coordinate[1],accuracy:fix.accuracy??10000,heading:fix.heading??undefined,timestamp:fix.timestamp,vehicleType},now);
+ const now=Date.now();const result=offlineSpeedLimit(process.env.EXPO_PUBLIC_PILOT_MODE==='true'?null:offlineData().safety,{lon:fix.coordinate[0],lat:fix.coordinate[1],accuracy:fix.accuracy??10000,heading:fix.heading??undefined,timestamp:fix.timestamp,vehicleType},now);
  return{fixTimestamp:fix.timestamp,checkedAt:now,validUntil:now+2000,coordinate:fix.coordinate,validForMeters:10,
   limit:result.status==='verified'?{status:'verified',speedLimitKmh:result.speedLimitKmh,segmentId:result.segmentId,confidence:result.confidence,units:'km/h'}:{status:'unknown',speedLimitKmh:null,reason:result.reason},
   notices:[],enforcementStatus:'unavailable/unverified'};

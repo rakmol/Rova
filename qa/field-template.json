@@ -238,6 +238,28 @@
       "observations": null,
       "measurements": {},
       "artifacts": []
+    },
+    {
+      "id": "M22",
+      "status": "not_run",
+      "tester": null,
+      "reviewer": null,
+      "executedAt": null,
+      "deviceIds": [],
+      "observations": null,
+      "measurements": {},
+      "artifacts": []
+    },
+    {
+      "id": "M23",
+      "status": "not_run",
+      "tester": null,
+      "reviewer": null,
+      "executedAt": null,
+      "deviceIds": [],
+      "observations": null,
+      "measurements": {},
+      "artifacts": []
     }
   ],
   "defects": [],

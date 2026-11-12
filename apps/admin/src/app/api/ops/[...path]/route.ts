@@ -1,10 +1,10 @@
 import {cookies}from'next/headers';
 import {NextRequest,NextResponse}from'next/server';
-const allowed=new Set(['login','session','logout','schema','overview','records','detail','revise','revert','review','publish','withdraw','freshness','analytics','audit','coverage','sponsored','provider-costs','members','member']);
-const readOnly=new Set(['session','schema','overview','records','detail','freshness','analytics','audit','coverage','sponsored','provider-costs','members']);
+const allowed=new Set(['pilot','pilot/corridors','pilot/review','pilot/control','pilot/incident-check','login','session','logout','schema','overview','records','detail','revise','revert','review','publish','withdraw','freshness','analytics','audit','coverage','sponsored','provider-costs','members','member']);
+const readOnly=new Set(['pilot','session','schema','overview','records','detail','freshness','analytics','audit','coverage','sponsored','provider-costs','members']);
 const base=process.env.ROVA_API_URL??'http://127.0.0.1:4000';
 async function handle(request:NextRequest,context:{params:Promise<{path:string[]}>}){
- const params=await context.params;const path=params.path.join('/');if(!allowed.has(path)||params.path.length!==1)return NextResponse.json({error:'Unknown endpoint'},{status:404});
+ const params=await context.params;const path=params.path.join('/');if(!allowed.has(path))return NextResponse.json({error:'Unknown endpoint'},{status:404});
  if((request.method==='GET')!==readOnly.has(path))return NextResponse.json({error:'Method not allowed'},{status:405});
  if(request.method==='POST'&&(request.headers.get('origin')!==request.nextUrl.origin||request.headers.get('x-rova-ops')!=='1'))return NextResponse.json({error:'Same-origin request required'},{status:403});
  const api=new URL(base);if(api.protocol!=='https:'&&!['localhost','127.0.0.1'].includes(api.hostname))return NextResponse.json({error:'Secure API endpoint required'},{status:503});

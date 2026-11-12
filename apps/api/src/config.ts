@@ -17,6 +17,8 @@ const envSchema = z.object({
   NOTIFICATION_TOKEN_KEY:z.preprocess(v=>v===''?undefined:v,z.string().regex(/^[a-fA-F0-9]{64}$/).optional()),
   NOTIFICATION_TOKEN_KEY_ID:z.string().min(1).max(50).default('push-v1'),
   ADMIN_COVERAGE_AGGREGATION_ENABLED: z.enum(['true','false']).default('false'),
+  PILOT_TELEMETRY_ENABLED:z.enum(['true','false']).default('false'),
+  PILOT_REGION_GATING_ENABLED:z.enum(['true','false']).optional(),
   OFFLINE_SAFETY_ENABLED:z.enum(['true','false']).default('false'),
   OFFLINE_SAFETY_SOURCE_IDS:z.string().default('').refine(v=>!v||v.split(',').length<=100&&v.split(',').every(id=>z.uuid().safeParse(id).success),'Explicit licensed source UUID allowlist required'),
   SUPABASE_URL: z.preprocess(v=>v===''?undefined:v,z.url().refine(v=>/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test(v),'Use your hosted Supabase project HTTPS origin').optional()),
@@ -50,7 +52,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env) {
     try { const url = new URL(origin); if (url.origin !== origin || !["http:", "https:"].includes(url.protocol) || (config.NODE_ENV === "production" && url.protocol !== "https:")) throw new Error(); }
     catch { throw new Error("CORS_ORIGINS must contain explicit origins; production requires HTTPS."); }
   }
-  return { ...config, DATABASE_URL: config.DATABASE_URL ?? "postgres://rova:rova_local_only@127.0.0.1:54329/rova", corsOrigins: origins, trustProxy: config.TRUST_PROXY_CIDRS ? config.TRUST_PROXY_CIDRS.split(",").map((value) => value.trim()) : false as false };
+  return { ...config, PILOT_REGION_GATING_ENABLED:config.PILOT_REGION_GATING_ENABLED??(config.NODE_ENV==='production'?'true':'false'), DATABASE_URL: config.DATABASE_URL ?? "postgres://rova:rova_local_only@127.0.0.1:54329/rova", corsOrigins: origins, trustProxy: config.TRUST_PROXY_CIDRS ? config.TRUST_PROXY_CIDRS.split(",").map((value) => value.trim()) : false as false };
 }
 export type ApiConfig = ReturnType<typeof readConfig>;
 export function assertDemoSeedAllowed(config: ApiConfig, allow = process.env.ALLOW_SYNTHETIC_SEED) {

@@ -8,8 +8,8 @@ apps/api/data/osm/
 .env
 .env.*
 !.env.example
-android/
-ios/
+/android/
+/ios/
 **/google-services.json
 **/*firebase-adminsdk*.json
 qa/evidence/
@@ -44,3 +44,9 @@ apps/api/data/realtime-local-metrics.json
 **/.netrc
 **/keystore.properties
 **/key.properties
+
+/apps/mobile/android/
+/apps/mobile/ios/
+
+**/build/
+**/.gradle/

@@ -81,3 +81,4 @@ export {validateSafetyPack,offlinePackState,offlineSpeedLimit,OFFLINE_SAFETY_TTL
 
 export {NOTIFICATION_TIME_ZONE,defaultNotificationPreferences,validRenewalDate,accraDay,accraAt,pushWindow,planRenewals,type RenewalKind,type RenewalReminder,type SavedNotificationRegion,type NotificationPreferences} from './notifications';
 export {PROVIDER_COST_REVIEW_DATE,estimateProviderCosts,planningAlert,type CostScenario} from './provider-costs';
+export {PILOT_CONSENT_VERSION,pilotMetrics,pilotCounts,pilotRatio,pilotSummary,type PilotMetric,type PilotCounts} from './pilot';

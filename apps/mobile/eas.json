@@ -31,7 +31,8 @@
       "distribution": "internal",
       "environment": "preview",
       "env": {
-        "ROVA_APP_VARIANT": "preview"
+        "ROVA_APP_VARIANT": "preview",
+        "EXPO_PUBLIC_PILOT_MODE": "true"
       },
       "android": {
         "buildType": "apk"
@@ -43,7 +44,8 @@
       "distribution": "store",
       "environment": "production",
       "env": {
-        "ROVA_APP_VARIANT": "production"
+        "ROVA_APP_VARIANT": "production",
+        "EXPO_PUBLIC_PILOT_MODE": "true"
       },
       "android": {
         "buildType": "app-bundle"

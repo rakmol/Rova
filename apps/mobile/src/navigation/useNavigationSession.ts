@@ -16,6 +16,7 @@ import { fetchComplianceContext } from "./compliance-client";
 import {ReportedRoadAlertEngine,emptyReportedRoadAlert,reportedRoadAlertsEnabled} from "./reported-road-alerts";
 import { useHazardFeed } from '../incidents/useHazardFeed';
 import { CongestionAlertEngine, type CongestionAlert } from './congestion-alerts';
+import {pilotRuntime} from '../pilot/runtime';
 
 const fromLocation = (location: Location.LocationObject): Fix => ({ coordinate: [location.coords.longitude, location.coords.latitude], accuracy: location.coords.accuracy, timestamp: location.timestamp, speed: location.coords.speed, heading: location.coords.heading });
 
@@ -41,6 +42,8 @@ export function useNavigationSession(destination: RoutingCoordinate | undefined,
     if (lon === undefined || lat === undefined) return;
     navigationInteraction(true);
     const machine = new NavigationMachine();
+    pilotRuntime.record('nav_attempts');
+    let outcome=false;
     const gate = new VoiceGate();
     const voice = createVoicePlayer(setVoiceError);
     const alerts = new SmartAlertEngine();
@@ -74,6 +77,7 @@ export function useNavigationSession(destination: RoutingCoordinate | undefined,
     const publish = () => {
       if (!active) return;
       const next = machine.snapshot;
+      if(!outcome&&['error','arrived','idle'].includes(next.state)){outcome=true;pilotRuntime.record(next.state==='error'?'nav_failures':next.state==='arrived'?'nav_arrivals':'nav_cancelled');}
       setSnapshot({ ...next });
       setUpdatedAt(Date.now());
       const now = Date.now();
@@ -89,8 +93,8 @@ export function useNavigationSession(destination: RoutingCoordinate | undefined,
           const fix = lastFix!; const progressMeters = next.progress!.along;
           const timeout = setTimeout(() => request.abort(), 4500);
           void fetchComplianceContext(fix, path, request.signal, vehicleType).then((data) => {
-            if (active && !request.signal.aborted && safetyRequest === request) {safetyFailures=0;requestOutcome(true);safetyContext = { data, progressMeters, heading: fix.heading ?? -1 };}
-          }).catch(() => { if (safetyRequest === request) {safetyFailures++;requestOutcome(false);safetyContext = null;} }).finally(() => {
+            if (active && !request.signal.aborted && safetyRequest === request) {safetyFailures=0;requestOutcome(true);pilotRuntime.safety(data.limit.status==='verified',data.limit.status==='unknown'&&/stale|expired/.test(data.limit.reason));safetyContext = { data, progressMeters, heading: fix.heading ?? -1 };}
+          }).catch(() => { if (safetyRequest === request) {safetyFailures++;requestOutcome(false);pilotRuntime.safety(false);safetyContext = null;} }).finally(() => {
             clearTimeout(timeout);
             if (active && safetyRequest === request) { safetyRequest = null; publish(); }
           });
@@ -127,7 +131,7 @@ export function useNavigationSession(destination: RoutingCoordinate | undefined,
         if (!next) throw new Error("No route with maneuver instructions was found.");
         machine.preview(next); machine.start();
       } catch {
-        if (active && !abort.signal.aborted) machine.rerouteFailed();
+        if (active && !abort.signal.aborted) {pilotRuntime.record('reroute_failures');machine.rerouteFailed();}
       } finally { if (active && !abort.signal.aborted) publish(); }
     };
     const startWatch = async () => {
@@ -139,6 +143,7 @@ export function useNavigationSession(destination: RoutingCoordinate | undefined,
           const fix = fromLocation(location);
           observeMotion({speed:fix.speed,accuracy:fix.accuracy,timestamp:fix.timestamp});
           machine.update(fix, Date.now());
+          pilotRuntime.gps(Date.now()-fix.timestamp>10000?'stale':machine.snapshot.gpsReliable?'good':'poor');
           if (machine.snapshot.gpsReliable) lastFix = fix;
           publish();
           if (machine.snapshot.state === "off-route") void recalculate();
@@ -208,9 +213,9 @@ export function useNavigationSession(destination: RoutingCoordinate | undefined,
       else if (["navigating", "off-route", "rerouting"].includes(machine.snapshot.state)) { resumeOnForeground = true; pause(); }
       else voice.stop(); // System permission activities can briefly background startup.
     });
-    const timer = setInterval(() => { machine.stale(Date.now()); publish(); }, 2000);
+    const timer = setInterval(() => { machine.stale(Date.now());if(foregroundState==='active'&&machine.snapshot.state==='navigating'&&!machine.snapshot.gpsReliable)pilotRuntime.gps('stale');publish(); }, 2000);
     void start();
-    return () => { navigationInteraction(false); active = false; controller.abort(); rerouteAbort?.abort(); safetyRequest?.abort(); watchGeneration++; watch?.remove(); voice.stop(); appState.remove(); clearInterval(timer); control.current = null; };
+    return () => { if(!outcome)pilotRuntime.record('nav_cancelled');navigationInteraction(false); active = false; controller.abort(); rerouteAbort?.abort(); safetyRequest?.abort(); watchGeneration++; watch?.remove(); voice.stop(); appState.remove(); clearInterval(timer); control.current = null; };
   }, [lon, lat, selected, retry, vehicleType]);
 
   return { snapshot, voiceError, muted, updatedAt, smartAlerts, alertAudio,reportedRoadAlert,communityHazards,congestionAlert,

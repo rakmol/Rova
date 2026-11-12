@@ -9,6 +9,7 @@ import { AccountControls } from '../../account/AccountControls';
 import {NotificationSettings} from "../../notifications/NotificationSettings";
 import {OfflineSettings} from "../../offline/OfflineSettings";
 import { DriverSettings } from '../../account/DriverSettings';
+import {PilotSettings} from '../../pilot/PilotSettings';
 
 const themeOptions: { label: string; value: ThemeMode }[] = [
   { label: "System", value: "system" },
@@ -33,6 +34,7 @@ export default function SettingsScreen() {
         <DriverSettings/>
         <OfflineSettings/>
         <NotificationSettings/>
+        <PilotSettings/>
         <Text style={[styles.sectionLabel, { color: theme.colors.inkMuted }]}>
           APPEARANCE
         </Text>

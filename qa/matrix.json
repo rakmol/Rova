@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "scope": "Requirements supplied in stages05?19 plus reported map/keyboard UX. Earlier original01?04 prompts are unavailable in this conversation; reconcile their original acceptance criteria before declaring complete product traceability.",
+  "scope": "Requirements supplied in stages05?19 plus reported map/keyboard UX. Earlier original01?04 prompts are unavailable in this conversation; reconcile their original acceptance criteria before declaring complete product traceability. Stage22 pilot consent, diagnostics, corridor rollback and honest readiness are mapped separately; no field execution claimed.",
   "requirements": [
     {
       "id": "UX-map",
@@ -363,6 +363,22 @@
         "M19",
         "M20",
         "M21"
+      ]
+    },
+    {
+      "id": "R22-pilot",
+      "stage": "22",
+      "requirement": "Voluntary Accra pilot: default-off aggregate telemetry, safe protocol, independent corridor gates and honest monitoring/readiness",
+      "automated": [
+        "apps/mobile/src/__tests__/pilot.test.ts",
+        "apps/api/src/pilot.test.ts",
+        "apps/api/src/db.integration.test.ts",
+        "apps/admin/e2e/pilot.spec.ts"
+      ],
+      "manual": [
+        "M22",
+        "M23",
+        "M19"
       ]
     }
   ],
@@ -792,6 +808,49 @@
         "Restricted annotated road/audio recording",
         "Maneuver/arrival timing, discrepancies and safety review"
       ]
+    },
+    {
+      "id": "M22",
+      "title": "Pilot consent, native exits and deletion on real Android",
+      "environment": "device",
+      "required": true,
+      "status": "not_run",
+      "steps": [
+        "Install exact rebuilt APK on supported Android 11+ plus an unsupported/missing-native-module build; record identity and capabilities.",
+        "With diagnostics off, inspect traffic/native calls for no pilot collection; guest navigation remains available. Opt in separately, trigger controlled bench JS/native failure/ANR, restart and inspect only bounded daily counts. Never intentionally crash while driving.",
+        "While offline withdraw, restart, reconnect and verify remote erasure; race an upload, repeat account/phone deletion, inspect expired retention jobs and no resurrection."
+      ],
+      "expected": [
+        "No coordinates/routes/history/identifiers/error text in diagnostic payloads; no pre-consent events.",
+        "Unsupported/missing/truncated/gap evidence is unavailable, never zero-crash proof; platform error handling remains intact.",
+        "Counters clear, pending deletion is honest and retries, new receipts deduplicate and revoked credentials cannot upload."
+      ],
+      "evidence": [
+        "Exact APK/build/SHA256, physical OS/device and redacted network/native verification.",
+        "Independent tester/reviewer findings, encrypted storage/remote deletion and scheduler evidence."
+      ]
+    },
+    {
+      "id": "M23",
+      "title": "Accra pilot independent corridor and staffed rollback drill",
+      "environment": "operations",
+      "required": true,
+      "status": "not_run",
+      "steps": [
+        "Two real independent reviewers validate documentary signs/road direction/class/geometry and current corridor revision; verify no test fixtures enter real data.",
+        "Passenger-assisted legally operated tests stay within approved corridor; record unknown/ambiguous behaviour, voice/GPS/network safety and structured minimised feedback.",
+        "Pause corridor, expire/withdraw evidence and exercise global service flags safely; measure polling/context delay and confirm pilot cached offline safety cannot restore a number.",
+        "Verify staffed support, participant withdrawal, privacy/hosting/provider approval and response communication before invitation."
+      ],
+      "expected": [
+        "Unapproved/stale/ambiguous/outside-corridor limits remain unknown; stage metadata never substitutes for review or cohort access control.",
+        "No dangerous manoeuvres or driver forms; clear consent and no default movement analytics.",
+        "Rollback timing, escalation owner and remaining unknowns are recorded honestly; any critical issue blocks advancement."
+      ],
+      "evidence": [
+        "Independent road/source/corridor review package and exact-build passenger evidence.",
+        "Sanitised support case, pause audit, timed rollback, staffed contact and legal/operations sign-off."
+      ]
     }
   ],
   "gates": [
@@ -801,13 +860,15 @@
       "requirements": [
         "R09-known",
         "R09-match",
-        "R15"
+        "R15",
+        "R22-pilot"
       ],
       "manual": [
         "M04",
         "M06",
         "M07",
-        "M20"
+        "M20",
+        "M23"
       ],
       "tolerance": "Zero false known limits; any mismatch blocks release."
     },
@@ -847,11 +908,13 @@
       "requirements": [
         "R13-delete",
         "R15",
-        "R17"
+        "R17",
+        "R22-pilot"
       ],
       "manual": [
         "M14",
-        "M17"
+        "M17",
+        "M22"
       ],
       "tolerance": "No undeclared retained personal data or falsely completed deletion."
     },
@@ -863,13 +926,15 @@
         "R11",
         "R14",
         "R18",
-        "R19-security"
+        "R19-security",
+        "R22-pilot"
       ],
       "manual": [
         "M13",
         "M15",
         "M18",
-        "M20"
+        "M20",
+        "M23"
       ],
       "tolerance": "No unresolved critical/high finding or unauthorized access/publication."
     },
@@ -879,10 +944,12 @@
       "requirements": [
         "R12",
         "R19-security",
-        "R19-evidence"
+        "R19-evidence",
+        "R22-pilot"
       ],
       "manual": [
-        "M19"
+        "M19",
+        "M23"
       ],
       "tolerance": "Actual approved alert/acknowledgment/rollback drill and named owner required."
     },
