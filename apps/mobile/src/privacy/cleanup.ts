@@ -1,0 +1,1 @@
+export async function independentCleanup(tasks:{name:string;run:()=>void|Promise<unknown>}[]){const failures:string[]=[];for(const task of tasks){try{await task.run();}catch{failures.push(task.name);}}return{complete:failures.length===0,failures};}

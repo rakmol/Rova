@@ -1,0 +1,10 @@
+import {readFileSync,existsSync}from'node:fs';
+import {dirname,resolve}from'node:path';
+import {fileURLToPath}from'node:url';
+import {execFileSync}from'node:child_process';
+const p=JSON.parse(readFileSync(fileURLToPath(new URL('../package.json',import.meta.url)),'utf8'));
+const npmPath=[process.env.npm_execpath,resolve(dirname(process.execPath),'node_modules/npm/bin/npm-cli.js'),resolve(dirname(process.execPath),'../lib/node_modules/npm/bin/npm-cli.js'),'/usr/share/nodejs/npm/bin/npm-cli.js'].find(path=>path&&existsSync(path));
+if(!npmPath)throw Error('Cannot locate npm; run this check through npm with the pinned Node installation.');
+const npm=execFileSync(process.execPath,[npmPath,'--version'],{encoding:'utf8'}).trim();
+if(process.version!=='v'+p.engines.node||npm!==p.engines.npm)throw Error(`Build toolchain must use Node ${p.engines.node} and npm ${p.engines.npm}.`);
+console.log(`Pinned Node ${p.engines.node} / npm ${p.engines.npm} verified.`);

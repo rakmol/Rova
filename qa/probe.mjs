@@ -1,0 +1,6 @@
+import {performance} from 'node:perf_hooks';
+const base=new URL(process.env.ROVA_QA_BASE_URL||'http://127.0.0.1:4000');
+if(base.username||base.password||base.search||base.hash||base.pathname!=='/'||(base.protocol!=='https:'&&!['localhost','127.0.0.1','[::1]'].includes(base.hostname)))throw new Error('Use an HTTPS API origin, or local HTTP, without credentials or query parameters.');
+const checks=[];
+for(const [path,expected]of [['/health','ok'],['/ready','ready']]){const start=performance.now();try{const r=await fetch(new URL(path,base),{signal:AbortSignal.timeout(10000)}),value=await r.json();checks.push({path,status:r.status,durationMs:Math.round(performance.now()-start),passed:r.status===200&&value.status===expected&&!!r.headers.get('x-request-id')&&r.headers.get('cache-control')==='no-store'});}catch{checks.push({path,status:null,durationMs:Math.round(performance.now()-start),passed:false,error:'unavailable_or_invalid_response'});}}
+console.log(JSON.stringify({scope:['localhost','127.0.0.1','[::1]'].includes(base.hostname)?'local_only':'specified_deployment_only',checks,productionMonitoringVerified:false,limitation:'A one-off probe does not establish continuous monitoring, alert delivery or a rollback drill.'},null,2));if(checks.some(c=>!c.passed))process.exitCode=1;

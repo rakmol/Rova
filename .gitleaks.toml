@@ -1,0 +1,15 @@
+title = "ROVA full-history secret scan"
+[extend]
+useDefault = true
+# Intentionally no blanket test-directory exclusions: real keys in tests must fail too.
+[[allowlists]]
+description = "Explicit synthetic fixtures, never real credentials"
+regexTarget = "secret"
+regexes = [
+  '''synthetic-signing-key-for-tests-only-12345''',
+  '''isolated-storage-signing-key-1234567890''',
+  '''separate-admin-moderator-secret-token-32''',
+  '''synthetic-private-fixture''',
+  '''synthetic_public_fixture''',
+  '''synthetic_private_fixture'''
+]

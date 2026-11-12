@@ -1,0 +1,18 @@
+# Public enforcement reporting snapshot — 8 November 2026
+
+The Reports tab includes a searchable, paginated reference catalogue of named areas in these public reports:
+
+- [TrustCheck article](https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra), published 1 November, live update checked 8 November 2026. Search results initially surfaced an older version; the live 8 November revision adds more roads and individually recorded speed values.
+- [YEN article](https://yen.com.gh/ghana/314868-traffitech-gh-speed-camera-locations-mapped-by-drivers-accra-kumasi/), published 2 November 2026, for earlier Accra/Kumasi named-area reports. It draws on the same underlying reporting, so these are not independent confirmations.
+- [Ghana Police TraffiTech FAQ](https://police.gov.gh/en/index.php/traffitech-gh/), checked 8 November 2026, for separately labelled general speed guidance.
+- [YEN deployment report](https://yen.com.gh/ghana/315081-traffitech-ghana-list-7-regions-confirmed-camera-deployments/), published 4 November 2026: eight named cities across seven regions, attributed by the article to MTTD. Displayed separately as city-level reporting, without assigning exact locations or current coverage.
+
+The catalogue records factual place names and reported numeric readings, with links to the articles. It is not a copy of the articles or a licensed feed of the underlying Glydr/Waze pins. Grouped road/suburb names represent published reporting areas, not individual camera counts. All named areas in the article's road listings are covered by these groups; this is not an exhaustive inventory of all real cameras or the 161 underlying hotspots mentioned in the article. No precise coordinates, road geometries, event validity dates or fixed/mobile classification are supplied by the articles. They are not fabricated. Two entries retain the article's reported red-light type, explicitly unverified.
+
+The 8 November article records **80 km/h for individual sightings** at Major Mahama Roundabout, Legon East Road, Harbour Road, Liberation Road and Mendskrom. Other readings include 30, 40, 50, 60 and 90. Forest Road retains both 30/50 readings. A missing reading stays empty, not zero or 80. Reported readings are not applied to an entire road, a vehicle class or a GPS position.
+
+The current Police FAQ lists general categories of 30, 50, 90 and 100 km/h. That public guidance is presented as reference information, not automatically published into the segment-matching database. The research does not substantiate a universal approved 80 km/h limit. Historical references to 80 do not supply current legal road boundaries, signage, effective dates or vehicle applicability.
+
+Every original report has `verification: unverified`, `precision: named_area_only` and `geometry: null`. At the user's request, a separate association now links exact road names to actual OSM road shapes for explicitly unverified road-level prompts during navigation. See [REPORTED_ROAD_ALERTS.md](../../../api/REPORTED_ROAD_ALERTS.md). These are not camera pins or approved speed rules. Broad/unmatched areas remain unmapped, and reported speeds never become legal defaults. Unlisted areas never imply no enforcement. A dated bundled snapshot does not refresh itself when the publisher changes the page.
+
+To turn a report into a verified rule or corridor requires documented legal applicability, valid geometry, effective/expiry dates, source provenance and the existing independent review process. No reviewers or approvals are invented, and the app database is not populated with simulated official records.

@@ -1,0 +1,10 @@
+import {useEffect,useState} from 'react';
+import {Text} from 'react-native';
+import {ContentFrame,Page,PageHeader,Surface,ActionButton} from '../components/ui';
+import {useRovaTheme} from '../theme/ThemeProvider';
+import {notificationInbox} from '../notifications/client';
+export default function NotificationsScreen(){const {theme}=useRovaTheme(),[items,setItems]=useState<Awaited<ReturnType<typeof notificationInbox>>>([]),[message,setMessage]=useState('');
+ async function refresh(){try{setItems(await notificationInbox());setMessage('');}catch(e){setMessage(e instanceof Error?e.message:'Updates unavailable.');}}
+ useEffect(()=>{let active=true;void notificationInbox().then(value=>{if(active)setItems(value);}).catch(()=>{if(active)setMessage('Updates unavailable. Try refreshing when connected.');});return()=>{active=false;};},[]);
+ return <Page><ContentFrame><PageHeader eyebrow="OPTIONAL UPDATES" title="Road and policy updates" subtitle="Read when safely stopped. Road signs and current official advice take priority."/><ActionButton secondary title="Refresh updates" onPress={()=>{void refresh();}}/>{!!message&&<Text style={{color:theme.colors.inkMuted}}>{message}</Text>}{!items.length&&<Text style={{color:theme.colors.inkMuted}}>No current notifications. Remote delivery is awaiting configuration; navigation works without notifications.</Text>}{items.map(item=><Surface key={item.id} style={{gap:12,marginVertical:8}}><Text style={{color:theme.colors.ink,fontSize:20,fontWeight:'800'}}>{item.title}</Text><Text style={{color:theme.colors.inkMuted}}>{item.evidence==='official_source'?'Verified official source':'Community-reviewed report — conditions may change'}</Text><Text style={{color:theme.colors.ink}}>{item.body}</Text>{!!item.source_url&&<Text selectable style={{color:theme.colors.inkMuted}}>Source: {item.source_url}</Text>}<Text style={{color:theme.colors.inkMuted}}>Valid until {new Date(item.expires_at).toLocaleString('en-GH',{timeZone:'Africa/Accra'})} (Ghana time)</Text></Surface>)}</ContentFrame></Page>;
+}

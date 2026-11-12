@@ -1,0 +1,60 @@
+{
+  "cli": {
+    "version": "27.7.2",
+    "appVersionSource": "remote",
+    "requireCommit": true
+  },
+  "build": {
+    "base": {
+      "node": "24.13.0",
+      "credentialsSource": "remote",
+      "autoIncrement": true,
+      "android": {
+        "image": "ubuntu-26.04-jdk-17-ndk-r27b-sdk-58"
+      }
+    },
+    "development": {
+      "extends": "base",
+      "developmentClient": true,
+      "distribution": "internal",
+      "environment": "development",
+      "env": {
+        "ROVA_APP_VARIANT": "development"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "preview": {
+      "extends": "base",
+      "developmentClient": false,
+      "distribution": "internal",
+      "environment": "preview",
+      "env": {
+        "ROVA_APP_VARIANT": "preview"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "extends": "base",
+      "developmentClient": false,
+      "distribution": "store",
+      "environment": "production",
+      "env": {
+        "ROVA_APP_VARIANT": "production"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
+    },
+    "production-apk": {
+      "extends": "production",
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    }
+  }
+}

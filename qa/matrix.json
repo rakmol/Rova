@@ -1,0 +1,913 @@
+{
+  "schema": 1,
+  "scope": "Requirements supplied in stages05?19 plus reported map/keyboard UX. Earlier original01?04 prompts are unavailable in this conversation; reconcile their original acceptance criteria before declaring complete product traceability.",
+  "requirements": [
+    {
+      "id": "UX-map",
+      "stage": "existing UX",
+      "requirement": "Locate, zoom, movement arrow, safe areas, map startup and keyboard visibility",
+      "automated": [
+        "apps/mobile/src/__tests__/map-zoom.test.tsx",
+        "apps/mobile/src/__tests__/navigation-puck.test.tsx",
+        "apps/mobile/src/__tests__/navigation-startup-map.test.tsx",
+        "apps/mobile/src/__tests__/destination-search.test.tsx"
+      ],
+      "manual": [
+        "M01",
+        "M02",
+        "M21"
+      ]
+    },
+    {
+      "id": "R05",
+      "stage": "05",
+      "requirement": "Real places, autocomplete, local recent history, debounce, caching and provider errors",
+      "automated": [
+        "apps/api/src/places.test.ts",
+        "apps/mobile/src/__tests__/geoapify-places.test.ts",
+        "apps/mobile/src/__tests__/search-history.test.ts",
+        "apps/mobile/src/__tests__/destination-search.test.tsx"
+      ],
+      "manual": [
+        "M02",
+        "M10"
+      ]
+    },
+    {
+      "id": "R06",
+      "stage": "06",
+      "requirement": "Provider route geometry, distance, alternatives, static ETA and no invented traffic/toll facts",
+      "automated": [
+        "apps/api/src/routing.test.ts",
+        "apps/mobile/src/__tests__/routing-provider.test.ts",
+        "apps/mobile/src/__tests__/route-options.test.tsx"
+      ],
+      "manual": [
+        "M03",
+        "M20",
+        "M21"
+      ]
+    },
+    {
+      "id": "R07-progress",
+      "stage": "07",
+      "requirement": "State machine and progress reject imprecise/stale/jumping GPS",
+      "automated": [
+        "apps/mobile/src/__tests__/navigation-session.test.ts",
+        "apps/mobile/src/__tests__/navigation-hook.test.tsx"
+      ],
+      "manual": [
+        "M04",
+        "M05",
+        "M21"
+      ]
+    },
+    {
+      "id": "R07-direction",
+      "stage": "07",
+      "requirement": "Wrong-direction and off-route confirmation with bounded rerouting",
+      "automated": [
+        "apps/mobile/src/__tests__/navigation-session.test.ts"
+      ],
+      "manual": [
+        "M06",
+        "M21"
+      ]
+    },
+    {
+      "id": "R07-voice",
+      "stage": "07",
+      "requirement": "Real maneuvers, no duplicate/stale/overlapping voice and honest limitations",
+      "automated": [
+        "apps/mobile/src/__tests__/navigation-session.test.ts",
+        "apps/mobile/src/__tests__/voice-player.test.ts",
+        "apps/mobile/src/__tests__/voice-coordinator.test.ts"
+      ],
+      "manual": [
+        "M08",
+        "M12",
+        "M21"
+      ]
+    },
+    {
+      "id": "R08",
+      "stage": "08",
+      "requirement": "Validated secured API, PostGIS migrations, WGS84, synthetic isolation and provenance",
+      "automated": [
+        "apps/api/src/app.test.ts",
+        "apps/api/src/db.integration.test.ts"
+      ],
+      "manual": [
+        "M15",
+        "M20"
+      ]
+    },
+    {
+      "id": "R09-known",
+      "stage": "09",
+      "requirement": "Only current applicable verified limits are numeric; never substitute unknown",
+      "automated": [
+        "apps/api/src/speed-limit.test.ts",
+        "apps/api/src/db.integration.test.ts",
+        "apps/mobile/src/__tests__/compliance-client.test.ts"
+      ],
+      "manual": [
+        "M04",
+        "M07",
+        "M20"
+      ]
+    },
+    {
+      "id": "R09-match",
+      "stage": "09",
+      "requirement": "Heading, time, accuracy, parallel roads, ramps, junction and vehicle-class ambiguity",
+      "automated": [
+        "apps/api/src/speed-limit.test.ts",
+        "apps/api/src/db.integration.test.ts",
+        "apps/mobile/src/__tests__/offline.test.ts"
+      ],
+      "manual": [
+        "M06",
+        "M07"
+      ]
+    },
+    {
+      "id": "R10-speed",
+      "stage": "10",
+      "requirement": "Sustained overspeed confidence, hysteresis, cooldown and safe wording",
+      "automated": [
+        "apps/mobile/src/__tests__/smart-alerts.test.ts",
+        "apps/mobile/src/__tests__/speedometer.test.ts",
+        "apps/mobile/src/__tests__/voice-coordinator.test.ts"
+      ],
+      "manual": [
+        "M04",
+        "M08",
+        "M21"
+      ]
+    },
+    {
+      "id": "R10-enforcement",
+      "stage": "10",
+      "requirement": "Verified transitions distinct from unverified reports; no invented camera coverage",
+      "automated": [
+        "apps/api/src/compliance.test.ts",
+        "apps/api/src/reported-roads.test.ts",
+        "apps/mobile/src/__tests__/reported-road-alerts.test.ts",
+        "apps/mobile/src/__tests__/public-enforcement-reports.test.tsx"
+      ],
+      "manual": [
+        "M07",
+        "M09"
+      ]
+    },
+    {
+      "id": "R11",
+      "stage": "11",
+      "requirement": "Approximate incident reporting, spam/duplicate/vote moderation, expiry and privacy",
+      "automated": [
+        "apps/api/src/incidents.test.ts",
+        "apps/api/src/db.integration.test.ts",
+        "apps/mobile/src/__tests__/incident-reports.test.tsx",
+        "apps/mobile/src/__tests__/incident-client.test.ts"
+      ],
+      "manual": [
+        "M13",
+        "M14"
+      ]
+    },
+    {
+      "id": "R12",
+      "stage": "12",
+      "requirement": "Approved nearby updates, reconnect/backoff, freshness and no fake live traffic",
+      "automated": [
+        "apps/api/src/incident-realtime.test.ts",
+        "apps/mobile/src/__tests__/hazard-realtime.test.ts",
+        "apps/mobile/src/__tests__/hazard-feed-lifecycle.test.tsx",
+        "apps/mobile/src/__tests__/congestion-alerts.test.ts"
+      ],
+      "manual": [
+        "M10",
+        "M13",
+        "M19"
+      ]
+    },
+    {
+      "id": "R13-guest",
+      "stage": "13",
+      "requirement": "Guest navigation, optional auth and locally saved places/preferences",
+      "automated": [
+        "apps/api/src/accounts.test.ts",
+        "apps/mobile/src/__tests__/account-client.test.ts",
+        "apps/mobile/src/__tests__/saved-places-flow.test.tsx",
+        "apps/mobile/src/__tests__/driver-data.test.ts"
+      ],
+      "manual": [
+        "M01",
+        "M12",
+        "M18"
+      ]
+    },
+    {
+      "id": "R13-delete",
+      "stage": "13",
+      "requirement": "Search clearing, account/local deletion, owner isolation and durable retry",
+      "automated": [
+        "apps/api/src/accounts.test.ts",
+        "apps/api/src/db.integration.test.ts",
+        "apps/mobile/src/__tests__/driver-data.test.ts",
+        "apps/mobile/src/__tests__/search-history.test.ts",
+        "apps/mobile/src/__tests__/account-client.test.ts"
+      ],
+      "manual": [
+        "M14",
+        "M15"
+      ]
+    },
+    {
+      "id": "R14",
+      "stage": "14",
+      "requirement": "Admin RBAC, current independent approvals, audit/revert and no unreviewed safety publication",
+      "automated": [
+        "apps/api/src/db.integration.test.ts",
+        "apps/admin/e2e/dashboard.spec.ts"
+      ],
+      "manual": [
+        "M15",
+        "M20"
+      ]
+    },
+    {
+      "id": "R15",
+      "stage": "15",
+      "requirement": "Honest offline states, encrypted/transactional downloads, licence/expiry and partial-data rejection",
+      "automated": [
+        "apps/api/src/offline.test.ts",
+        "apps/mobile/src/__tests__/offline.test.ts"
+      ],
+      "manual": [
+        "M10",
+        "M14",
+        "M20"
+      ]
+    },
+    {
+      "id": "R16-access",
+      "stage": "16",
+      "requirement": "Readable accessible alerts, safe interactions and dark mode",
+      "automated": [
+        "apps/mobile/src/__tests__/navigation-accessibility.test.tsx",
+        "apps/mobile/src/__tests__/driving-gate.test.tsx",
+        "apps/mobile/src/__tests__/driver-safety.test.ts",
+        "apps/mobile/src/__tests__/theme.test.ts"
+      ],
+      "manual": [
+        "M01",
+        "M16",
+        "M21"
+      ]
+    },
+    {
+      "id": "R16-language",
+      "stage": "16",
+      "requirement": "English human review; Twi/Ga architecture stays unapproved until reviewed",
+      "automated": [
+        "apps/mobile/src/__tests__/driver-safety.test.ts",
+        "apps/mobile/src/__tests__/voice-coordinator.test.ts"
+      ],
+      "manual": [
+        "M16"
+      ]
+    },
+    {
+      "id": "R17",
+      "stage": "17",
+      "requirement": "Optional notifications, local Accra reminders, permissions, caps and no marketing/trip targeting",
+      "automated": [
+        "apps/api/src/notifications.test.ts",
+        "apps/api/src/db.integration.test.ts",
+        "apps/mobile/src/__tests__/notifications.test.ts",
+        "apps/mobile/src/__tests__/notification-permissions.test.ts"
+      ],
+      "manual": [
+        "M12",
+        "M14",
+        "M17"
+      ]
+    },
+    {
+      "id": "R18",
+      "stage": "18",
+      "requirement": "Free navigation, disabled sponsorship, separate ranking and private aggregate review foundation",
+      "automated": [
+        "apps/api/src/db.integration.test.ts",
+        "apps/admin/e2e/dashboard.spec.ts",
+        "apps/mobile/src/__tests__/navigation-accessibility.test.tsx"
+      ],
+      "manual": [
+        "M18"
+      ]
+    },
+    {
+      "id": "R19-network",
+      "stage": "19",
+      "requirement": "Physical offline/radio/provider-outage acceptance versus simulated networking",
+      "automated": [
+        "apps/api/src/routing.test.ts",
+        "apps/api/src/places.test.ts",
+        "apps/mobile/src/__tests__/offline.test.ts",
+        "apps/mobile/src/__tests__/hazard-realtime.test.ts"
+      ],
+      "manual": [
+        "M10",
+        "M19"
+      ]
+    },
+    {
+      "id": "R19-battery",
+      "stage": "19",
+      "requirement": "Measured device battery/thermal/memory acceptance, not inferred from mocks",
+      "automated": [
+        "apps/mobile/src/__tests__/driving-monitor.test.ts",
+        "apps/mobile/src/__tests__/voice-coordinator.test.ts",
+        "apps/mobile/src/__tests__/navigation-hook.test.tsx"
+      ],
+      "manual": [
+        "M11"
+      ]
+    },
+    {
+      "id": "R19-security",
+      "stage": "19",
+      "requirement": "Security assessment and production monitoring with real evidence",
+      "automated": [
+        "apps/api/src/app.test.ts",
+        "apps/api/src/incident-realtime.test.ts",
+        "apps/api/src/db.integration.test.ts",
+        "apps/admin/e2e/dashboard.spec.ts"
+      ],
+      "manual": [
+        "M15",
+        "M19"
+      ]
+    },
+    {
+      "id": "R19-evidence",
+      "stage": "19",
+      "requirement": "Traceable exact-build evidence; unexecuted manual tests and skipped checks cannot pass",
+      "automated": [
+        "qa/acceptance.test.mjs"
+      ],
+      "manual": [
+        "M01",
+        "M19",
+        "M20",
+        "M21"
+      ]
+    }
+  ],
+  "manualCases": [
+    {
+      "id": "M01",
+      "title": "APK installation, small-screen maps and startup",
+      "environment": "device",
+      "required": true,
+      "status": "not_run",
+      "steps": [
+        "Install the exact standalone candidate APK on three supported physical devices; record manifest minSdk, model, RAM, OS, signing/version identity and SHA256.",
+        "At 100% and 200% font/display scale, open map, locate, pinch/zoom, rotate heading and view the movement/stationary arrow; check gesture and three-button system navigation.",
+        "Repeat cold/warm startup ten times, denied and granted location, and search with keyboard open."
+      ],
+      "expected": [
+        "No runtime/native crash, obscured bottom controls or hidden autocomplete. Route/action controls remain usable.",
+        "Record cold/warm startup and first-fix timings; goals are in STRATEGY.md, not claimed measurements."
+      ],
+      "evidence": [
+        "APK hash and manifest report",
+        "Redacted screen recording for each device/settings combination",
+        "Ten-trial timing sheet"
+      ]
+    },
+    {
+      "id": "M02",
+      "title": "Accra-friendly place search and provider failure",
+      "environment": "device",
+      "required": true,
+      "status": "not_run",
+      "steps": [
+        "While parked, search documented streets, markets, landmarks, junctions and suburbs with correctly/incorrectly spelled names; preselect real reference places.",
+        "Type quickly, clear, search again, disable network and exercise a controlled provider-error response in a test environment.",
+        "Open details/pin, select a real result and clear optional search history."
+      ],
+      "expected": [
+        "Keyboard never hides accessible results; provider attribution and honest empty/unavailable states remain visible.",
+        "No invented landmark, stale query result, secret in logs or quota storm. Measure actual provider coverage; absence is not a fabricated result."
+      ],
+      "evidence": [
+        "Query/reference list without trip history",
+        "Search/keyboard recording",
+        "Redacted error and request-count evidence"
+      ]
+    },
+    {
+      "id": "M03",
+      "title": "Routes, alternatives and honest ETA",
+      "environment": "device",
+      "required": true,
+      "status": "not_run",
+      "steps": [
+        "Compare available genuine provider route alternatives, distance, selected polyline and maneuver geometry in staging.",
+        "Test no route, missing toll metadata, provider timeout/error and low bandwidth; try a saved route separately."
+      ],
+      "expected": [
+        "Selected geometry matches destination and route choice; unknown tolls remain unknown.",
+        "Static ETA stays labelled an estimate. No traffic-aware Ghana claim or mock route in production."
+      ],
+      "evidence": [
+        "Provider response/geometry reference with credentials removed",
+        "UI recording and latency measurements"
+      ]
+    },
+    {
+      "id": "M04",
+      "title": "GPS drift, jumps, stationary jitter and false speed",
+      "environment": "bench",
+      "required": true,
+      "status": "not_run",
+      "steps": [
+        "Use synthetic/replayed GPS only in isolated tests, labelled test data: stale/future timestamps, 30-200m drift, teleport jumps, heading noise, and stationary speed jitter.",
+        "Run at least ten minutes of stationary/noisy sequences and a GPS loss/recovery cycle; observe counters and recorded app audio."
+      ],
+      "expected": [
+        "No numeric applicable limit on ambiguous/imprecise fixes; no sustained bogus overspeed voice/UI warning.",
+        "No progress jump, repeated reroute or fake speed due to noise; quality recovers without hiding route geometry."
+      ],
+      "evidence": [
+        "Synthetic replay file/hash and explicit TEST label",
+        "Fix-quality/progress observations without personal trip data",
+        "Warning/reroute count and audio timeline"
+      ]
+    },
+    {
+      "id": "M05",
+      "title": "Covered-area/tunnel GPS loss and recovery",
+      "environment": "road",
+      "required": true,
+      "status": "not_run",
+      "steps": [
+        "Use an actually available safe covered section/underpass or parked GPS attenuation test; identify which was used. A laboratory replay is not a real tunnel test.",
+        "Passenger observes entry, signal loss, stale location and exit recovery while driver follows signs independently."
+      ],
+      "expected": [
+        "No fabricated movement, fresh speed or confirmed limit during GPS loss.",
+        "Map/route remain understandable, no bogus overspeed/reroute spam; guidance resumes only after reliable fixes."
+      ],
+      "evidence": [
+        "Site type and lawful test plan",
+        "Passenger observation timeline, redacted video",
+        "GPS quality/time-to-recovery log"
+      ]
+    },
+    {
+      "id": "M06",
+      "title": "Parallel roads, ramps, junctions and wrong direction",
+      "environment": "road",
+      "required": true,
+      "status": "not_run",
+      "steps": [
+        "Choose reviewed parallel-road/main-road/ramp/junction segments with independently documented reference geometry and limits; do not invent an Accra camera location.",
+        "Drive legally with passenger-operated devices; use a safe lawful route or closed-course replay to exercise wrong-direction detection. Never drive against traffic for testing.",
+        "Repeat ambiguous fixes near junctions and physical carriageways."
+      ],
+      "expected": [
+        "No nearest verified road substitution onto a parallel carriageway. Ambiguity returns unknown.",
+        "Wrong-way confirmation/reroute does not instruct illegal or sudden manoeuvres; no rerouting loop."
+      ],
+      "evidence": [
+        "Reference geometry and sign/authority evidence",
+        "Passenger annotated route observations, access controlled",
+        "Reroute count and maneuver timing"
+      ]
+    },
+    {
+      "id": "M07",
+      "title": "Unknown limits remain unknown and known limits have proof",
+      "environment": "road",
+      "required": true,
+      "status": "not_run",
+      "steps": [
+        "Prepare independently reviewed segment/class/direction/effective-date references before travel; if no verified coverage exists, test unknown behaviour and mark positive coverage blocked.",
+        "Passenger compares display and spoken text with applicable documented signs at legal speeds; test unsigned/unreviewed/expired/unmatched sections."
+      ],
+      "expected": [
+        "Zero unknown-to-known substitutions, blanket80km/h defaults or unverified numeric limits.",
+        "Every displayed known limit has current applicable provenance; signs/rules override app guidance. A mismatch is a critical defect."
+      ],
+      "evidence": [
+        "Reviewed reference/validity pack",
+        "Timestamped observations linking segment and test build",
+        "Mismatch count and safety reviewer assessment"
+      ]
+    },
+    {
+      "id": "M08",
+      "title": "Sustained overspeed, hysteresis and cue priorities",
+      "environment": "bench",
+      "required": true,
+      "status": "not_run",
+      "steps": [
+        "Use isolated verified test fixtures and synthetic speed readings: threshold crossings, noisy boundary, sustained excess, return below threshold, mute, rapid repeats, stale proof and new segment.",
+        "Overlap upcoming maneuvers, arrival, verified warnings and community advisories; test missing TTS and audio interruptions. Never speed on public roads to trigger a warning."
+      ],
+      "expected": [
+        "No warning for unknown/unverified limits or stale/imprecise GPS; genuine sustained test excess alerts once with documented cooldown.",
+        "No repeated/spam/overlapping voice; maneuvers have priority. Wording asks to slow down safely, never abrupt braking."
+      ],
+      "evidence": [
+        "Labelled replay and expected state timeline",
+        "Captured cue/audio order and event counts",
+        "Cooldown/hysteresis assertion sheet"
+      ]
+    },
+    {
+      "id": "M09",
+      "title": "Transitions and enforcement truth labels",
+      "environment": "road",
+      "required": true,
+      "status": "not_run",
+      "steps": [
+        "Passenger observes a reviewed speed-limit transition at legal speeds and separate unverified reported-road advisory if available.",
+        "Exercise expired, withdrawn, behind, wrong-direction and parallel-road enforcement metadata with staging replay where no real verified data exists."
+      ],
+      "expected": [
+        "Only current verified applicable transitions/enforcement receive confirmed treatment.",
+        "Reported areas stay unverified road advisories, never confirmed precise camera pins; no invented mobile-camera or traffic-light coverage."
+      ],
+      "evidence": [
+        "Source/review/direction evidence or explicit unavailable result",
+        "UI/voice capture showing truth labels",
+        "Event-distance and duplicate-warning notes"
+      ]
+    },
+    {
+      "id": "M10",
+      "title": "Offline, partial download and Ghana radio switching",
+      "environment": "device",
+      "required": true,
+      "status": "not_run",
+      "steps": [
+        "Test explicit saved guidance, no saved route, fresh/stale/mismatched safety packs, partial/corrupt downloads, airplane mode and network restoration.",
+        "While parked or passenger-assisted, switch actual available2G/3G/4G/Wi-Fi radios; record carrier/availability. Separately shape bandwidth/latency/loss in the lab; do not call that a radio test.",
+        "Test cold app launch without Metro/network and repeated reconnect/backoff."
+      ],
+      "expected": [
+        "Honest offline/stale status, no expired numeric limit, no false full-offline routing promise; previous complete downloads survive interruption.",
+        "No unbounded retries, duplicate streams or false live-traffic measurement. Unsupported radio or standalone cold launch is blocked, not passed."
+      ],
+      "evidence": [
+        "Carrier/radio and lab shaping settings",
+        "Offline/cold-launch video with server disconnected",
+        "Downloaded dataset version/expiry and reconnect timeline"
+      ]
+    },
+    {
+      "id": "M11",
+      "title": "Battery, heat, memory and long sessions",
+      "environment": "device",
+      "required": true,
+      "status": "not_run",
+      "steps": [
+        "On each supported device run paired30-minute stationary-screen baseline and legal/passenger-observed navigation trials, three repeats, with matched brightness/radio/volume/ambient conditions and no charging.",
+        "Record battery percentage/power stats, temperature/thermal state, memory and crashes; end navigation and verify watches/speech stop. Include a90-minute navigation soak."
+      ],
+      "expected": [
+        "No ANR, crash, runaway memory or critical thermal state.",
+        "Compare measured drain to the provisional20 percentage-points/hour ceiling and baseline; an excess needs investigation and signed decision, not a fabricated pass."
+      ],
+      "evidence": [
+        "Per-device raw measurement sheet and controlled conditions",
+        "Redacted battery/memory/thermal diagnostic captures",
+        "Soak recording and post-stop watcher evidence"
+      ]
+    },
+    {
+      "id": "M12",
+      "title": "Permission denial, revocation and app lifecycle",
+      "environment": "device",
+      "required": true,
+      "status": "not_run",
+      "steps": [
+        "Deny/revoke foreground location and notification permission; test approximate-only location, GPS disabled, force-stop/reopen and background/foreground.",
+        "Test phone call/TTS interruption, Android battery saver and notification channel disabled; do not request background location implicitly."
+      ],
+      "expected": [
+        "No crash, surprise permission loop or fabricated fix; navigation offers clear actionable recovery.",
+        "No background continuous history; old native builds fail gracefully. Notifications remain optional and navigation still works."
+      ],
+      "evidence": [
+        "OS permission/channel screenshots",
+        "Lifecycle/audio recording",
+        "Foreground/background watch and request observations"
+      ]
+    },
+    {
+      "id": "M13",
+      "title": "Incident abuse, expiry, votes and privacy",
+      "environment": "bench",
+      "required": true,
+      "status": "not_run",
+      "steps": [
+        "On isolated fixtures submit burst/duplicate reports, own/repeated/conflicting votes, spoofed stale fixes, oversized notes and expired hazards.",
+        "Check pending versus community-reviewed versus official labels; verify nearby stream expiry, backpressure and reconnect fallback."
+      ],
+      "expected": [
+        "Rate/ownership checks hold; no client self-verification, unlimited extension or duplicate vote.",
+        "Approximate positions only; no reporter identity/precise travel history; stale/expired events disappear and remain separate from official alerts."
+      ],
+      "evidence": [
+        "Sanitised API contract/load results and role table",
+        "Expiry/reconnect/duplicate counts",
+        "Public response privacy inspection"
+      ]
+    },
+    {
+      "id": "M14",
+      "title": "Clear history, delete data and durable retries",
+      "environment": "device",
+      "required": true,
+      "status": "not_run",
+      "steps": [
+        "With isolated accounts save Home/Work, history, an offline route, local renewal dates, notification registration and a report/vote.",
+        "Clear local data and delete account; interrupt network/provider deletion and reconnect. Check phone storage/native schedules, API ownership and provider result.",
+        "Check documented retained anonymous public hazards/audit/frequency-cap records separately; do not describe queued provider deletion as complete."
+      ],
+      "expected": [
+        "No recoverable local saved locations/history/route/reminder plaintext or reusable removed credentials; native reminders are cancelled.",
+        "Account ownership and provider deletion complete or honestly pending with durable retry; no other account affected. Retention matches documentation."
+      ],
+      "evidence": [
+        "Before/after storage/API checks using test accounts",
+        "Provider deletion confirmation or blocked retry evidence",
+        "Retention and token revocation review"
+      ]
+    },
+    {
+      "id": "M15",
+      "title": "Security acceptance and source/role isolation",
+      "environment": "review",
+      "required": true,
+      "status": "not_run",
+      "steps": [
+        "Perform dependency/secrets review, abuse/authorization assessment and cross-account/cross-role checks against the exact candidate and deployment configuration.",
+        "Check admin cookies/CSRF, password-only role separation, evidence publication bypass, SQL reader privileges, HTTPS, secret redaction, request quotas and backup/restore."
+      ],
+      "expected": [
+        "No unresolved critical/high finding; driver cannot gain admin rights, publish data or access another driver.",
+        "No provider/server keys in bundle/logs; provenance and current independent reviews required. Passing unit tests is not penetration-test certification."
+      ],
+      "evidence": [
+        "Dated security report/SBOM/triage with false-positive rationale",
+        "Authorization and secrets-scan evidence",
+        "Reviewer signoff and backup/restore result"
+      ]
+    },
+    {
+      "id": "M16",
+      "title": "Accessibility and human English review",
+      "environment": "device",
+      "required": true,
+      "status": "not_run",
+      "steps": [
+        "Test TalkBack, colour-independent warnings, dark/light/glare,200% font, long real street names, safe tap targets and system bars on each physical device.",
+        "Human reviewers check all English screens, maneuvers, safety cues and Ghana pronunciation; unavailable Twi/Ga stay disabled.",
+        "Verify forms/keyboard defer during movement; passenger bypass expires and cannot weaken GPS confidence."
+      ],
+      "expected": [
+        "No inaccessible safety text or hidden/end controls; no constant screen-reader chatter or overlapping app voice.",
+        "Real copy/pronunciation approvals reference the current catalogue; no fabricated translations or road validation claim."
+      ],
+      "evidence": [
+        "TalkBack/font/day-night videos and reviewer checklist",
+        "Signed catalogue/pronunciation revision review",
+        "Parked/passenger movement-guard observations"
+      ]
+    },
+    {
+      "id": "M17",
+      "title": "Optional notifications and local reminders",
+      "environment": "device",
+      "required": true,
+      "status": "not_run",
+      "steps": [
+        "Verify no prompt/collection by default, category opt-in, Accra09:00 renewal schedule, opt-out, permission/channel denial, reboot/timezone change and offline erase retry.",
+        "If remote delivery remains disabled, record that limitation; do not mark real FCM receipt/display as passed. If enabled later, test saved-region closures, reviewed policies, quiet hours, caps and invalid token receipts with test accounts."
+      ],
+      "expected": [
+        "No marketing/current-trip profiling; dates stay on device; duplicate/expired/unapproved messages suppressed.",
+        "Provider receipt is not proof of phone display. Navigation voice/UI is not interrupted by promotional notifications."
+      ],
+      "evidence": [
+        "Native schedule/phone receipt and timezone evidence",
+        "Remote disabled configuration or actual credentialed test delivery evidence",
+        "Cap/opt-out/deletion timeline"
+      ]
+    },
+    {
+      "id": "M18",
+      "title": "Free navigation and sponsorship lock",
+      "environment": "device",
+      "required": true,
+      "status": "not_run",
+      "steps": [
+        "Attempt guest navigation and all safety functions without payment or sponsored consent.",
+        "Check every navigation state for sponsored UI/audio; inspect admin drafts/reviews and attempt public fetch/event/publication with viewer/editor/admin accounts."
+      ],
+      "expected": [
+        "All navigation/safety stays free; zero pop-ups/audio/interstitial/promotional overlays.",
+        "Sponsorship delivery/tracking/billing stays locked; business data never influences route/safety ranking."
+      ],
+      "evidence": [
+        "Navigation-state screen/audio captures",
+        "Admin/public endpoint and DB publication rejection evidence",
+        "No-ad-SDK/billing review"
+      ]
+    },
+    {
+      "id": "M19",
+      "title": "Production monitoring, outage alerts and rollback",
+      "environment": "operations",
+      "required": true,
+      "status": "not_run",
+      "steps": [
+        "Use an approved staging failure drill for DB readiness, search/routing timeout, quota exhaustion, realtime outage, stale safety data and token/provider failure.",
+        "Prove production/staging synthetic checks, privacy-safe logs, crash/ANR observation, alert routing, named on-call ownership, response/rollback and source withdrawal. Obtain approval before paging people or causing outages."
+      ],
+      "expected": [
+        "Health/readiness and aggregate metrics are useful but do not alone establish production monitoring.",
+        "A real controlled alert is acknowledged; dashboards/runbooks and rollback work without logging trips, credentials or raw GPS. No alert integration is claimed without evidence."
+      ],
+      "evidence": [
+        "Monitoring configuration and redacted failure drill",
+        "Actual alert receipt/acknowledgment and rollback evidence",
+        "On-call owner, retention/access review and latency/error measurements"
+      ]
+    },
+    {
+      "id": "M20",
+      "title": "Data expiry, migration and licensed provider review",
+      "environment": "review",
+      "required": true,
+      "status": "not_run",
+      "steps": [
+        "Test migration/restore on disposable PostGIS, then review source licences, review dates, effective dates, units/classes, source withdrawal and offline dataset expiration.",
+        "Verify real provider Ghana coverage, quotas, pricing and credentials for the intended use; no synthetic records enter production views."
+      ],
+      "expected": [
+        "No expired/unreviewed/demo safety record becomes known; ambiguous ramps/parallel roads remain unknown.",
+        "Actual source and provider evidence exists; no assumed camera database, traffic licence or statutory80km/h default."
+      ],
+      "evidence": [
+        "Migration/restore ledger and isolated contract results",
+        "Source/licensing/current review register",
+        "Expiry and withdrawal observations"
+      ]
+    },
+    {
+      "id": "M21",
+      "title": "Real-road maneuver and voice acceptance",
+      "environment": "road",
+      "required": true,
+      "status": "not_run",
+      "steps": [
+        "Passenger observes legal normal driving on pre-reviewed urban, junction, suburb and highway sections; independently choose routes and signs before travel.",
+        "Check map startup, arrow heading, upcoming instruction, distance-to-turn, ETA estimate, recovery and arrival; compare actual road decisions to provider maneuvers.",
+        "Stop testing on unsafe instructions/distraction. Driver follows traffic signs and lawful safe driving, never the app in conflict."
+      ],
+      "expected": [
+        "No unsafe turn instruction, frozen misleading speed/limit, hidden map/controls or repeated stale maneuver.",
+        "Each road/environment test is explicitly evidenced; no dependable lane guidance or Accra-wide coverage claim based on limited trials."
+      ],
+      "evidence": [
+        "Passenger/tester names and safe route plan",
+        "Restricted annotated road/audio recording",
+        "Maneuver/arrival timing, discrepancies and safety review"
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "G01",
+      "name": "No unknown limit displayed as known",
+      "requirements": [
+        "R09-known",
+        "R09-match",
+        "R15"
+      ],
+      "manual": [
+        "M04",
+        "M06",
+        "M07",
+        "M20"
+      ],
+      "tolerance": "Zero false known limits; any mismatch blocks release."
+    },
+    {
+      "id": "G02",
+      "name": "No unverified enforcement presented as confirmed",
+      "requirements": [
+        "R10-enforcement"
+      ],
+      "manual": [
+        "M09",
+        "M20"
+      ],
+      "tolerance": "Zero mislabelled confirmed markers or spoken claims."
+    },
+    {
+      "id": "G03",
+      "name": "No sustained bogus overspeed warnings or unsafe guidance",
+      "requirements": [
+        "R07-progress",
+        "R07-direction",
+        "R07-voice",
+        "R10-speed"
+      ],
+      "manual": [
+        "M04",
+        "M05",
+        "M06",
+        "M08",
+        "M21"
+      ],
+      "tolerance": "Zero sustained bogus alerts or unsafe route instructions; any critical event blocks."
+    },
+    {
+      "id": "G04",
+      "name": "Data deletion works and retention is honest",
+      "requirements": [
+        "R13-delete",
+        "R15",
+        "R17"
+      ],
+      "manual": [
+        "M14",
+        "M17"
+      ],
+      "tolerance": "No undeclared retained personal data or falsely completed deletion."
+    },
+    {
+      "id": "G05",
+      "name": "Security and privacy checks accepted",
+      "requirements": [
+        "R08",
+        "R11",
+        "R14",
+        "R18",
+        "R19-security"
+      ],
+      "manual": [
+        "M13",
+        "M15",
+        "M18",
+        "M20"
+      ],
+      "tolerance": "No unresolved critical/high finding or unauthorized access/publication."
+    },
+    {
+      "id": "G06",
+      "name": "Production monitoring and response evidenced",
+      "requirements": [
+        "R12",
+        "R19-security",
+        "R19-evidence"
+      ],
+      "manual": [
+        "M19"
+      ],
+      "tolerance": "Actual approved alert/acknowledgment/rollback drill and named owner required."
+    },
+    {
+      "id": "G07",
+      "name": "Device, radio, accessibility and resource acceptance",
+      "requirements": [
+        "UX-map",
+        "R05",
+        "R06",
+        "R16-access",
+        "R16-language",
+        "R19-battery",
+        "R19-network"
+      ],
+      "manual": [
+        "M01",
+        "M02",
+        "M03",
+        "M10",
+        "M11",
+        "M12",
+        "M16"
+      ],
+      "tolerance": "Exact standalone APK, representative physical devices and current human review; no unexecuted pass."
+    }
+  ]
+}

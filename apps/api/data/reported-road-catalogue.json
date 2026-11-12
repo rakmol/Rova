@@ -1,0 +1,653 @@
+{
+  "checkedAt": "2026-11-08",
+  "reports": [
+    {
+      "id": "trustcheck-accra-0",
+      "area": "Spintex Road",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-1",
+      "area": "Tetteh Quarshie Interchange",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-2",
+      "area": "Airport By Pass Road",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-3",
+      "area": "Ring Road Central",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-4",
+      "area": "Ring Road East",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-5",
+      "area": "J.A. Kuffour Avenue",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-6",
+      "area": "Kanda Highway / Kawukudi",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-7",
+      "area": "Major Mahama Roundabout",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-8",
+      "area": "Legon East Road",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-9",
+      "area": "Harbour Road",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-10",
+      "area": "Liberation Road",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-11",
+      "area": "Olusegun Obasanjo Highway",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-12",
+      "area": "Boundary Road / towards Mahama Road",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-13",
+      "area": "J.J. Rawlings Avenue / North Legon / Madina / Frafraha",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-14",
+      "area": "Chief Alhaji Seidu Street",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-15",
+      "area": "Haatso–Ecomog Avenue",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-16",
+      "area": "Haatso–Atomic Road",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-17",
+      "area": "Atomic Junction",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-18",
+      "area": "Dome–St. John's Road",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-19",
+      "area": "Ecowas Road / Madina",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-20",
+      "area": "Ashalebotwe Nmai Dzorn Road",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-21",
+      "area": "Annie Jiagge Road",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-22",
+      "area": "Alex Tetteh Avenue",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-23",
+      "area": "Forest Road",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-24",
+      "area": "Lagos Avenue",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-25",
+      "area": "Garden Street",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-26",
+      "area": "Gulf Road",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-27",
+      "area": "Pawpaw Street",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-28",
+      "area": "Okine Avenue",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-29",
+      "area": "Gye Nyame Street",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-30",
+      "area": "Salem Avenue",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-31",
+      "area": "Djani Ashie Road",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-32",
+      "area": "Nii Aku Mensah Avenue",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-33",
+      "area": "Osu Badu Avenue",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-34",
+      "area": "Oxford Street",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-35",
+      "area": "Aggrey Street",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-36",
+      "area": "Giffard Road",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-37",
+      "area": "Efua Sutherland Road",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-38",
+      "area": "Brig. General R. Agbamasu Avenue",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-39",
+      "area": "Fiesta Royale area",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-40",
+      "area": "Mallam Junction",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-41",
+      "area": "Police Training Academy junction / Tesano",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-42",
+      "area": "Nsawam Road / Apenkwa overpass",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-43",
+      "area": "Nsawam Road / Achimota Old Station",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-44",
+      "area": "Nsawam Road / Caprice",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-45",
+      "area": "Winneba Road / Kokrobite Junction",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-46",
+      "area": "Winneba Road / Mendskrom",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-47",
+      "area": "Winneba Road / SCC",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-48",
+      "area": "Winneba Road / Amanfrom",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-49",
+      "area": "Winneba Road / Bortianor",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-50",
+      "area": "Winneba Road / New Weija",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-51",
+      "area": "Accra–Cape Coast Road",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-52",
+      "area": "Korando Street / Weija",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-53",
+      "area": "Tangala Lane / Odorkor",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-54",
+      "area": "Adoley Addo Lane / Kwashieman",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-55",
+      "area": "Adafi Lane / Nii Boi Town",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-56",
+      "area": "Ngongo Lane / Nii Boi Town",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-57",
+      "area": "Nii Okaiman Avenue / Nii Boi Town / Nii Ankraman",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-58",
+      "area": "18th Street / Tantra Hill",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-59",
+      "area": "Manye Adorkor Avenue / Tantra Hill",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-60",
+      "area": "Red Okai Street / Tantra Hill",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-61",
+      "area": "Aburi Road / Teiman / Adenkrebi / Amanfrokoo / New Kweiman",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-62",
+      "area": "Kasoa",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "trustcheck-accra-63",
+      "area": "Borteyman New Road junction",
+      "city": "accra",
+      "sourceUrl": "https://trustcheckapp.com/blog/traffitech-gh-camera-locations-accra",
+      "publishedAt": "2026-11-01",
+      "sourceUpdatedAt": "2026-11-08"
+    },
+    {
+      "id": "yen-accra-0",
+      "area": "Jawaharlal Nehru Road / Liberation Link",
+      "city": "accra",
+      "sourceUrl": "https://yen.com.gh/ghana/314868-traffitech-gh-speed-camera-locations-mapped-by-drivers-accra-kumasi/",
+      "publishedAt": "2026-11-02",
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "yen-accra-1",
+      "area": "Cantonments Road",
+      "city": "accra",
+      "sourceUrl": "https://yen.com.gh/ghana/314868-traffitech-gh-speed-camera-locations-mapped-by-drivers-accra-kumasi/",
+      "publishedAt": "2026-11-02",
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "yen-accra-2",
+      "area": "Ring Road / Nima",
+      "city": "accra",
+      "sourceUrl": "https://yen.com.gh/ghana/314868-traffitech-gh-speed-camera-locations-mapped-by-drivers-accra-kumasi/",
+      "publishedAt": "2026-11-02",
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "yen-accra-3",
+      "area": "Teshie Link",
+      "city": "accra",
+      "sourceUrl": "https://yen.com.gh/ghana/314868-traffitech-gh-speed-camera-locations-mapped-by-drivers-accra-kumasi/",
+      "publishedAt": "2026-11-02",
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "yen-accra-4",
+      "area": "Laterbiokorshie",
+      "city": "accra",
+      "sourceUrl": "https://yen.com.gh/ghana/314868-traffitech-gh-speed-camera-locations-mapped-by-drivers-accra-kumasi/",
+      "publishedAt": "2026-11-02",
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "yen-accra-5",
+      "area": "N1 / Weija / Densu River",
+      "city": "accra",
+      "sourceUrl": "https://yen.com.gh/ghana/314868-traffitech-gh-speed-camera-locations-mapped-by-drivers-accra-kumasi/",
+      "publishedAt": "2026-11-02",
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "yen-accra-6",
+      "area": "Apenkwa / Abeka / Achimota / Abelenkpe",
+      "city": "accra",
+      "sourceUrl": "https://yen.com.gh/ghana/314868-traffitech-gh-speed-camera-locations-mapped-by-drivers-accra-kumasi/",
+      "publishedAt": "2026-11-02",
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "yen-accra-7",
+      "area": "Taifa / Ofankor / Sowutuom",
+      "city": "accra",
+      "sourceUrl": "https://yen.com.gh/ghana/314868-traffitech-gh-speed-camera-locations-mapped-by-drivers-accra-kumasi/",
+      "publishedAt": "2026-11-02",
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "yen-accra-8",
+      "area": "Pillar 2",
+      "city": "accra",
+      "sourceUrl": "https://yen.com.gh/ghana/314868-traffitech-gh-speed-camera-locations-mapped-by-drivers-accra-kumasi/",
+      "publishedAt": "2026-11-02",
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "yen-accra-9",
+      "area": "Haatso / Papao / Madina",
+      "city": "accra",
+      "sourceUrl": "https://yen.com.gh/ghana/314868-traffitech-gh-speed-camera-locations-mapped-by-drivers-accra-kumasi/",
+      "publishedAt": "2026-11-02",
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "yen-accra-10",
+      "area": "Dzorwulu / North Dzorwulu",
+      "city": "accra",
+      "sourceUrl": "https://yen.com.gh/ghana/314868-traffitech-gh-speed-camera-locations-mapped-by-drivers-accra-kumasi/",
+      "publishedAt": "2026-11-02",
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "yen-accra-11",
+      "area": "East Legon / Shiashie / Bawaleshie / towards Madina",
+      "city": "accra",
+      "sourceUrl": "https://yen.com.gh/ghana/314868-traffitech-gh-speed-camera-locations-mapped-by-drivers-accra-kumasi/",
+      "publishedAt": "2026-11-02",
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "yen-accra-12",
+      "area": "Ogbojo / Adjiringanor",
+      "city": "accra",
+      "sourceUrl": "https://yen.com.gh/ghana/314868-traffitech-gh-speed-camera-locations-mapped-by-drivers-accra-kumasi/",
+      "publishedAt": "2026-11-02",
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "yen-kumasi-0",
+      "area": "N6 / Bomso / Ayigya / Kentinkrono / Nsenie / Anwiankwanta",
+      "city": "kumasi",
+      "sourceUrl": "https://yen.com.gh/ghana/314868-traffitech-gh-speed-camera-locations-mapped-by-drivers-accra-kumasi/",
+      "publishedAt": "2026-11-02",
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "yen-kumasi-1",
+      "area": "Asokwa",
+      "city": "kumasi",
+      "sourceUrl": "https://yen.com.gh/ghana/314868-traffitech-gh-speed-camera-locations-mapped-by-drivers-accra-kumasi/",
+      "publishedAt": "2026-11-02",
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "yen-kumasi-2",
+      "area": "Adukrom / Asokore Mampong",
+      "city": "kumasi",
+      "sourceUrl": "https://yen.com.gh/ghana/314868-traffitech-gh-speed-camera-locations-mapped-by-drivers-accra-kumasi/",
+      "publishedAt": "2026-11-02",
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "yen-kumasi-3",
+      "area": "Ayeduase / KNUST",
+      "city": "kumasi",
+      "sourceUrl": "https://yen.com.gh/ghana/314868-traffitech-gh-speed-camera-locations-mapped-by-drivers-accra-kumasi/",
+      "publishedAt": "2026-11-02",
+      "sourceUpdatedAt": null
+    }
+  ]
+}

@@ -1,0 +1,399 @@
+{
+  "mappedRoads": 44,
+  "mappedReports": 51,
+  "unmappedReportIds": [
+    "trustcheck-accra-2",
+    "trustcheck-accra-6",
+    "trustcheck-accra-8",
+    "trustcheck-accra-11",
+    "trustcheck-accra-18",
+    "trustcheck-accra-20",
+    "trustcheck-accra-31",
+    "trustcheck-accra-32",
+    "trustcheck-accra-38",
+    "trustcheck-accra-39",
+    "trustcheck-accra-40",
+    "trustcheck-accra-41",
+    "trustcheck-accra-51",
+    "trustcheck-accra-62",
+    "trustcheck-accra-63",
+    "yen-accra-2",
+    "yen-accra-3",
+    "yen-accra-4",
+    "yen-accra-5",
+    "yen-accra-6",
+    "yen-accra-7",
+    "yen-accra-8",
+    "yen-accra-9",
+    "yen-accra-10",
+    "yen-accra-11",
+    "yen-accra-12",
+    "yen-kumasi-0",
+    "yen-kumasi-1",
+    "yen-kumasi-2",
+    "yen-kumasi-3"
+  ],
+  "roads": [
+    {
+      "id": "12e594b8-e7da-0c99-1df9-c74ee4265c02",
+      "roadName": "Spintex Road",
+      "segments": 46,
+      "reportIds": [
+        "trustcheck-accra-0"
+      ]
+    },
+    {
+      "id": "5a8aea72-cc9c-0663-afa8-9ce7bd88cbed",
+      "roadName": "Tetteh Quarshie Interchange",
+      "segments": 16,
+      "reportIds": [
+        "trustcheck-accra-1"
+      ]
+    },
+    {
+      "id": "dc16a712-2d67-1be2-7d8a-a83322df758f",
+      "roadName": "Ring Road Central",
+      "segments": 53,
+      "reportIds": [
+        "trustcheck-accra-3"
+      ]
+    },
+    {
+      "id": "b79aa340-b9a4-9559-91c6-e6dcce9138c2",
+      "roadName": "Ring Road East",
+      "segments": 29,
+      "reportIds": [
+        "trustcheck-accra-4"
+      ]
+    },
+    {
+      "id": "cabb3cea-b989-262b-586d-2b10ead43a16",
+      "roadName": "J.A. Kuffour Avenue",
+      "segments": 15,
+      "reportIds": [
+        "trustcheck-accra-5"
+      ]
+    },
+    {
+      "id": "89bfaaed-9bcc-598b-7357-1a1cc095aeaf",
+      "roadName": "Major Mahama Roundabout",
+      "segments": 5,
+      "reportIds": [
+        "trustcheck-accra-7"
+      ]
+    },
+    {
+      "id": "de224833-70b1-7fe3-2d63-d2af91c06ba4",
+      "roadName": "Harbour Road",
+      "segments": 32,
+      "reportIds": [
+        "trustcheck-accra-9"
+      ]
+    },
+    {
+      "id": "e8fde77b-45b3-a63f-d6b2-97eba770a4b0",
+      "roadName": "Liberation Road",
+      "segments": 39,
+      "reportIds": [
+        "trustcheck-accra-10"
+      ]
+    },
+    {
+      "id": "793de6db-14a5-6f63-6073-8b6cc07df4ac",
+      "roadName": "Boundary Road",
+      "segments": 49,
+      "reportIds": [
+        "trustcheck-accra-12"
+      ]
+    },
+    {
+      "id": "43e0286e-bf18-5190-3968-dfc219b3f1c5",
+      "roadName": "J.J. Rawlings Avenue",
+      "segments": 77,
+      "reportIds": [
+        "trustcheck-accra-13"
+      ]
+    },
+    {
+      "id": "7ae55bed-f830-1068-a673-9b488c7d4f91",
+      "roadName": "Chief Alhaji Seidu Street",
+      "segments": 10,
+      "reportIds": [
+        "trustcheck-accra-14"
+      ]
+    },
+    {
+      "id": "ef0e8043-5834-1998-08c0-cf0d41a9b8f2",
+      "roadName": "Haatso Ecomog Avenue",
+      "segments": 1,
+      "reportIds": [
+        "trustcheck-accra-15"
+      ]
+    },
+    {
+      "id": "1e7addda-646a-472f-b17b-f53df198d00e",
+      "roadName": "Haatso-Atomic Road",
+      "segments": 16,
+      "reportIds": [
+        "trustcheck-accra-16"
+      ]
+    },
+    {
+      "id": "abd883a5-22c2-ed4b-1216-d45f2bc2a60a",
+      "roadName": "Atomic Junction",
+      "segments": 8,
+      "reportIds": [
+        "trustcheck-accra-17"
+      ]
+    },
+    {
+      "id": "844f33d9-70a5-5a28-122d-75842631d8cd",
+      "roadName": "Ecowas Road",
+      "segments": 6,
+      "reportIds": [
+        "trustcheck-accra-19"
+      ]
+    },
+    {
+      "id": "027dc322-cd88-89ad-a49e-5e2ffb6c88b5",
+      "roadName": "Annie Jiagge Road",
+      "segments": 2,
+      "reportIds": [
+        "trustcheck-accra-21"
+      ]
+    },
+    {
+      "id": "0210834f-e449-7ab5-02f0-d3b08f673890",
+      "roadName": "Alex Tetteh Avenue",
+      "segments": 1,
+      "reportIds": [
+        "trustcheck-accra-22"
+      ]
+    },
+    {
+      "id": "d1a0b406-0af8-a1e3-e370-f57b19c51574",
+      "roadName": "Forest Road",
+      "segments": 8,
+      "reportIds": [
+        "trustcheck-accra-23"
+      ]
+    },
+    {
+      "id": "d112eea1-e8ea-fac6-893c-655f749d39a6",
+      "roadName": "Lagos Avenue",
+      "segments": 15,
+      "reportIds": [
+        "trustcheck-accra-24"
+      ]
+    },
+    {
+      "id": "889e37a6-7a96-2b84-d3e7-e5848dba2582",
+      "roadName": "Garden Street",
+      "segments": 3,
+      "reportIds": [
+        "trustcheck-accra-25"
+      ]
+    },
+    {
+      "id": "a0bba3a8-a32c-a6fd-0e93-90dd6e712e37",
+      "roadName": "Gulf Road",
+      "segments": 1,
+      "reportIds": [
+        "trustcheck-accra-26"
+      ]
+    },
+    {
+      "id": "4732f5fb-82a9-4e9f-b6c1-bb4e4e050c72",
+      "roadName": "Pawpaw Street",
+      "segments": 7,
+      "reportIds": [
+        "trustcheck-accra-27"
+      ]
+    },
+    {
+      "id": "a6619bd6-2a0a-c21f-8ffe-3590ec908a6a",
+      "roadName": "Okine Avenue",
+      "segments": 1,
+      "reportIds": [
+        "trustcheck-accra-28"
+      ]
+    },
+    {
+      "id": "d69bfe16-ffeb-88e0-b44b-f17412612d96",
+      "roadName": "Gye Nyame Street",
+      "segments": 3,
+      "reportIds": [
+        "trustcheck-accra-29"
+      ]
+    },
+    {
+      "id": "a568d9a8-9730-8b49-efb6-390b88ecb7e1",
+      "roadName": "Salem Avenue",
+      "segments": 12,
+      "reportIds": [
+        "trustcheck-accra-30"
+      ]
+    },
+    {
+      "id": "66b78f33-f111-277a-5fc8-5c76d0efca87",
+      "roadName": "Osu Badu Avenue",
+      "segments": 7,
+      "reportIds": [
+        "trustcheck-accra-33"
+      ]
+    },
+    {
+      "id": "f8022439-6510-a578-8547-eb432a61a534",
+      "roadName": "Oxford Street",
+      "segments": 15,
+      "reportIds": [
+        "trustcheck-accra-34"
+      ]
+    },
+    {
+      "id": "975c4204-0003-5230-a942-221e2de2dff4",
+      "roadName": "Aggrey Street",
+      "segments": 11,
+      "reportIds": [
+        "trustcheck-accra-35"
+      ]
+    },
+    {
+      "id": "a220d649-9ea9-547e-f8e7-18536982d9ac",
+      "roadName": "Giffard Road",
+      "segments": 53,
+      "reportIds": [
+        "trustcheck-accra-36"
+      ]
+    },
+    {
+      "id": "1b5d9b65-9768-0e5a-d166-36112ace884a",
+      "roadName": "Efua Sutherland Road",
+      "segments": 2,
+      "reportIds": [
+        "trustcheck-accra-37"
+      ]
+    },
+    {
+      "id": "d44ecf4c-68b4-11cf-0cfb-bca16bcd9383",
+      "roadName": "Nsawam Road",
+      "segments": 157,
+      "reportIds": [
+        "trustcheck-accra-42",
+        "trustcheck-accra-43",
+        "trustcheck-accra-44"
+      ]
+    },
+    {
+      "id": "b5a06faf-fce5-b421-9f58-ec02a3f62b02",
+      "roadName": "Winneba Road",
+      "segments": 62,
+      "reportIds": [
+        "trustcheck-accra-45",
+        "trustcheck-accra-46",
+        "trustcheck-accra-47",
+        "trustcheck-accra-48",
+        "trustcheck-accra-49",
+        "trustcheck-accra-50"
+      ]
+    },
+    {
+      "id": "b5a3f0c7-e36e-e0f8-78e0-57f8bf80497f",
+      "roadName": "Korando Street",
+      "segments": 1,
+      "reportIds": [
+        "trustcheck-accra-52"
+      ]
+    },
+    {
+      "id": "603e8551-34c7-0eb6-6c2d-5a76d9dc6a9a",
+      "roadName": "Tangala Lane",
+      "segments": 2,
+      "reportIds": [
+        "trustcheck-accra-53"
+      ]
+    },
+    {
+      "id": "5c2355c1-e22c-46e9-12c6-2e0b40de69c9",
+      "roadName": "Adoley Addo Lane",
+      "segments": 2,
+      "reportIds": [
+        "trustcheck-accra-54"
+      ]
+    },
+    {
+      "id": "41422d90-3d38-fa26-7806-30ba76e21fc8",
+      "roadName": "Adafi Lane",
+      "segments": 3,
+      "reportIds": [
+        "trustcheck-accra-55"
+      ]
+    },
+    {
+      "id": "541c5cbf-3fbc-4095-1b15-14d1e0b612e2",
+      "roadName": "Ngongo Lane",
+      "segments": 2,
+      "reportIds": [
+        "trustcheck-accra-56"
+      ]
+    },
+    {
+      "id": "e615080b-be32-7a90-e40b-a281d30feadc",
+      "roadName": "Nii Okaiman Avenue",
+      "segments": 3,
+      "reportIds": [
+        "trustcheck-accra-57"
+      ]
+    },
+    {
+      "id": "c803c8d6-68dd-f28e-5eea-643025cb3be5",
+      "roadName": "18th Street",
+      "segments": 1,
+      "reportIds": [
+        "trustcheck-accra-58"
+      ]
+    },
+    {
+      "id": "716f1b32-070b-33e9-a9aa-b0d250f16c35",
+      "roadName": "Manye Adorkor Avenue",
+      "segments": 2,
+      "reportIds": [
+        "trustcheck-accra-59"
+      ]
+    },
+    {
+      "id": "a032583c-265c-e5b6-d6f6-63b334952cbf",
+      "roadName": "Red Okai Street",
+      "segments": 3,
+      "reportIds": [
+        "trustcheck-accra-60"
+      ]
+    },
+    {
+      "id": "811812b4-5dfa-9e77-38ac-eeafeaa8d683",
+      "roadName": "Aburi Road",
+      "segments": 36,
+      "reportIds": [
+        "trustcheck-accra-61"
+      ]
+    },
+    {
+      "id": "350baa54-3163-79d3-b930-271df9856642",
+      "roadName": "Jawaharlal Nehru Road",
+      "segments": 10,
+      "reportIds": [
+        "yen-accra-0"
+      ]
+    },
+    {
+      "id": "602505b5-6b5a-318c-5590-3b7957718f60",
+      "roadName": "Cantonments Road",
+      "segments": 7,
+      "reportIds": [
+        "yen-accra-1"
+      ]
+    }
+  ],
+  "verification": "unverified",
+  "scope": "named_road_not_camera"
+}

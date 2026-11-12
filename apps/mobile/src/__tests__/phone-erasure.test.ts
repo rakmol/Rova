@@ -1,0 +1,14 @@
+import {erasePhoneData} from '../privacy/erase';
+import {clearLocalDriverData} from '../account/local';
+import {writeHistory} from '../places/history';
+import {clearOfflineData} from '../offline/data';
+import {eraseNotifications} from '../notifications/runtime';
+import {placesProvider} from '../places/runtime';
+jest.mock('../account/local',()=>({clearLocalDriverData:jest.fn()}));
+jest.mock('../places/history',()=>({writeHistory:jest.fn()}));
+jest.mock('../offline/data',()=>({clearOfflineData:jest.fn()}));
+jest.mock('../notifications/runtime',()=>({eraseNotifications:jest.fn()}));
+jest.mock('../places/runtime',()=>({placesProvider:{clearCache:jest.fn()}}));
+beforeEach(()=>jest.resetAllMocks());
+test('offline notification erasure cannot strand places, history, cache or the selected route',async()=>{jest.mocked(eraseNotifications).mockRejectedValue(Error('offline'));const reset=jest.fn();await expect(erasePhoneData(reset)).rejects.toThrow('notification schedules/registration');expect(clearLocalDriverData).toHaveBeenCalled();expect(writeHistory).toHaveBeenCalledWith({enabled:false,queries:[]});expect(clearOfflineData).toHaveBeenCalled();expect(placesProvider.clearCache).toHaveBeenCalled();expect(reset).toHaveBeenCalled();});
+test('a failed local store does not block other cleanup or report complete success',async()=>{jest.mocked(clearLocalDriverData).mockRejectedValue(Error('disk failure'));await expect(erasePhoneData()).rejects.toThrow('saved places/preferences');expect(writeHistory).toHaveBeenCalled();expect(clearOfflineData).toHaveBeenCalled();expect(eraseNotifications).toHaveBeenCalled();});

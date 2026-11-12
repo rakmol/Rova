@@ -1,0 +1,39 @@
+{
+  "name": "rova",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:mobile": "npm run start --workspace @rova/mobile",
+    "dev:api": "npm run dev --workspace @rova/api",
+    "dev:admin": "npm run dev --workspace @rova/admin",
+    "build": "npm run build --workspace @rova/api && npm run build --workspace @rova/admin",
+    "typecheck": "npm run typecheck --workspace @rova/shared && npm run typecheck --workspace @rova/ui && npm run typecheck --workspace @rova/api && npm run typecheck --workspace @rova/admin && npm run typecheck --workspace @rova/mobile",
+    "db:up": "docker compose up -d --wait postgis && npm run db:migrate",
+    "db:migrate": "npm run db:migrate --workspace @rova/api --",
+    "db:seed:demo": "npm run db:seed:demo --workspace @rova/api",
+    "db:down": "docker compose down",
+    "qa:check": "node qa/check.mjs",
+    "qa:run": "node qa/run.mjs",
+    "qa:release": "node qa/check.mjs --release",
+    "qa:probe": "node qa/probe.mjs",
+    "lint": "eslint apps/api/src apps/admin/src scripts && npm run lint --workspace @rova/mobile",
+    "ci:policy": "node --test scripts/*.test.mjs",
+    "ci:config": "node scripts/check-android-config.mjs",
+    "ci:hygiene": "node scripts/check-repo-hygiene.mjs",
+    "release:preflight": "node scripts/check-release-config.mjs --production"
+  },
+  "packageManager": "npm@11.6.2",
+  "engines": {
+    "node": "24.13.0",
+    "npm": "11.6.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "@typescript-eslint/parser": "8.72.1",
+    "eslint": "9.39.5"
+  }
+}

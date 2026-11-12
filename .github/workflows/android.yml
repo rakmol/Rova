@@ -1,0 +1,61 @@
+name: Android build (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Build profile; production creates an AAB candidate, never publishes
+        required: true
+        default: development
+        type: choice
+        options: [development, preview, production-apk, production]
+permissions:
+  contents: read
+concurrency:
+  group: android-build-${{ github.event.inputs.profile }}
+  cancel-in-progress: false
+jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+  build:
+    needs: checks
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    environment: android-${{ github.event.inputs.profile }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Require deliberate opt-in to consume cloud build quota
+        env:
+          ENABLED: ${{ vars.EAS_BUILDS_ENABLED }}
+          BUILD_PROFILE: ${{ github.event.inputs.profile }}
+        run: |
+          test "$ENABLED" = "true"
+          case "$BUILD_PROFILE" in development|preview|production|production-apk) ;; *) exit 1 ;; esac
+      - uses: expo/expo-github-action@5273c2136bd09c2a341fe3340d3e767ce5a13015 # 9.0.2
+        with:
+          eas-version: 27.7.2
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Build reviewed commit (no auto submission or publication)
+        working-directory: apps/mobile
+        env:
+          BUILD_PROFILE: ${{ github.event.inputs.profile }}
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas build --platform android --profile "$BUILD_PROFILE" --non-interactive --wait --json > "$RUNNER_TEMP/rova-build.json"
+      - name: Record build ID, artifact hash and pinned inputs without private credentials
+        env:
+          BUILD_RESULT: ${{ runner.temp }}/rova-build.json
+          BUILD_PROFILE: ${{ github.event.inputs.profile }}
+        run: node scripts/build-manifest.mjs
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: android-build-manifest
+          path: android-build-manifest.json
+          retention-days: 30

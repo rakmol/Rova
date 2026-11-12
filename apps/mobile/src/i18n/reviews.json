@@ -1,0 +1,8 @@
+{
+ "catalogRevision":1,
+ "locales":{
+  "en-GH":{"name":"English (Ghana)","enabledInPreview":true,"translationsComplete":true,"reviewer":null,"reviewedRevision":null,"reviewedAt":null,"pronunciationReviewer":null,"pronunciationReviewedAt":null},
+  "tw-GH":{"name":"Twi","enabledInPreview":false,"translationsComplete":false,"reviewer":null,"reviewedRevision":null,"reviewedAt":null,"pronunciationReviewer":null,"pronunciationReviewedAt":null},
+  "gaa-GH":{"name":"Ga","enabledInPreview":false,"translationsComplete":false,"reviewer":null,"reviewedRevision":null,"reviewedAt":null,"pronunciationReviewer":null,"pronunciationReviewedAt":null}
+ }
+}

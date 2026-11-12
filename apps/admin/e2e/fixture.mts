@@ -1,0 +1,23 @@
+// Test-only adapter and explicitly disposable database. Never imported by the production API.
+import{Client,Pool}from'pg';
+import{loadMigrations,migrate}from'../../api/src/migrations.js';
+import{buildApp}from'../../api/src/app.js';
+import{readConfig}from'../../api/src/config.js';
+import type{AdminAuthProvider}from'../../api/src/admin-auth.js';
+const databaseName='rova_test_admin_e2e_20261109';
+const connectionString=`postgres://rova:rova_local_only@127.0.0.1:54329/${databaseName}`;
+const url=new URL(connectionString);if(url.hostname!=='127.0.0.1'||!url.pathname.startsWith('/rova_test_'))throw new Error('Disposable local test database required.');
+const master=new Client({connectionString:connectionString.replace(databaseName,'postgres')});await master.connect();
+if(!(await master.query('SELECT 1 FROM pg_database WHERE datname=$1',[databaseName])).rowCount)await master.query(`CREATE DATABASE ${databaseName}`);
+await master.end();
+const setup=new Client({connectionString});await setup.connect();await setup.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public');await migrate(setup,await loadMigrations());
+const issuer='https://browser-fixture.supabase.co/auth/v1';
+const ids={administrator:'30000000-0000-4000-8000-000000000001',editor:'30000000-0000-4000-8000-000000000002',reviewer:'30000000-0000-4000-8000-000000000003',reviewer2:'30000000-0000-4000-8000-000000000004',viewer:'30000000-0000-4000-8000-000000000005'};
+for(const[key,id]of Object.entries(ids))await setup.query("INSERT INTO admin_members(issuer,subject,role,granted_by) VALUES($1,$2,$3,'ISOLATED BROWSER FIXTURE')",[issuer,id,key==='reviewer2'?'reviewer':key]);
+await setup.end();
+const pack=(subject:string,aal:string)=>({accessToken:`${subject}:${aal}`,refreshToken:'ISOLATED TEST TOKEN',expiresAt:Date.now()+3600000});
+const factor='30000000-0000-4000-8000-000000000099';
+const auth:AdminAuthProvider={identity:async token=>{const[subject,aal]=token.split(':');if(!Object.values(ids).includes(subject))throw Object.assign(new Error('Test token rejected'),{statusCode:401});return{issuer,subject,aal:aal==='aal2'?'aal2':'aal1',expiresAt:Date.now()+3600000};},signIn:async(email,password)=>{const id=ids[email.split('@')[0]as keyof typeof ids];if(!id||password!=='ISOLATED TEST PASSWORD')throw Object.assign(new Error('Test login rejected'),{statusCode:401});return pack(id,'aal1');},memberExists:async id=>Object.values(ids).includes(id)};
+const app=await buildApp({config:readConfig({NODE_ENV:'test',RATE_LIMIT_MAX:'1000'}),database:new Pool({connectionString}),adminAuth:auth,logger:false});
+await app.listen({host:'127.0.0.1',port:4101});
+for(const signal of ['SIGTERM','SIGINT']as const)process.on(signal,()=>{void app.close().then(()=>process.exit(0));});

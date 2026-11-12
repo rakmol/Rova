@@ -1,0 +1,20 @@
+import Constants from 'expo-constants';
+import {Platform} from 'react-native';
+import type {NotificationPreferences} from '@rova/shared';
+const host=Constants.expoConfig?.hostUri;
+const endpoint=process.env.EXPO_PUBLIC_NOTIFICATIONS_API_URL||(__DEV__&&host&&['.exp.direct','.on.expo.app','.ngrok-free.app'].some(s=>host.endsWith(s))?`https://${host}/rova-api/v1/notifications`:undefined);
+type Credential={token:string;endpoint:string};
+async function secure(){return import('expo-secure-store');}
+async function credential():Promise<Credential|null>{const value=await(await secure()).getItemAsync('rova.notifications.session');if(!value)return null;try{const c=JSON.parse(value);return c.endpoint===endpoint&&/^[a-f0-9]{64}$/.test(c.token)?c:null;}catch{return null;}}
+async function request(path:string,body?:unknown,token?:string){if(!endpoint)throw new Error('Remote notifications are not connected yet. Local reminders are available.');const base=new URL(endpoint);if(base.protocol!=='https:'&&!['localhost','127.0.0.1'].includes(base.hostname))throw new Error('Notifications require HTTPS.');const c=new AbortController(),timer=setTimeout(()=>c.abort(),12000);try{const r=await fetch(endpoint.replace(/\/$/,'')+path,{method:body?'POST':'GET',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{}),signal:c.signal});if(r.status===401){await(await secure()).deleteItemAsync('rova.notifications.session');throw new Error('Notification registration expired. Save preferences again.');}if(!r.ok)throw new Error('Remote notification settings could not be synced. Try again when connected.');return await r.json();}finally{clearTimeout(timer);}}
+export async function syncRemote(p:NotificationPreferences,permission:boolean,expoToken?:string){
+ let c=await credential();const enabled=p.enabled&&(p.closures||p.policy)&&permission;
+ if(!enabled&&!c)return 'Remote notifications are off.';
+ if(enabled){const status=await request('/status');if(status.remoteEnabled!==true)throw new Error('Remote notifications are awaiting Firebase setup. Local reminders can still be used.');if(!c){const session=await request('/session',{platform:Platform.OS==='ios'?'ios':'android'});if(!/^[a-f0-9]{64}$/.test(session.token))throw new Error('Invalid notification registration.');c={token:session.token,endpoint:endpoint!};const s=await secure();await s.setItemAsync('rova.notifications.session',JSON.stringify(c),{keychainAccessible:s.WHEN_UNLOCKED_THIS_DEVICE_ONLY});}}
+ if(c)await request('/preferences',{enabled,closures:p.closures,policy:p.policy,marketing:false,currentTrip:false,timeZone:'Africa/Accra',dailyCap:p.dailyCap,permission:permission?'granted':'denied',regions:p.regions.map(r=>({...r,label:"Saved region"})),...(expoToken?{expoToken}:{})},c.token);
+ return enabled?'Remote preferences synced for 24 hours.':'Remote notifications are off.';
+}
+export async function remoteReady(){return(await request('/status')).remoteEnabled===true;}
+export async function eraseRemoteNotifications(){const s=await secure();await s.setItemAsync('rova.notifications.erase','pending',{keychainAccessible:s.WHEN_UNLOCKED_THIS_DEVICE_ONLY});const c=await credential();if(c)await request('/erase',{},c.token);await s.deleteItemAsync('rova.notifications.session');await s.deleteItemAsync('rova.notifications.erase');}
+export async function retryNotificationErase(){const s=await secure();if(await s.getItemAsync('rova.notifications.erase'))await eraseRemoteNotifications();}
+export async function notificationInbox():Promise<{id:string;title:string;body:string;evidence:string;expires_at:string;source_url?:string}[]>{const c=await credential();if(!c)return[];const data=await request('/inbox',undefined,c.token);if(!Array.isArray(data.items)||data.items.length>20)throw new Error('Invalid notification inbox.');return data.items.filter((v:Record<string,unknown>)=>typeof v.id==='string'&&typeof v.title==='string'&&typeof v.body==='string'&&v.body.length<=2000&&Date.parse(String(v.expires_at))>Date.now()&&['community_reviewed','official_source'].includes(String(v.evidence)));}
