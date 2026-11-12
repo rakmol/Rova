@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Linking, Pressable, Text, View } from "react-native";
 import type { RoutingCoordinate, RoutingResponse } from "@rova/shared";
 import { ActionButton, ContentFrame, Page, PageHeader, Surface } from "../components/ui";
+import { RovaIcon } from "../components/RovaIcon";
 import { useRoutePreview } from "../map/RouteProvider";
 import { MapLibreRouteMap } from "../routing/MapLibreRouteMap";
 import { routingProvider } from "../routing/runtime";
@@ -18,6 +19,18 @@ function parseCoordinate(value: unknown): RoutingCoordinate {
   return [parts[0], parts[1]];
 }
 const minutes = (seconds: number) => seconds < 60 ? "<1 min" : `${Math.round(seconds / 60)} min`;
+const styles = {
+  routeList:{gap:10,marginVertical:16},
+  routeChoice:{minHeight:96,padding:16,borderRadius:18,borderWidth:1.5,flexDirection:'row' as const,alignItems:'center' as const,gap:12},
+  routeIcon:{width:42,height:42,borderRadius:14,alignItems:'center' as const,justifyContent:'center' as const},
+  routeCopy:{flex:1,minWidth:0,gap:4},
+  routeTitle:{fontWeight:'800' as const,fontSize:16,lineHeight:22},
+  routeMetrics:{fontWeight:'700' as const,lineHeight:21},
+  routeNote:{fontSize:12,lineHeight:18},
+  radio:{width:22,height:22,borderWidth:2,borderRadius:11,alignItems:'center' as const,justifyContent:'center' as const},
+  radioDot:{width:10,height:10,borderRadius:5},
+  routeDetails:{gap:12},
+};
 
 export default function RouteOptionsScreen() {
   const params = useLocalSearchParams<{ origin?: string; destination?: string; title?: string }>();
@@ -51,21 +64,32 @@ export default function RouteOptionsScreen() {
   return <Page><ContentFrame>
     <ActionButton title="Back to map" secondary onPress={() => router.back()} />
     <PageHeader eyebrow="Route options" title={params.title || route?.destinationLabel || "Compare routes"} subtitle="Driving estimates without live traffic. Check road conditions and restrictions before travel." />
-    <Surface style={{ marginBottom: 16 }}><VehicleSelector value={vehicleType} onChange={setVehicleType} /></Surface>
+    <Surface style={{ marginBottom: 18 }}><VehicleSelector value={vehicleType} onChange={setVehicleType} /></Surface>
     {loading && <Text accessibilityLiveRegion="polite" style={muted}>Calculating supported routes. This may take a few seconds on a slow connection...</Text>}
     {error && <Text accessibilityRole="alert" style={{ color: theme.colors.danger }}>{error}</Text>}
     {!loading && !error && data?.routes.length === 0 && <Text style={muted}>No driving route was found. Check the origin and destination, then try again. No sample route has been substituted.</Text>}
     {!loading && <ActionButton title="Retry route search" secondary onPress={() => { setLoading(true); setError(null); setData(null); setRetry((value) => value + 1); }} />}
     {data?.warnings.map((warning, i) => <Text key={i} accessibilityRole="alert" style={muted}>{warning}</Text>)}
     {data && data.routes.length === 1 && <Text style={muted}>Only one distinct route was returned. Other supported preferences did not produce a different available route.</Text>}
-    <View accessibilityRole="radiogroup" accessibilityLabel="Available routes" style={{ gap: 10, marginVertical: 16 }}>
-      {data?.routes.map((option) => <Pressable key={option.id} accessibilityRole="radio" accessibilityState={{ checked: selectedId === option.id }} accessibilityLabel={option.label} onPress={() => { setSelectedId(option.id); setAllInstructions(false); setMapError(null); }} style={{ padding: 16, borderRadius: 16, borderWidth: 2, borderColor: selectedId === option.id ? theme.colors.brandStrong : theme.colors.border, backgroundColor: theme.colors.surface }}>
-        <Text style={[ink, { fontWeight: "800", fontSize: 16 }]}>{option.isSample ? "SAMPLE ROUTE - " : ""}{option.label}</Text>
-        <Text style={ink}>{travelDistance(option.distanceMeters,preferences.units)} | Estimated {minutes(option.durationSeconds)}</Text>
-        <Text style={muted}>No live traffic | {option.tolls === "present" ? "Tolls reported" : option.tolls === "none_reported" ? "No tolls reported by provider" : "Toll information unknown"}</Text>
-      </Pressable>)}
+    <View accessibilityRole="radiogroup" accessibilityLabel="Available routes" style={styles.routeList}>
+      {data?.routes.map((option) => {
+        const selectedOption = selectedId === option.id;
+        return <Pressable key={option.id} accessibilityRole="radio" accessibilityState={{ checked: selectedOption }} accessibilityLabel={option.label} onPress={() => { setSelectedId(option.id); setAllInstructions(false); setMapError(null); }} style={{ ...styles.routeChoice, borderColor: selectedOption ? theme.colors.brandStrong : theme.colors.border, backgroundColor: selectedOption ? theme.colors.brandTint : theme.colors.surface }}>
+          <View style={[styles.routeIcon,{backgroundColor:selectedOption?theme.colors.surface:theme.colors.surfaceRaised}]}>
+            <RovaIcon name="navigation" color={selectedOption?theme.colors.brandStrong:theme.colors.inkMuted} size={21}/>
+          </View>
+          <View style={styles.routeCopy}>
+            <Text style={[ink, styles.routeTitle]}>{option.isSample ? "SAMPLE ROUTE - " : ""}{option.label}</Text>
+            <Text style={[ink, styles.routeMetrics]}>{travelDistance(option.distanceMeters,preferences.units)} · Estimated {minutes(option.durationSeconds)}</Text>
+            <Text style={[muted, styles.routeNote]}>No live traffic · {option.tolls === "present" ? "Tolls reported" : option.tolls === "none_reported" ? "No tolls reported by provider" : "Toll information unknown"}</Text>
+          </View>
+          <View style={[styles.radio,{borderColor:selectedOption?theme.colors.brandStrong:theme.colors.border}]}>
+            {selectedOption&&<View style={[styles.radioDot,{backgroundColor:theme.colors.brandStrong}]}/>}
+          </View>
+        </Pressable>;
+      })}
     </View>
-    {selected && <Surface style={{ gap: 12 }}>
+    {selected && <Surface style={styles.routeDetails}>
       {selected.isSample && <Text accessibilityRole="alert" style={{ color: theme.colors.warning }}>Sample route for testing only. Not for navigation.</Text>}
       <MapLibreRouteMap route={selected} onError={setMapError} />
       {mapError && <Text accessibilityRole="alert" style={muted}>{mapError}</Text>}

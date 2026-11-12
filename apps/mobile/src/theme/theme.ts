@@ -4,6 +4,26 @@ export type ThemeMode = "system" | "light" | "dark";
 
 export interface RovaTheme {
   mode: "light" | "dark";
+  spacing: {
+    xs: number;
+    sm: number;
+    md: number;
+    lg: number;
+    xl: number;
+    xxl: number;
+  };
+  radii: {
+    sm: number;
+    md: number;
+    lg: number;
+    pill: number;
+  };
+  typography: {
+    caption: number;
+    body: number;
+    title: number;
+    bodyLine: number;
+  };
   colors: {
     background: string;
     surface: string;
@@ -12,6 +32,7 @@ export interface RovaTheme {
     inkMuted: string;
     inkSubtle: string;
     border: string;
+    divider: string;
     brand: string;
     brandStrong: string;
     brandTint: string;
@@ -23,20 +44,28 @@ export interface RovaTheme {
   };
 }
 
+const designTokens = {
+  spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 },
+  radii: { sm: 12, md: 16, lg: 24, pill: 999 },
+  typography: { caption: 12, body: 15, title: 32, bodyLine: 22 },
+} as const;
+
 const themes: Record<"light" | "dark", RovaTheme> = {
   light: {
     mode: "light",
+    ...designTokens,
     colors: {
       background: "#F4F7F6",
       surface: "#FFFFFF",
-      surfaceRaised: "#FFFFFF",
+      surfaceRaised: "#F8FBFA",
       ink: "#102A35",
       inkMuted: "#536970",
       inkSubtle: "#536970",
       border: "#7A918B",
-      brand: "#066F69",
-      brandStrong: "#06645F",
-      brandTint: "#E0F3F0",
+      divider: "#C7D6D1",
+      brand: "#08786F",
+      brandStrong: "#075D58",
+      brandTint: "#E3F4F1",
       accent: "#D7F06A",
       warning: "#8A5A00",
       warningTint: "#FFF3D6",
@@ -46,6 +75,7 @@ const themes: Record<"light" | "dark", RovaTheme> = {
   },
   dark: {
     mode: "dark",
+    ...designTokens,
     colors: {
       background: "#0D1D26",
       surface: "#142832",
@@ -54,6 +84,7 @@ const themes: Record<"light" | "dark", RovaTheme> = {
       inkMuted: "#B0C1C3",
       inkSubtle: "#879DA1",
       border: "#65888D",
+      divider: "#35515C",
       brand: "#6BD4C5",
       brandStrong: "#8AE4D5",
       brandTint: "#1D4548",

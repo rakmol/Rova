@@ -10,7 +10,7 @@ import {
   useWindowDimensions,
   type ScrollViewInstance,
 } from "react-native";
-import {DrivingGate} from "../safety/DrivingGate";
+import { DrivingGate } from "../safety/DrivingGate";
 import { NetworkNotice } from "../offline/NetworkNotice";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRovaTheme } from "../theme/ThemeProvider";
@@ -31,7 +31,10 @@ export function Page({
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: 28 + extraBottomPadding }]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: theme.spacing.xl + extraBottomPadding },
+        ]}
         automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled"
         onScroll={onScroll}
@@ -39,8 +42,8 @@ export function Page({
         showsVerticalScrollIndicator={false}
       >
         <DrivingGate>
-        <NetworkNotice/>
-        {children}
+          <NetworkNotice />
+          {children}
         </DrivingGate>
       </ScrollView>
     </SafeAreaView>
@@ -60,8 +63,30 @@ export function PageHeader({
   return (
     <View style={styles.pageHeader}>
       <Text style={[styles.eyebrow, { color: theme.colors.brandStrong }]}>{eyebrow}</Text>
-      <Text style={[styles.pageTitle, { color: theme.colors.ink }]}>{title}</Text>
-      <Text style={[styles.pageSubtitle, { color: theme.colors.inkMuted }]}>{subtitle}</Text>
+      <Text
+        accessibilityRole="header"
+        style={[
+          styles.pageTitle,
+          {
+            color: theme.colors.ink,
+            fontSize: theme.typography.title,
+            lineHeight: Math.ceil(theme.typography.title * 1.22),
+          },
+        ]}
+      >
+        {title}
+      </Text>
+      <Text
+        style={[
+          styles.pageSubtitle,
+          {
+            color: theme.colors.inkMuted,
+            lineHeight: theme.typography.bodyLine,
+          },
+        ]}
+      >
+        {subtitle}
+      </Text>
     </View>
   );
 }
@@ -80,7 +105,8 @@ export function Surface({
         styles.surface,
         {
           backgroundColor: theme.colors.surface,
-          borderColor: theme.colors.border,
+          borderColor: theme.colors.divider,
+          borderRadius: theme.radii.lg,
         },
         style,
       ]}
@@ -106,7 +132,12 @@ export function Pill({
   const [backgroundColor, color] = toneColors[tone];
 
   return (
-    <View style={[styles.pill, { backgroundColor }]}>
+    <View
+      style={[
+        styles.pill,
+        { backgroundColor, borderRadius: theme.radii.pill, maxWidth: "100%" },
+      ]}
+    >
       <Text style={[styles.pillText, { color }]}>{children}</Text>
     </View>
   );
@@ -145,7 +176,14 @@ export function ActionButton({
       <Text
         style={[
           styles.actionButtonText,
-          { color: secondary ? theme.colors.ink : theme.mode === "dark" ? "#0D1D26" : "#FFFFFF" },
+          {
+            color: secondary
+              ? theme.colors.ink
+              : theme.mode === "dark"
+                ? "#0D1D26"
+                : "#FFFFFF",
+            fontSize: theme.typography.body,
+          },
         ]}
       >
         {title}
@@ -222,7 +260,7 @@ const styles = StyleSheet.create({
     paddingBottom: 22,
   },
   eyebrow: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "800",
     letterSpacing: 1.5,
     textTransform: "uppercase",
@@ -231,7 +269,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 32,
     fontWeight: "800",
-    letterSpacing: -0.8,
+    letterSpacing: -0.7,
+    lineHeight: 39,
   },
   pageSubtitle: {
     marginTop: 8,
@@ -240,8 +279,8 @@ const styles = StyleSheet.create({
   },
   surface: {
     borderWidth: 1,
-    borderRadius: 22,
-    padding: 18,
+    borderRadius: 24,
+    padding: 20,
   },
   pill: {
     alignSelf: "flex-start",
@@ -253,9 +292,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "800",
     letterSpacing: 0.2,
+    flexShrink: 1,
   },
   actionButton: {
-    minHeight: 56,
+    minHeight: 54,
     minWidth: 48,
     paddingVertical: 12,
     alignItems: "center",

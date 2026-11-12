@@ -10,9 +10,11 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { ActionButton, ContentFrame, Page, Pill, Surface } from "../../components/ui";
+import { RovaIcon } from "../../components/RovaIcon";
 import { useRoutePreview } from "../../map/RouteProvider";
 import {
   accraDevelopmentCenter,
@@ -34,6 +36,8 @@ type SearchState = "idle" | "loading" | "error";
 
 export default function MapScreen() {
   const { theme } = useRovaTheme();
+  const { height: screenHeight, fontScale } = useWindowDimensions();
+  const mapHeight = Math.max(240, Math.min(390, screenHeight * (fontScale >= 1.5 ? 0.34 : 0.42)));
   const {preferences}=useDriverData();
   const { vehicleType, setVehicleType, route, setRoute, pickedDestination, setPickedDestination, selectedRoutingOption, setSelectedRoutingOption } = useRoutePreview();
   const mapboxConfigured = isMapboxConfigured();
@@ -260,12 +264,22 @@ export default function MapScreen() {
       <ContentFrame>
         <View style={styles.topBar}>
           <View>
-            <Text style={[styles.brand, { color: theme.colors.brandStrong }]}>rova<Text style={{ color: theme.colors.ink }}> ↗</Text></Text>
+            <Text accessibilityRole="header" style={[styles.brand, { color: theme.colors.brandStrong }]}>rova</Text>
             <Text style={[styles.tagline, { color: theme.colors.inkMuted }]}>
               Move with confidence.
             </Text>
           </View>
-          <Pressable accessibilityRole="button" accessibilityLabel="Open settings" onPress={() => router.push("/(tabs)/settings")} style={[styles.headerButton, { backgroundColor: theme.colors.brandTint }]}><Text style={{ color: theme.colors.brandStrong, fontWeight: "800" }}>Settings</Text></Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open settings"
+            onPress={() => router.push("/(tabs)/settings")}
+            style={[
+              styles.headerButton,
+              { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+            ]}
+          >
+            <RovaIcon name="settings" color={theme.colors.brandStrong} size={21} />
+          </Pressable>
         </View>
 
         <Surface style={styles.destinationCard}>
@@ -282,7 +296,7 @@ export default function MapScreen() {
               { backgroundColor: theme.colors.background, borderColor: theme.colors.border },
             ]}
           >
-            <Text style={[styles.searchSymbol, { color: theme.colors.brandStrong }]}>⌕</Text>
+            <RovaIcon name="search" color={theme.colors.brandStrong} size={22} />
             <TextInput
               accessibilityLabel="Search destinations in Ghana"
               editable={mapboxConfigured && selectingId === null}
@@ -401,9 +415,10 @@ export default function MapScreen() {
         </Surface>
 
         <View style={styles.exploreHeader}><Text style={[styles.sectionLabel, { color: theme.colors.inkMuted }]}>EXPLORE YOUR AREA</Text><Text style={{ color: theme.colors.inkMuted, fontSize: 12 }}>Accra, Ghana</Text></View>
-        <View style={styles.mapFrame}>
+        <View style={[styles.mapFrame, { height: mapHeight }]}>
           {mapReady ? (
             <MapboxMap
+              fill
               center={center}
               destination={selectedDestination?.coordinate}
               locationEnabled={locationEnabled}
@@ -466,9 +481,8 @@ export default function MapScreen() {
                 { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
               ]}
             >
-              <Text style={[styles.locateText, { color: theme.colors.brandStrong }]}>
-                Locate me
-              </Text>
+              <RovaIcon name="locate" color={theme.colors.brandStrong} size={22} />
+              <Text style={[styles.locateText, { color: theme.colors.brandStrong }]}>Locate</Text>
             </Pressable>
           )}
         </View>
@@ -513,7 +527,7 @@ export default function MapScreen() {
 
 const styles = StyleSheet.create({
   exploreHeader: { flexDirection: "row", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginTop: 24, marginBottom: 12 },
-  headerButton: { minHeight: 48, justifyContent: "center", borderRadius: 24, paddingHorizontal: 18 },
+  headerButton: { width: 48, height: 48, alignItems: "center", justifyContent: "center", borderRadius: 24, borderWidth: 1 },
   recentLink: { minHeight: 48, justifyContent: "center", alignItems: "center" },
   topBar: {
     flexDirection: "row",
@@ -523,14 +537,14 @@ const styles = StyleSheet.create({
     paddingBottom: 18,
   },
   brand: {
-    fontSize: 31,
+    fontSize: 34,
     fontWeight: "900",
-    letterSpacing: -1.6,
+    letterSpacing: -1.7,
   },
   tagline: {
-    marginTop: 1,
+    marginTop: 2,
     fontSize: 13,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   mapFrame: {
     position: "relative",
@@ -538,7 +552,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
   },
   mapPlaceholder: {
-    height: 330,
+    flex: 1,
     borderWidth: 1,
     borderRadius: 24,
     alignItems: "center",
@@ -574,11 +588,14 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 12,
     bottom: 12,
-    minHeight: 42,
+    minHeight: 48,
+    flexDirection: "row",
+    alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
     borderRadius: 14,
-    paddingHorizontal: 14,
+    paddingHorizontal: 13,
+    gap: 7,
   },
   locateText: {
     fontSize: 13,
@@ -638,8 +655,7 @@ const styles = StyleSheet.create({
   destinationCard: {
     marginTop: 0,
     gap: 14,
-    borderTopWidth: 4,
-    borderTopColor: "#066F69",
+    borderTopWidth: 0,
     padding: 20,
   },
   destinationHeading: {
@@ -658,25 +674,25 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderRadius: 15,
+    borderRadius: 17,
     paddingHorizontal: 13,
-  },
-  searchSymbol: {
-    fontSize: 24,
-    marginRight: 9,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    paddingVertical: 14,
+    minHeight: 54,
+    paddingVertical: 10,
   },
   statusText: {
     fontSize: 12,
   },
   suggestion: {
     borderTopWidth: StyleSheet.hairlineWidth,
+    minHeight: 64,
+    justifyContent: "center",
     paddingTop: 10,
     paddingBottom: 10,
+    paddingHorizontal: 8,
   },
   suggestionList: {
     maxHeight: 240,
@@ -697,12 +713,14 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   routeHeading: {
-    flexDirection: "column",
-    alignItems: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
     gap: 10,
   },
   routeCopy: {
-    alignSelf: "stretch",
+    flex: 1,
+    minWidth: 180,
   },
   routeTitle: {
     fontSize: 15,
@@ -716,6 +734,6 @@ const styles = StyleSheet.create({
   disclaimer: {
     fontSize: 11,
     lineHeight: 16,
-    textAlign: "center",
+    textAlign: "left",
   },
 });

@@ -23,6 +23,10 @@ test('200% text on a small viewport keeps primary controls before the map, reada
   const instruction=view.getByRole('header',{name:'Turn left at the test junction'});expect(instruction.props.numberOfLines).toBeUndefined();expect(Native.StyleSheet.flatten(instruction.props.style).fontSize).toBe(28);expect(instruction.props.allowFontScaling).not.toBe(false);
   expect(view.getByRole('alert',{name:/OVER SPEED LIMIT/})).toBeTruthy();expect(view.getByText('Verified limit: 50 km/h')).toBeTruthy();
   const controls=view.getAllByRole('button');expect(controls.slice(0,2).map(c=>c.props.accessibilityLabel)).toEqual(['Mute voice','End']);expect(Native.StyleSheet.flatten(controls[0].props.style).minHeight).toBeGreaterThanOrEqual(48);
+  expect(Native.StyleSheet.flatten(view.getByTestId('navigation-map-area').props.style).height).toBeGreaterThanOrEqual(180);
+  const metricCells=view.getByTestId('journey-metrics').children;
+  expect(metricCells).toHaveLength(4);
+  expect(metricCells.every(cell=>Native.StyleSheet.flatten(cell.props.style).width==='100%')).toBe(true);
   expect(view.getByTestId('navigation-accessible-content').props.scrollEnabled).toBe(true);expect(view.queryByText(/sponsored|advertisement/i)).toBeNull();
  }finally{await view.unmount();size.mockRestore();}
 });

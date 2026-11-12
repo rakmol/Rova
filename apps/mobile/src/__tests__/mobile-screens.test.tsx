@@ -16,6 +16,10 @@ jest.mock("expo-router", () => ({
   },
 }));
 
+jest.mock("expo-symbols", () => ({
+  SymbolView: () => null,
+}));
+
 jest.mock("../map/mapboxProvider", () => ({
   accraDevelopmentCenter: [-0.187, 5.6037],
   createSearchSessionToken: () => "00000000-0000-4000-8000-000000000000",
