@@ -11,6 +11,17 @@
       "autoIncrement": true,
       "android": {
         "image": "ubuntu-26.04-jdk-17-ndk-r27b-sdk-58"
+      },
+      "env": {
+        "EXPO_PUBLIC_PLACES_PROXY_URL": "https://rova-api-amber.vercel.app/v1/places/search",
+        "EXPO_PUBLIC_ROUTES_API_URL": "https://rova-api-amber.vercel.app/routes",
+        "EXPO_PUBLIC_COMPLIANCE_API_URL": "https://rova-api-amber.vercel.app/safety/alert-context",
+        "EXPO_PUBLIC_INCIDENTS_API_URL": "https://rova-api-amber.vercel.app/v1/incidents",
+        "EXPO_PUBLIC_ACCOUNT_API_URL": "https://rova-api-amber.vercel.app",
+        "EXPO_PUBLIC_OFFLINE_SAFETY_API_URL": "https://rova-api-amber.vercel.app/safety/offline-pack",
+        "EXPO_PUBLIC_NOTIFICATIONS_API_URL": "https://rova-api-amber.vercel.app/v1/notifications",
+        "EXPO_PUBLIC_PILOT_API_URL": "https://rova-api-amber.vercel.app/v1/pilot",
+        "EXPO_PUBLIC_PILOT_MODE": "true"
       }
     },
     "development": {
