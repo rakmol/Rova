@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import {createServer} from 'node:http';
+import type {AddressInfo} from 'node:net';
+import type {Pool} from 'pg';
+import Fastify from 'fastify';
+import {createServerlessHandler} from './serverless.js';
+import {buildApp} from './app.js';
+import {readConfig} from './config.js';
+import {databaseConnection,databasePool} from './database.js';
+test('serverless entry preserves original routes/bodies, shares initialization and sanitizes startup failure with retry',async()=>{let calls=0,fail=true;const app=Fastify();app.post('/original',async r=>({body:r.body}));const handler=createServerlessHandler(async()=>{calls++;if(fail)throw Error('secret DB password');return app;}),server=createServer(handler);await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));const url='http://127.0.0.1:'+(server.address() as AddressInfo).port;try{const failed=await fetch(url+'/original');assert.equal(failed.status,503);assert.ok(!(await failed.text()).includes('secret'));fail=false;const results=await Promise.all(Array.from({length:3},()=>fetch(url+'/original',{method:'POST',headers:{'content-type':'application/json'},body:'{"query":"Accra"}'})));for(const r of results){assert.equal(r.status,200);assert.deepEqual(await r.json(),{body:{query:'Accra'}});}assert.equal(calls,2);}finally{server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));await app.close();}});
+test('hosted pool bounds connections, verifies TLS and accepts a configured CA without disabling certificate checks',()=>{const config=readConfig({NODE_ENV:'production',DATABASE_URL:'postgres://test@remote.test/postgres',DATABASE_SSL:'true',DATABASE_CA_BASE64:Buffer.from('test PEM fixture').toString('base64')});assert.equal(databasePool(config).max,2);assert.deepEqual(databaseConnection(config).ssl,{rejectUnauthorized:true,ca:'test PEM fixture'});assert.throws(()=>readConfig({DATABASE_POOL_MAX:'100'}));});
+test('cron endpoint rejects missing/wrong secrets before any database access and is disabled without configuration',async()=>{const db={query:async()=>{throw Error('must not query');},end:async()=>{}} as unknown as Pool;for(const secret of [undefined,'x'.repeat(32)]){const app=await buildApp({config:readConfig({NODE_ENV:'test',CRON_SECRET:secret}),database:db,logger:false});try{for(const authorization of [undefined,'Bearer wrong'])assert.equal((await app.inject({url:'/internal/maintenance',headers:authorization?{authorization}:{}})).statusCode,404);}finally{await app.close();}}});

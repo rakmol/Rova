@@ -50,3 +50,5 @@ apps/api/data/realtime-local-metrics.json
 
 **/build/
 **/.gradle/
+
+.vercel/
