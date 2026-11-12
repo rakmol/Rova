@@ -104,10 +104,23 @@ describe("mobile screen foundation", () => {
   it("allows switching to an explicit dark theme", async () => {
     const view = await renderWithTheme(<SettingsScreen />);
 
+    await fireEvent.press(view.getByRole("button", { name: "Appearance" }));
     await fireEvent.press(view.getByRole("radio", { name: "Dark" }));
 
     expect(view.getByRole("radio", { name: "Dark" }).props.accessibilityState.checked).toBe(true);
     expect(view.getByRole("radio", { name: "System" }).props.accessibilityState.checked).toBe(false);
+  });
+
+  it("opens only the selected settings category and returns to the compact menu", async () => {
+    const view = await renderWithTheme(<SettingsScreen />);
+    expect(view.queryByText('Voice and units')).toBeNull();
+    await fireEvent.press(view.getByRole('button', { name: 'Navigation & voice' }));
+    expect(view.getByText('Voice and units')).toBeTruthy();
+    expect(view.queryByText('Location and privacy')).toBeNull();
+    await fireEvent.press(view.getByRole('button', { name: 'All settings' }));
+    await fireEvent.press(view.getByRole('button', { name: 'Location & privacy' }));
+    expect(view.getByText('Location and privacy')).toBeTruthy();
+    expect(view.queryByText('Voice and units')).toBeNull();
   });
 
   it("renders a clear permission-denied state without implying location access", async () => {

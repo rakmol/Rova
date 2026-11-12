@@ -21,7 +21,7 @@ import {
   mapboxProvider,
 } from "../../map/mapboxProvider";
 import { MapboxMap } from "../../map/MapboxMap";
-import { landmarkSearchEnabled } from "../../places/runtime";
+import { VehicleSelector } from "../../components/VehicleSelector";
 import { travelDistance, useDriverData } from '../../account/local';
 import type {
   Destination,
@@ -35,7 +35,7 @@ type SearchState = "idle" | "loading" | "error";
 export default function MapScreen() {
   const { theme } = useRovaTheme();
   const {preferences}=useDriverData();
-  const { route, setRoute, pickedDestination, setPickedDestination, selectedRoutingOption, setSelectedRoutingOption } = useRoutePreview();
+  const { vehicleType, setVehicleType, route, setRoute, pickedDestination, setPickedDestination, selectedRoutingOption, setSelectedRoutingOption } = useRoutePreview();
   const mapboxConfigured = isMapboxConfigured();
   const sessionToken = useRef(createSearchSessionToken());
   const currentLocationRef = useRef<MapCoordinate | null>(null);
@@ -260,125 +260,20 @@ export default function MapScreen() {
       <ContentFrame>
         <View style={styles.topBar}>
           <View>
-            <Text style={[styles.brand, { color: theme.colors.ink }]}>rova</Text>
+            <Text style={[styles.brand, { color: theme.colors.brandStrong }]}>rova<Text style={{ color: theme.colors.ink }}> ↗</Text></Text>
             <Text style={[styles.tagline, { color: theme.colors.inkMuted }]}>
               Move with confidence.
             </Text>
           </View>
-          <Pill tone="neutral">ACCRA · GHANA</Pill>
+          <Pressable accessibilityRole="button" accessibilityLabel="Open settings" onPress={() => router.push("/(tabs)/settings")} style={[styles.headerButton, { backgroundColor: theme.colors.brandTint }]}><Text style={{ color: theme.colors.brandStrong, fontWeight: "800" }}>Settings</Text></Pressable>
         </View>
-
-        <View style={styles.mapFrame}>
-          {mapReady ? (
-            <MapboxMap
-              center={center}
-              destination={selectedDestination?.coordinate}
-              locationEnabled={locationEnabled}
-              routeGeometry={selectedRoutingOption?.geometry ?? route?.geometry}
-              onMapLoaded={() => {
-                setMapLoaded(true);
-                setMapLoadError(null);
-              }}
-              onMapError={setMapLoadError}
-            />
-          ) : (
-            <View
-              accessibilityRole="summary"
-              style={[
-                styles.mapPlaceholder,
-                {
-                  backgroundColor: theme.colors.surfaceRaised,
-                  borderColor: theme.colors.border,
-                },
-              ]}
-            >
-              <Text style={[styles.mapTitle, { color: theme.colors.ink }]}>
-                {mapError
-                  ? "Map could not be loaded"
-                  : mapboxConfigured
-                    ? "Loading the Accra map"
-                    : "Mapbox token required"}
-              </Text>
-              <Text style={[styles.mapDescription, { color: theme.colors.inkMuted }]}>
-                {mapError ??
-                  (mapboxConfigured
-                    ? "Connecting to Mapbox. Check your connection if the map does not appear."
-                    : "Add a public pk. token to apps/mobile/.env to load live map tiles and search.")}
-              </Text>
-            </View>
-          )}
-          {mapReady && (!mapLoaded || mapLoadError) && (
-            <View
-              accessibilityRole={mapLoadError ? "alert" : "summary"}
-              style={[
-                styles.mapNotice,
-                { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
-              ]}
-            >
-              <Text style={[styles.mapNoticeTitle, { color: theme.colors.ink }]}>
-                {mapLoadError ? "Map tiles unavailable" : "Loading Mapbox streets"}
-              </Text>
-              <Text style={[styles.mapDescription, { color: theme.colors.inkMuted }]}>
-                {mapLoadError ?? "Waiting for map tiles from Mapbox."}
-              </Text>
-            </View>
-          )}
-          {mapReady && (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Locate me"
-              onPress={handleLocate}
-              style={[
-                styles.locateButton,
-                { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
-              ]}
-            >
-              <Text style={[styles.locateText, { color: theme.colors.brandStrong }]}>
-                Locate me
-              </Text>
-            </Pressable>
-          )}
-        </View>
-
-        {locationStatus && (
-          <Text
-            accessibilityRole="alert"
-            style={[styles.inlineNotice, { color: theme.colors.warning }]}
-          >
-            {locationStatus}
-          </Text>
-        )}
-
-        <View style={styles.limitHeader}>
-          <Text style={[styles.sectionLabel, { color: theme.colors.inkMuted }]}>
-            ROAD SAFETY
-          </Text>
-          <Text style={[styles.limitCaption, { color: theme.colors.inkSubtle }]}>
-            Verified ROVA data only
-          </Text>
-        </View>
-        <Surface style={styles.limitCard}>
-          <View style={[styles.limitIcon, { backgroundColor: theme.colors.warningTint }]}>
-            <Text style={[styles.limitIconText, { color: theme.colors.warning }]}>!</Text>
-          </View>
-          <View style={styles.limitCopy}>
-            <Text style={[styles.limitTitle, { color: theme.colors.ink }]}>
-              Speed limit unavailable
-            </Text>
-            <Text style={[styles.limitDescription, { color: theme.colors.inkMuted }]}>
-              No approved ROVA speed-limit record is available here.
-            </Text>
-          </View>
-          <Pill tone="warning">UNKNOWN</Pill>
-        </Surface>
 
         <Surface style={styles.destinationCard}>
-          <ActionButton title="Search destinations & recent searches" onPress={() => router.push("/destination-search")} />
           <View style={styles.destinationHeading}>
             <Text style={[styles.destinationTitle, { color: theme.colors.ink }]}>
-              Where to?
+              Where are you heading?
             </Text>
-            <Pill tone="neutral">{mapboxConfigured ? landmarkSearchEnabled ? "PLACES SEARCH" : "MAPBOX SEARCH" : "SEARCH OFFLINE"}</Pill>
+
           </View>
           <View
             ref={searchFieldRef}
@@ -487,6 +382,7 @@ export default function MapScreen() {
                     : "Mapbox driving estimate; live traffic is not included."
                   : "Preview starts from Accra city center, not your GPS location. Locate yourself to refresh it."}
               </Text>
+              <VehicleSelector value={vehicleType} onChange={setVehicleType} />
               <ActionButton
                 title={route.originIsLive ? "Start navigation" : "Locate me to navigate"}
                 disabled={!route.originIsLive}
@@ -498,21 +394,127 @@ export default function MapScreen() {
           )}
           <ActionButton
             title={locationEnabled ? "Update route from my location" : "Use my location"}
-            secondary
             disabled={!mapboxConfigured}
             onPress={handleLocate}
           />
-          <Text style={[styles.disclaimer, { color: theme.colors.inkSubtle }]}>
-            Search and route requests send your query and route coordinates to Mapbox. Safety data
-            remains independent of Mapbox.
-          </Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="Search destinations & recent searches" onPress={() => router.push("/destination-search")} style={styles.recentLink}><Text style={{ color: theme.colors.brandStrong, fontWeight: "700" }}>Recent searches & saved places  →</Text></Pressable>
         </Surface>
+
+        <View style={styles.exploreHeader}><Text style={[styles.sectionLabel, { color: theme.colors.inkMuted }]}>EXPLORE YOUR AREA</Text><Text style={{ color: theme.colors.inkMuted, fontSize: 12 }}>Accra, Ghana</Text></View>
+        <View style={styles.mapFrame}>
+          {mapReady ? (
+            <MapboxMap
+              center={center}
+              destination={selectedDestination?.coordinate}
+              locationEnabled={locationEnabled}
+              routeGeometry={selectedRoutingOption?.geometry ?? route?.geometry}
+              onMapLoaded={() => {
+                setMapLoaded(true);
+                setMapLoadError(null);
+              }}
+              onMapError={setMapLoadError}
+            />
+          ) : (
+            <View
+              accessibilityRole="summary"
+              style={[
+                styles.mapPlaceholder,
+                {
+                  backgroundColor: theme.colors.surfaceRaised,
+                  borderColor: theme.colors.border,
+                },
+              ]}
+            >
+              <Text style={[styles.mapTitle, { color: theme.colors.ink }]}>
+                {mapError
+                  ? "Map could not be loaded"
+                  : mapboxConfigured
+                    ? "Loading the Accra map"
+                    : "Mapbox token required"}
+              </Text>
+              <Text style={[styles.mapDescription, { color: theme.colors.inkMuted }]}>
+                {mapError ??
+                  (mapboxConfigured
+                    ? "Connecting to Mapbox. Check your connection if the map does not appear."
+                    : "Add a public pk. token to apps/mobile/.env to load live map tiles and search.")}
+              </Text>
+            </View>
+          )}
+          {mapReady && (!mapLoaded || mapLoadError) && (
+            <View
+              accessibilityRole={mapLoadError ? "alert" : "summary"}
+              style={[
+                styles.mapNotice,
+                { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+              ]}
+            >
+              <Text style={[styles.mapNoticeTitle, { color: theme.colors.ink }]}>
+                {mapLoadError ? "Map tiles unavailable" : "Loading Mapbox streets"}
+              </Text>
+              <Text style={[styles.mapDescription, { color: theme.colors.inkMuted }]}>
+                {mapLoadError ?? "Waiting for map tiles from Mapbox."}
+              </Text>
+            </View>
+          )}
+          {mapReady && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Locate me"
+              onPress={handleLocate}
+              style={[
+                styles.locateButton,
+                { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+              ]}
+            >
+              <Text style={[styles.locateText, { color: theme.colors.brandStrong }]}>
+                Locate me
+              </Text>
+            </Pressable>
+          )}
+        </View>
+
+        {locationStatus && (
+          <Text
+            accessibilityRole="alert"
+            style={[styles.inlineNotice, { color: theme.colors.warning }]}
+          >
+            {locationStatus}
+          </Text>
+        )}
+
+        <View style={styles.limitHeader}>
+          <Text style={[styles.sectionLabel, { color: theme.colors.inkMuted }]}>
+            ROAD SAFETY
+          </Text>
+          <Text style={[styles.limitCaption, { color: theme.colors.inkSubtle }]}>
+            Verified ROVA data only
+          </Text>
+        </View>
+        <Surface style={styles.limitCard}>
+          <View style={[styles.limitIcon, { backgroundColor: theme.colors.warningTint }]}>
+            <Text style={[styles.limitIconText, { color: theme.colors.warning }]}>!</Text>
+          </View>
+          <View style={styles.limitCopy}>
+            <Text style={[styles.limitTitle, { color: theme.colors.ink }]}>
+              Speed limit unavailable
+            </Text>
+            <Text style={[styles.limitDescription, { color: theme.colors.inkMuted }]}>
+              No approved ROVA speed-limit record is available here.
+            </Text>
+          </View>
+          <Pill tone="warning">UNKNOWN</Pill>
+        </Surface>
+
+
       </ContentFrame>
     </Page>
   );
 }
 
 const styles = StyleSheet.create({
+  exploreHeader: { flexDirection: "row", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginTop: 24, marginBottom: 12 },
+  headerButton: { minHeight: 48, justifyContent: "center", borderRadius: 24, paddingHorizontal: 18 },
+  recentLink: { minHeight: 48, justifyContent: "center", alignItems: "center" },
   topBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -532,6 +534,8 @@ const styles = StyleSheet.create({
   },
   mapFrame: {
     position: "relative",
+    overflow: "hidden",
+    borderRadius: 24,
   },
   mapPlaceholder: {
     height: 330,
@@ -632,8 +636,11 @@ const styles = StyleSheet.create({
     lineHeight: 17,
   },
   destinationCard: {
-    marginTop: 16,
-    gap: 13,
+    marginTop: 0,
+    gap: 14,
+    borderTopWidth: 4,
+    borderTopColor: "#066F69",
+    padding: 20,
   },
   destinationHeading: {
     flexDirection: "row",
@@ -642,7 +649,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   destinationTitle: {
-    fontSize: 20,
+    fontSize: 26,
+    lineHeight: 34,
     fontWeight: "800",
   },
   searchField: {
@@ -659,7 +667,8 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 16,
+    paddingVertical: 14,
   },
   statusText: {
     fontSize: 12,
@@ -688,13 +697,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   routeHeading: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: "column",
     alignItems: "flex-start",
     gap: 10,
   },
   routeCopy: {
-    flex: 1,
+    alignSelf: "stretch",
   },
   routeTitle: {
     fontSize: 15,

@@ -1,3 +1,4 @@
+import { VehicleSelector } from "../components/VehicleSelector";
 import {saveOfflineRoute} from "../offline/data";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
@@ -20,7 +21,7 @@ const minutes = (seconds: number) => seconds < 60 ? "<1 min" : `${Math.round(sec
 
 export default function RouteOptionsScreen() {
   const params = useLocalSearchParams<{ origin?: string; destination?: string; title?: string }>();
-  const { route, setSelectedRoutingOption } = useRoutePreview();
+  const { route, setSelectedRoutingOption, vehicleType, setVehicleType } = useRoutePreview();
   const { theme } = useRovaTheme();
   const {preferences}=useDriverData();
   const origin = params.origin ?? route?.origin.join(",");
@@ -50,6 +51,7 @@ export default function RouteOptionsScreen() {
   return <Page><ContentFrame>
     <ActionButton title="Back to map" secondary onPress={() => router.back()} />
     <PageHeader eyebrow="Route options" title={params.title || route?.destinationLabel || "Compare routes"} subtitle="Driving estimates without live traffic. Check road conditions and restrictions before travel." />
+    <Surface style={{ marginBottom: 16 }}><VehicleSelector value={vehicleType} onChange={setVehicleType} /></Surface>
     {loading && <Text accessibilityLiveRegion="polite" style={muted}>Calculating supported routes. This may take a few seconds on a slow connection...</Text>}
     {error && <Text accessibilityRole="alert" style={{ color: theme.colors.danger }}>{error}</Text>}
     {!loading && !error && data?.routes.length === 0 && <Text style={muted}>No driving route was found. Check the origin and destination, then try again. No sample route has been substituted.</Text>}
