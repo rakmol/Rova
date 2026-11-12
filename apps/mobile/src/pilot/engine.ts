@@ -1,6 +1,6 @@
 import {PILOT_CONSENT_VERSION,type PilotMetric} from '@rova/shared';
 import {addMetric,emptyDiagnostics,type DiagnosticData,type Lease} from './model';
-import type {ExitCounts} from './native';
+import {unknownBuild,type ExitCounts} from './native';
 type Store={load():Promise<void>;read():DiagnosticData;update(fn:(d:DiagnosticData)=>DiagnosticData):Promise<void>};
 type Dependencies={store:Store;endpoint?:string;now():number;uuid():string;exits(since:number):Promise<ExitCounts>;request(endpoint:string,path:string,body:unknown,token?:string,signal?:AbortSignal):Promise<Record<string,unknown>>};
 export function createPilotRuntime(dep:Dependencies){
@@ -9,7 +9,7 @@ export function createPilotRuntime(dep:Dependencies){
  const record=(metric:PilotMetric,count=1)=>{if(withdrawn||!dep.store.read().enabled)return;void dep.store.update(d=>withdrawn?d:addMetric(d,metric,count,dep.now())).catch(()=>{});};
  async function trim(){const d=dep.store.read(),valid=(day:string)=>{const age=dep.now()-Date.parse(day+'T00:00:00Z');return age>=0&&age<7*86400000;};if(d.buckets.some(b=>!valid(b.day))||d.upload&&!valid(d.upload.day))await dep.store.update(current=>({...current,buckets:current.buckets.filter(b=>valid(b.day)),upload:current.upload&&valid(current.upload.day)?current.upload:null}));}
  async function erasePending(){for(const lease of dep.store.read().erasePending){await dep.request(lease.endpoint,'/telemetry/erase',{},lease.token);await dep.store.update(d=>({...d,erasePending:d.erasePending.filter(l=>l.token!==lease.token)}));}}
- async function capture(first=false){const d=dep.store.read();if(!d.enabled||withdrawn)return;const now=dep.now();let exits:ExitCounts;try{exits=await dep.exits(first?now:Math.min(now,d.watermark||now));}catch{message='Android exit diagnostics are unavailable on this app.';exits={...d.meta,supported:false,watermark:now,javaCrashes:0,nativeCrashes:0,anrs:0,truncated:false};}
+ async function capture(first=false){const d=dep.store.read();if(!d.enabled||withdrawn)return;const now=dep.now();let exits:ExitCounts;try{exits=await dep.exits(first?now:Math.min(now,d.watermark||now));}catch{message='Android exit diagnostics are unavailable on this app.';exits={...unknownBuild,supported:false,watermark:now,javaCrashes:0,nativeCrashes:0,anrs:0,truncated:false};}
   await dep.store.update(current=>{if(withdrawn||!current.enabled)return current;const changed=current.meta.build!==exits.build||current.meta.version!==exits.version||current.meta.variant!==exits.variant;let next={...current,meta:{version:exits.version,build:exits.build,variant:exits.variant},supported:exits.supported,watermark:exits.watermark};next=addMetric(next,'sessions',1,now);next=addMetric(next,exits.supported?'android_supported_sessions':'android_unsupported_sessions',1,now);if(!first&&exits.supported){if(changed||exits.truncated||now-current.watermark>7*86400000||now<current.watermark)next=addMetric(next,'android_history_gaps',1,now);else{for(const[k,n]of [['android_crashes',exits.javaCrashes],['android_native_crashes',exits.nativeCrashes],['android_anrs',exits.anrs]]as const)if(n)next=addMetric(next,k,n,now);}}return next;});
  }
  async function lease(){let d=dep.store.read();if(d.lease&&d.lease.endpoint===dep.endpoint&&Date.parse(d.lease.expiresAt)>dep.now()+60000)return d.lease;

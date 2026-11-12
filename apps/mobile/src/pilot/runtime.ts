@@ -13,5 +13,5 @@ function uuid(){if(!requireOptionalNativeModule('ExpoCrypto'))throw Error('Updat
  // eslint-disable-next-line @typescript-eslint/no-require-imports -- Old APKs must not load an unavailable native module at startup.
  return (require('expo-crypto') as typeof import('expo-crypto')).randomUUID();}
 export const pilotRuntime=createPilotRuntime({store:diagnosticStore,endpoint:pilotEndpoint,now:Date.now,uuid,exits:androidExitCounts,request});
-export const erasePilotData=()=>pilotRuntime.withdraw();
+export async function erasePilotData(){try{await pilotRuntime.withdraw();}catch(error){if(diagnosticStore.status().error){await diagnosticStore.erase();throw Error('Unreadable local diagnostics erased. Remote deletion could not be confirmed because the credential was unavailable; server retention applies.');}throw error;}}
 export function startPilotLifecycle(){let alive=true,restore=()=>{};void pilotRuntime.start().then(()=>{if(alive)restore=observeFatal((globalThis as typeof globalThis&{ErrorUtils?:FatalGuard}).ErrorUtils,()=>pilotRuntime.record('js_fatal'));}).catch(()=>{});const app=AppState.addEventListener('change',()=>{void pilotRuntime.flush();}),timer=setInterval(()=>{void pilotRuntime.flush();},1800000);return()=>{alive=false;restore();app.remove();clearInterval(timer);};}
