@@ -2,7 +2,7 @@
 
 Target repository: https://github.com/rakmol/Rova (public; empty when inspected).
 
-**Prepared and tested locally. GitHub upload/hosted Actions execution is pending an authenticated connection with repository write access.** No Expo cloud native build, signing-key creation/rotation, Play upload, paid-plan change or physical-device/road test was performed by this setup.
+**Prepared and tested locally. Repository write access is verified. Check the repository Actions page for hosted CI execution; a local pass is not a hosted-run claim.** No Expo cloud native build, signing-key creation/rotation, Play upload, paid-plan change or physical-device/road test was performed by this setup.
 
 | Check | Local result |
 |---|---|
@@ -24,4 +24,4 @@ Target repository: https://github.com/rakmol/Rova (public; empty when inspected)
 
 Raw logs, dependency reports, private working copies and exported native-independent test artifacts remain under ignored `qa/evidence/ci-2026-11-12/`. Private audit working papers, real `.env` values, signing files, generated artifacts and the original nested mobile Git history are not part of the public-source export. The old mobile lockfile was backed up locally before removal; the root lockfile is canonical.
 
-Create the protected main-branch/ruleset and Android environments described in [the runbook](README.md) after connecting GitHub. Keep cloud builds disabled until the owner explicitly sets `EAS_BUILDS_ENABLED=true`, configures the environment-scoped Expo access token and bootstraps the appropriate remote credentials. Production URL/localization preflights and independent field/legal/privacy/provider/operations acceptance remain required. Build configuration is not public-release approval.
+Create the protected main-branch/ruleset and Android environments described in [the runbook](README.md) using the verified repository connection. Keep cloud builds disabled until the owner explicitly sets `EAS_BUILDS_ENABLED=true`, configures the environment-scoped Expo access token and bootstraps the appropriate remote credentials. Production URL/localization preflights and independent field/legal/privacy/provider/operations acceptance remain required. Build configuration is not public-release approval.
