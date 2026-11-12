@@ -9,9 +9,10 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { ThemeProvider, useRovaTheme } from "../theme/ThemeProvider";
 import { RouteProvider } from "../map/RouteProvider";
+import {startPilotLifecycle} from '../pilot/runtime';
 
 export default function RootLayout() {
-  useEffect(()=>{void loadOfflineData();void loadDriverData().catch(()=>{});void loadHistory().catch(()=>{});const network=startNetworkMonitor(),driving=startDrivingMonitor(),notifications=startNotificationLifecycle();return()=>{network();driving();notifications();};},[]);
+  useEffect(()=>{void loadOfflineData();void loadDriverData().catch(()=>{});void loadHistory().catch(()=>{});const network=startNetworkMonitor(),driving=startDrivingMonitor(),notifications=startNotificationLifecycle(),pilot=startPilotLifecycle();return()=>{network();driving();notifications();pilot();};},[]);
   return (
     <ThemeProvider>
       <RouteProvider>

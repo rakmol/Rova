@@ -4,6 +4,7 @@ import {writeHistory} from '../places/history';
 import {clearOfflineData} from '../offline/data';
 import {eraseNotifications} from '../notifications/runtime';
 import {placesProvider} from '../places/runtime';
+jest.mock('../pilot/runtime',()=>({erasePilotData:jest.fn(async()=>{})}));
 jest.mock('../account/local',()=>({clearLocalDriverData:jest.fn()}));
 jest.mock('../places/history',()=>({writeHistory:jest.fn()}));
 jest.mock('../offline/data',()=>({clearOfflineData:jest.fn()}));

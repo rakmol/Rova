@@ -1,3 +1,4 @@
+import {registerPilot} from './pilot.js';
 import {postgresUsage} from './provider-usage.js';
 import { randomUUID } from "node:crypto";
 import Fastify, { LogController } from "fastify";
@@ -36,6 +37,7 @@ export async function buildApp(options: { config?: ApiConfig; database?: Pool; l
     if (error instanceof ZodError) return reply.code(400).send({ error: "Invalid request.", code: "VALIDATION_ERROR", requestId: request.id, issues: error.issues.map((issue) => ({ path: issue.path.join("."), message: issue.message })) });
     const candidate = error as { statusCode?: number; code?: string; name?: string };
     if(['23514','23505','23503','22023','22P02'].includes(candidate.code??'')&&request.routeOptions.url?.startsWith('/v1/ops/'))return reply.code(409).send({error:'Safety validation rejected this change. Check current revision, geometry, provenance and approvals.',code:'SAFETY_VALIDATION'});
+    if(candidate.code==='P0001'&&request.routeOptions.url?.startsWith('/v1/ops/pilot'))return reply.code(409).send({error:'Pilot activation requires current verified roads and two independent current approvals, with no rejection.'});
     if(candidate.code==='OPS_REQUEST'||candidate.code==='NOTIFICATION_REQUEST')return reply.code(candidate.statusCode??403).send({error:(error as Error).message,code:'OPS_REQUEST'});
     const status = candidate.statusCode && candidate.statusCode >= 400 && candidate.statusCode <= 599 ? candidate.statusCode : 500;
     if (status >= 500) app.log.error({ requestId: request.id, errorType: candidate.name, code: candidate.code }, "request failed");
@@ -45,20 +47,21 @@ export async function buildApp(options: { config?: ApiConfig; database?: Pool; l
   app.get("/health", { config: { rateLimit: false } }, async () => ({ service: "rova-api", status: "ok" }));
   app.get("/ready", async (_request, reply) => {
     try {
-      const result = await database.query("SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname='postgis') AS postgis, to_regclass('public.speed_limit_rules') IS NOT NULL AS schema_ready, EXISTS (SELECT 1 FROM schema_migrations WHERE version='013_batch_a_protection.sql') AS migrated");
+      const result = await database.query("SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname='postgis') AS postgis, to_regclass('public.speed_limit_rules') IS NOT NULL AS schema_ready, EXISTS (SELECT 1 FROM schema_migrations WHERE version='014_accra_pilot.sql') AS migrated");
       if (!result.rows[0]?.postgis || !result.rows[0]?.schema_ready || !result.rows[0]?.migrated) throw new Error("Database setup incomplete");
       return { status: "ready" };
     } catch { app.log.warn({ dependency: "database" }, "Readiness check failed"); return reply.code(503).send({ status: "not_ready", dependency: "database" }); }
   });
   app.get("/openapi.json", async () => openapi);
   const opsAccess=registerAdminDashboard(app,database,options.adminAuth??managedAdminAuth(config.SUPABASE_URL,config.SUPABASE_PUBLISHABLE_KEY,config.SUPABASE_SECRET_KEY),config.ADMIN_COVERAGE_AGGREGATION_ENABLED==='true');
+  registerPilot(app,database,config,opsAccess);
   registerProviderCostDashboard(app,opsAccess,config,database);
-  registerSpeedLimitRoute(app, database,Date.now,config.ADMIN_COVERAGE_AGGREGATION_ENABLED==='true');
+  registerSpeedLimitRoute(app, database,Date.now,config.ADMIN_COVERAGE_AGGREGATION_ENABLED==='true',config.PILOT_REGION_GATING_ENABLED==='true');
   registerOfflineSafety(app,database,config);
   registerNotificationRoutes(app,database,config);
   registerAccountRoutes(app,database,options.driverAuth??supabaseProvider({url:config.SUPABASE_URL,publishableKey:config.SUPABASE_PUBLISHABLE_KEY,secretKey:config.SUPABASE_SECRET_KEY}),config.PLACES_STORAGE_SIGNING_KEY);
   registerIncidentRoutes(app, database, { ipHashKey: config.INCIDENT_IP_HASH_KEY, moderatorToken: config.NODE_ENV==='test'?config.ROVA_INCIDENT_MODERATOR_TOKEN:undefined, production: config.NODE_ENV === 'production',authorizeModerator:config.NODE_ENV==='test'?undefined:async request=>(await opsAccess(request,['reviewer','administrator'])).name,legacyReadOnly:config.NODE_ENV!=='test' });
-  registerComplianceRoute(app, database, { enabled: config.COMPLIANCE_ALERTS_ENABLED === "true", transitions: config.COMPLIANCE_TRANSITIONS_ENABLED === "true", corridors: config.COMPLIANCE_CORRIDORS_ENABLED === "true", reportedRoads: config.REPORTED_ROAD_ALERTS_ENABLED === "true" });
+  registerComplianceRoute(app, database, { enabled: config.COMPLIANCE_ALERTS_ENABLED === "true", transitions: config.COMPLIANCE_TRANSITIONS_ENABLED === "true", corridors: config.COMPLIANCE_CORRIDORS_ENABLED === "true", reportedRoads: config.REPORTED_ROAD_ALERTS_ENABLED === "true", pilotRestricted:config.PILOT_REGION_GATING_ENABLED==='true' });
   const usage=postgresUsage(database,config);
   registerPlacesRoutes(app, { provider: config.PLACES_PROVIDER, geoapifyKey: config.GEOAPIFY_API_KEY, token: config.MAPBOX_PLACES_ACCESS_TOKEN, permanentStorage: config.MAPBOX_PLACES_PERMANENT_STORAGE === "true", usage, storageKey:config.PLACES_STORAGE_SIGNING_KEY, dailyBudget: config.PLACES_DAILY_REQUEST_BUDGET });
   registerRoutingRoutes(app, { key: config.GEOAPIFY_API_KEY, usage, dailyBudget: config.ROUTING_DAILY_REQUEST_BUDGET });

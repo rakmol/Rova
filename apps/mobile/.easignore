@@ -6,8 +6,8 @@ coverage/
 .env
 .env.*
 !.env.example
-android/
-ios/
+/android/
+/ios/
 *.tsbuildinfo
 
 # Build/signing credentials and generated artifacts
@@ -34,3 +34,6 @@ ios/
 **/.netrc
 **/keystore.properties
 **/key.properties
+
+**/build/
+**/.gradle/

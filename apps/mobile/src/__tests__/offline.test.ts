@@ -2,11 +2,15 @@ import {transactionalCache,type SlotStorage} from '../offline/cache';
 import {networkObservation,networkSnapshot,requestOutcome,setLowData} from '../offline/network';
 import {validateSavedRoute} from '../offline/data';
 import {offlinePackState,offlineSpeedLimit,validateSafetyPack,type OfflineSafetyPack,type RoadCandidate} from '@rova/shared';
+import * as savedData from '../offline/data';
+import {offlineCompliance,downloadSafetyPack} from '../offline/runtime';
 const now=Date.parse('2026-11-10T12:00:00Z'),past=new Date(now-86400000).toISOString(),future=new Date(now+86400000).toISOString();
 const source={id:'test-source',kind:'official',status:'published',synthetic:false,reviewedAt:past,validFrom:past,expiresAt:future,document:'ISOLATED TEST EVIDENCE',url:null};
 const road:RoadCandidate={id:'ISOLATED ROAD',distanceMeters:0,roadKind:'road',gradeLevel:0,roadWidthMeters:8,direction:'both',bearing:90,endpointMeters:500,confidence:.99,accuracyMeters:2,status:'published',synthetic:false,validFrom:past,expiresAt:future,lastReviewedAt:past,source,rules:[{id:'ISOLATED RULE',speedLimitKmh:50,units:'km/h',vehicleClass:'all',direction:'both',role:'road_limit',evidenceType:'official_record',legalApplicability:'confirmed',status:'published',synthetic:false,confidence:.99,effectiveFrom:past,expiresAt:future,lastReviewedAt:past,revision:1,supersedesId:null,reference:'TEST ONLY',source,approvals:2,oldestApprovalAt:past,auditLogId:'test-audit'}]};
 const pack=():OfflineSafetyPack=>({schema:1,complete:true,version:'sha256:'+'a'.repeat(64),createdAt:now-1000,expiresAt:now+10000,bounds:[-.21,5.59,-.19,5.61],vehicleType:'private_car',attribution:'ISOLATED AUTOMATED TEST',roads:[{geometry:[[-.209,5.6],[-.191,5.6]],record:structuredClone(road)}]});
 const fix={lon:-.2,lat:5.6,accuracy:5,heading:90,timestamp:now,vehicleType:'private_car' as const};
+
+test('pilot build cannot restore a numeric limit from an otherwise valid old offline pack',async()=>{const original=process.env.EXPO_PUBLIC_PILOT_MODE,time=jest.spyOn(Date,'now').mockReturnValue(now),saved=savedData.offlineData(),spy=jest.spyOn(savedData,'offlineData').mockReturnValue({...saved,safety:pack()});try{delete process.env.EXPO_PUBLIC_PILOT_MODE;const position={coordinate:[-.2,5.6] as [number,number],accuracy:5,heading:90,timestamp:now,speed:10};expect(offlineCompliance(position,'private_car').limit.status).toBe('verified');process.env.EXPO_PUBLIC_PILOT_MODE='true';expect(offlineCompliance(position,'private_car').limit.status).toBe('unknown');await expect(downloadSafetyPack(-.2,5.6,'private_car')).rejects.toThrow('Pilot safety data');}finally{if(original===undefined)delete process.env.EXPO_PUBLIC_PILOT_MODE;else process.env.EXPO_PUBLIC_PILOT_MODE=original;spy.mockRestore();time.mockRestore();}});
 test('fresh preapproved offline limits require same road, heading, GPS, vehicle, dates and complete coverage',()=>{
  expect(offlineSpeedLimit(pack(),fix,now)).toMatchObject({status:'verified',speedLimitKmh:50});
  expect(offlineSpeedLimit(pack(),{...fix,accuracy:60},now).status).toBe('unknown');

@@ -5,5 +5,7 @@ const db=new Pool({connectionString:config.DATABASE_URL,ssl:config.DATABASE_SSL=
 try{
  const sessions=await db.query('DELETE FROM admin_sessions WHERE expires_at<now() OR revoked_at IS NOT NULL');
  const coverage=await db.query("DELETE FROM coverage_daily WHERE day<=current_date-30");
- console.log(JSON.stringify({expiredSessionsRemoved:sessions.rowCount,oldCoverageCellsRemoved:coverage.rowCount}));
+ const diagnostics=await db.query("DELETE FROM pilot_telemetry_batches WHERE received_day<=(now() AT TIME ZONE 'UTC')::date-29");
+ const consent=await db.query("DELETE FROM pilot_telemetry_sessions WHERE expires_at<now()-interval '30 days'");
+ console.log(JSON.stringify({diagnosticBatchesRemoved:diagnostics.rowCount,expiredDiagnosticLeasesRemoved:consent.rowCount,expiredSessionsRemoved:sessions.rowCount,oldCoverageCellsRemoved:coverage.rowCount}));
 }finally{await db.end();}

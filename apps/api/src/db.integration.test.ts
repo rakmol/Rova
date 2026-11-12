@@ -1,3 +1,4 @@
+import {checkPilotTelemetry,checkPilotCorridor,checkPilotIncident} from './pilot-integration.js';
 import {postgresUsage} from './provider-usage.js';
 import {storageProof} from './storage-proof.js';
 import assert from "node:assert/strict";
@@ -27,13 +28,14 @@ test("real PostGIS migrations, constraints, synthetic isolation, review guards a
     await client.query("DROP SCHEMA public CASCADE; CREATE SCHEMA public");
     const migrations = await loadMigrations();
     await t.test("migrations apply once; checksums and transaction rollback protect the ledger", async () => {
-      assert.equal((await migrate(client, migrations)).length, 13);
+      assert.equal((await migrate(client, migrations)).length, 14);
       assert.equal((await migrate(client, migrations)).length, 0);
       await assert.rejects(migrate(client, [{ ...migrations[0], checksum: "0".repeat(64) }, ...migrations.slice(1)]), /checksum mismatch/);
       await assert.rejects(migrate(client, [...migrations, { version: "099_failed_test.sql", checksum: "1".repeat(64), sql: "CREATE TABLE rollback_probe(id int); SELECT missing_function_for_test();" }]));
       assert.equal((await client.query("SELECT to_regclass('public.rollback_probe') AS probe")).rows[0].probe, null);
-      assert.equal((await client.query("SELECT count(*)::int AS n FROM schema_migrations")).rows[0].n, 13);
+      assert.equal((await client.query("SELECT count(*)::int AS n FROM schema_migrations")).rows[0].n, 14);
     });
+    await t.test('pilot consent receipts are idempotent, reject private payloads, and serialize withdrawal against uploads',async()=>{const app=await buildApp({config:readConfig({NODE_ENV:'test',PILOT_TELEMETRY_ENABLED:'true',RATE_LIMIT_MAX:'1000'}),database:new Pool({connectionString}),logger:false});let token='';try{token=await checkPilotTelemetry(app,client);}finally{await app.close();}const off=await buildApp({config:readConfig({NODE_ENV:'test'}),database:new Pool({connectionString}),logger:false});try{assert.equal((await off.inject({method:'POST',url:'/v1/pilot/telemetry/session',payload:{consent:true,consentVersion:1}})).statusCode,503);assert.equal((await off.inject({method:'POST',url:'/v1/pilot/telemetry/erase',payload:{},headers:{authorization:'Bearer '+token}})).statusCode,200);}finally{await off.close();}});
     await t.test('shared provider quotas serialize replicas, persist across limiter restarts, and fail closed on configuration drift',async()=>{
       const pool=new Pool({connectionString,max:10});
       const base=readConfig({NODE_ENV:'test',PROVIDER_USAGE_SCOPE:'isolated-quota-test',PLACES_DAILY_REQUEST_BUDGET:'10',PROVIDER_SEARCH_MONTHLY_LIMIT:'3'});
@@ -378,6 +380,7 @@ test("real PostGIS migrations, constraints, synthetic isolation, review guards a
         const limit=await create('rule',rule);
         const lookup=()=>app.inject(`/safety/speed-limit?lat=5.8&lon=-0.315&heading=90&accuracy=5&timestamp=${Date.now()}&vehicleType=private_car`);
         assert.equal((await lookup()).json().status,'unknown');await approve(limit.revisionId);await publish(limit.revisionId);assert.equal((await lookup()).json().speedLimitKmh,40);
+        const pilotApp=await buildApp({config:readConfig({NODE_ENV:'test',PILOT_REGION_GATING_ENABLED:'true',RATE_LIMIT_MAX:'1000'}),database:new Pool({connectionString}),adminAuth:auth,logger:false});try{await checkPilotCorridor(pilotApp,client,headers,r.id,s.id);}finally{await pilotApp.close();}
         const offlineApp=await buildApp({config:readConfig({NODE_ENV:'test',OFFLINE_SAFETY_ENABLED:'true',OFFLINE_SAFETY_SOURCE_IDS:s.id}),database:new Pool({connectionString}),logger:false});
         try{const pack=await offlineApp.inject('/safety/offline-pack?lon=-.315&lat=5.8&vehicleType=private_car');assert.equal(pack.statusCode,200,pack.body);assert.equal(pack.json().roads.find((v:any)=>v.record.id===r.id).record.rules[0].speedLimitKmh,40);}finally{await offlineApp.close();}
         const changed=await send('editor','revise',{entity:'rule',id:limit.id,expected:1,data:{...rule,speed_limit_kmh:60},comment:'ISOLATED changed evidence requires new review'});assert.equal(changed.statusCode,200,changed.body);
@@ -394,7 +397,7 @@ test("real PostGIS migrations, constraints, synthetic isolation, review guards a
         assert.equal((await send('reviewer','review',{revisionId:hazard.revisionId,decision:'approve',comment:'ISOLATED community hazard review'})).statusCode,200);
         await publish(hazard.revisionId);
         // Community votes are dynamic evidence, not an unreviewed change to hazard facts.
-        await client.query('UPDATE incident_reports SET confidence=.6,revision=revision+1 WHERE id=$1',[hazard.id]);
+        await checkPilotIncident(app,client,headers,hazard.id);
         const hazardEdit=await send('editor','revise',{entity:'hazard',id:hazard.id,expected:1,data:{...hazardDetail.json().editable,description:'ISOLATED UPDATED HAZARD'},comment:'ISOLATED hazard edit requires another review'});
         assert.equal(hazardEdit.statusCode,200,hazardEdit.body);assert.equal(hazardEdit.json().status,'pending');
         assert.equal((await send('administrator','logout',{})).statusCode,200);
@@ -444,7 +447,7 @@ test("real PostGIS migrations, constraints, synthetic isolation, review guards a
       await client.query("INSERT INTO speed_rule_approvals(speed_rule_id,reviewer_id,decision,reason) VALUES($1,'a','approve','test'),($1,'b','approve','test')", [legacyRule]);
       await client.query("UPDATE speed_rules SET status='published',verified_by='a',verified_at=now() WHERE id=$1", [legacyRule]);
       await assert.rejects(migrate(client, migrations), /baseline-legacy/);
-      assert.deepEqual(await migrate(client, migrations, true), ["003_backend_foundation.sql", "004_verified_speed_matching.sql", "005_driver_compliance_alerts.sql", "006_map_data_review_staging.sql", "007_reported_road_advisories.sql", "008_community_incidents.sql", "009_driver_accounts.sql", "010_admin_review.sql", "011_opt_in_notifications.sql", "012_sponsorship_prelaunch.sql", "013_batch_a_protection.sql"]);
+      assert.deepEqual(await migrate(client, migrations, true), ["003_backend_foundation.sql", "004_verified_speed_matching.sql", "005_driver_compliance_alerts.sql", "006_map_data_review_staging.sql", "007_reported_road_advisories.sql", "008_community_incidents.sql", "009_driver_accounts.sql", "010_admin_review.sql", "011_opt_in_notifications.sql", "012_sponsorship_prelaunch.sql", "013_batch_a_protection.sql", "014_accra_pilot.sql"]);
       const preserved = await client.query("SELECT status,source_id FROM speed_limit_rules WHERE id=$1", [legacyRule]);
       assert.equal(preserved.rows[0].status, "pending_review"); assert.ok(preserved.rows[0].source_id);
       assert.equal((await client.query("SELECT count(*)::int AS n FROM speed_rule_approvals WHERE speed_rule_id=$1", [legacyRule])).rows[0].n, 2);

@@ -4,6 +4,7 @@
 
 | App behaviour to inspect in the exact AAB | Candidate disclosure / required verification |
 |---|---|
+| Optional first-party pilot daily counters, native crash/ANR observations, build/version and temporary deletion credential | App info/performance/diagnostics and pseudonymous identifiers may require disclosure. Default off; separate consent. No route/location histories in these counters. Verify the final APK, IP/infrastructure logs, retention scheduler and opt-out/deletion; see [pilot disclosure](../pilot/README.md). Existing third-party SDK processing remains separate. |
 | Foreground GPS, routing/search coordinates and destination queries | Precise location and provider processing: review the actual network flow, ephemeral-processing/service-provider definitions, retention and purposes |
 | Anonymous incidents, approximate coordinates, optional notes and votes | Approximate location, user-provided content and anonymous installation/device identifiers; inspect spam-control retention and what is public |
 | Optional Supabase email sign-in, account ID and explicit saved-place backup | Personal info/user IDs and optional saved places; confirm real provider regions, processor terms, deletion and queue handling |

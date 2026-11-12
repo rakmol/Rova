@@ -1,5 +1,7 @@
 # ROVA API and PostGIS foundation
 
+Accra pilot preparation adds migration014, a separately opt-in first-party diagnostic API and audited independent corridor enablement. See [pilot contracts](../../pilot/API.md) and the honest [NO GO readiness report](../../pilot/READINESS.md). No real corridor is seeded or enabled.
+
 The [operations dashboard](../admin/README.md) provides separate Supabase-backed admin roles, enforced MFA, immutable revision history, independent review and controlled publication. Migration 010 adds this workflow; no driver receives an admin role automatically.
 
 Optional driver accounts are prepared using Supabase email OTP, but remain disabled until a dedicated ROVA project is configured. Guest Home/Work/favorites and privacy/voice settings work locally. See [ACCOUNTS.md](./ACCOUNTS.md) for migration009, owner authorization, provider activation, explicit sync, deletion/retry and tests.

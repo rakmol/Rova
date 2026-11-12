@@ -15,9 +15,9 @@ export function validateMatrix(m){
  for(const g of m.gates){if(!g.requirements.length||!g.manual.length)errors.push(`${g.id}: gate lacks traceability.`);for(const id of g.requirements)if(!requirements.has(id))errors.push(`${g.id}: unknown requirement ${id}`);for(const id of g.manual)if(!manual.has(id))errors.push(`${g.id}: unknown case ${id}`);}
  return errors;
 }
-export function candidateFingerprint(base=root){const files=[];const walk=(dir,all=false)=>{if(!existsSync(dir))return;for(const entry of readdirSync(dir,{withFileTypes:true}).sort((a,b)=>a.name.localeCompare(b.name))){if(entry.isSymbolicLink())continue;const p=resolve(dir,entry.name);if(entry.isDirectory()){if(p!==resolve(base,'qa/evidence'))walk(p,all);}else if((all||/\.(?:ts|tsx|js|mjs|cjs|json|sql|yml|yaml)$/.test(entry.name))&&!entry.name.startsWith('.env'))files.push(p);}};
+export function candidateFingerprint(base=root){const files=[];const walk=(dir,all=false)=>{if(!existsSync(dir))return;for(const entry of readdirSync(dir,{withFileTypes:true}).sort((a,b)=>a.name.localeCompare(b.name))){if(entry.isSymbolicLink())continue;const p=resolve(dir,entry.name);if(entry.isDirectory()){if(p!==resolve(base,'qa/evidence')&&!['node_modules','build','.gradle','.git'].includes(entry.name))walk(p,all);}else if((all||/\.(?:ts|tsx|js|mjs|cjs|json|sql|yml|yaml)$/.test(entry.name))&&!entry.name.startsWith('.env'))files.push(p);}};
  for(const dir of ['apps/api/src','apps/api/db/init','apps/admin/src','apps/admin/e2e','apps/mobile/src','apps/mobile/scripts','packages/shared/src','packages/ui/src','qa','scripts','.github','release'])walk(resolve(base,dir));
- walk(resolve(base,'apps/mobile/assets'),true);
+ walk(resolve(base,'apps/mobile/assets'),true);walk(resolve(base,'apps/mobile/modules'),true);
  // Generated evidence, including bundles/test logs, never changes source identity.
  const selected=files.filter(p=>!relative(base,p).replaceAll('\\','/').startsWith('qa/evidence/'));
  for(const folder of ['.','apps/api','apps/admin','apps/mobile','packages/shared','packages/ui'])for(const name of readdirSync(resolve(base,folder))){const p=resolve(base,folder,name);if(statSync(p).isFile()&&/\.(?:json|js|cjs|mjs|ts)$/.test(name)&&!['next-env.d.ts'].includes(name)&&!name.startsWith('.env'))selected.push(p);}

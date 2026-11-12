@@ -1,3 +1,4 @@
+import {pilotSegmentEnabled} from './pilot.js';
 import type { FastifyInstance } from "fastify";
 import type { Pool } from "pg";
 import { z } from "zod";
@@ -42,7 +43,7 @@ export function noticeOnRoute(event: ComplianceCandidate, path: ComplianceCoordi
     speedLimitKmh: null, enforcementType: event.enforcementType, confidence: event.confidence, effectiveFrom: event.effectiveFrom,
     expiresAt: event.expiresAt, reviewedAt: event.reviewedAt, sourceReference: event.sourceReference, demo: false };
 }
-export function registerComplianceRoute(app: FastifyInstance, database: Pool, flags: { enabled: boolean; transitions: boolean; corridors: boolean; reportedRoads?: boolean }, clock: () => number = Date.now) {
+export function registerComplianceRoute(app: FastifyInstance, database: Pool, flags: { enabled: boolean; transitions: boolean; corridors: boolean; reportedRoads?: boolean;pilotRestricted?:boolean }, clock: () => number = Date.now) {
   app.post("/safety/alert-context", { logLevel: "silent", bodyLimit: 32768, config: { rateLimit: { max: 40, timeWindow: 60000 } } }, async (request, reply) => {
     validateInput(complianceBody, request.body); const { fix, path } = complianceBody.parse(request.body);
     const empty = (reason: string): ComplianceContext => ({ fixTimestamp: fix.timestamp, checkedAt: clock(), validUntil: clock(), coordinate: [fix.lon, fix.lat], validForMeters: 0, limit: { status: "unknown", speedLimitKmh: null, reason }, notices: [], enforcementStatus: "unavailable/unverified" });
@@ -51,15 +52,17 @@ export function registerComplianceRoute(app: FastifyInstance, database: Pool, fl
     const position = projectOnPath([fix.lon, fix.lat], path);
     const length = path.slice(1).reduce((sum, point, i) => sum + metres(path[i], point), 0);
     if (!position || position.ambiguous || position.distance > Math.min(15, fix.accuracy * 2) || headingDifference(position.heading, fix.heading!) > 30 || length > 1500) return empty("route_alignment_unknown");
-    const reportedRoads = await reportedRoadContext(database, fix, path, position.along, clock(), flags.reportedRoads === true);
+    const reportedRoads = await reportedRoadContext(database, fix, path, position.along, clock(), flags.reportedRoads === true&&!flags.pilotRestricted);
     const lookup = async (point: SafetyFix) => { const rows = await database.query<{ candidate: RoadCandidate }>("SELECT candidate FROM public.rova_speed_limit_candidates($1,$2,$3,$4) AS candidates(candidate)", [point.lon, point.lat, 100, point.vehicleType]); return rows.rows.map((r) => r.candidate); };
     try {
       const roads = await lookup(fix); const limit = evaluateSpeedLimit(fix, roads, clock());
       if (limit.status !== "verified") return { ...empty(limit.reason), limit, reportedRoads };
+      if(flags.pilotRestricted&&!await pilotSegmentEnabled(database,limit.segmentId))return empty('pilot_corridor_unavailable');
       const rows = await database.query<{ candidate: ComplianceCandidate }>("SELECT candidate FROM public.rova_compliance_candidates($1,$2,$3) AS events(candidate)", [fix.lon, fix.lat, limit.segmentId]);
       const notices: ComplianceNotice[] = [];
       if (rows.rows.length < 17) for (const { candidate } of rows.rows) {
         if (candidate.kind === "transition" ? !flags.transitions : !flags.corridors) continue;
+        if(flags.pilotRestricted&&!await pilotSegmentEnabled(database,candidate.targetSegmentId))continue;
         const notice = noticeOnRoute(candidate, path, position, fix, clock()); if (!notice) continue;
         if (candidate.kind === "transition") {
           // Virtual target-road inspection, never exposed as a current GPS measurement.
@@ -79,6 +82,7 @@ export function registerComplianceRoute(app: FastifyInstance, database: Pool, fl
       }
       const stale = gpsProblem(fix, clock()); if (stale) return empty(stale);
       const finalLimit = evaluateSpeedLimit(fix, roads, clock()); if (finalLimit.status !== "verified") return { ...empty(finalLimit.reason), limit: finalLimit, reportedRoads };
+      if(flags.pilotRestricted&&!await pilotSegmentEnabled(database,limit.segmentId))return empty('pilot_corridor_unavailable');
       const matched = roads.find((r) => r.id === limit.segmentId)!;
       const validForMeters = Math.max(0, Math.min(20, matched.endpointMeters - (2 * fix.accuracy + (matched.accuracyMeters ?? 30) + (matched.roadWidthMeters ?? 60) / 2)));
       const checkedAt = clock();
