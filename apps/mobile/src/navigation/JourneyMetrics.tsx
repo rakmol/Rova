@@ -5,7 +5,7 @@ export type JourneyMetric = { label: string; value: string };
 export function JourneyMetrics({ metrics }: { metrics: JourneyMetric[] }) {
   const { theme } = useRovaTheme();
   const { width, fontScale } = useWindowDimensions();
-  const columns = fontScale >= 1.8 ? 1 : width < 440 || fontScale >= 1.2 ? 2 : 4;
+  const columns = fontScale >= 1.8 ? 1 : width < 600 || fontScale >= 1.2 ? 2 : 4;
   return <View testID="journey-metrics" style={styles.grid}>
     {metrics.map(metric => <View key={metric.label} accessible accessibilityLabel={`${metric.label}: ${metric.value}`} style={[styles.metric, { width: columns === 1 ? '100%' : columns === 2 ? '50%' : '25%' }]}>
       <Text style={[styles.value, { color: theme.colors.ink }]}>{metric.value}</Text>
