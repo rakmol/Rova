@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import * as Location from "expo-location";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ComponentRef } from "react";
 import {
   Keyboard,
@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { ActionButton, Pill } from "../../components/ui";
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { scrollMenu } from '../../components/scrollMenu';
 import { useScrollMenu } from '../../components/ScrollMenuContext';
 import { NetworkNotice } from '../../offline/NetworkNotice';
 import { useDrivingSafety } from '../../safety/driving';
@@ -46,6 +47,7 @@ export default function MapScreen() {
   const mapHeight = Math.max(240, Math.min(390, screenHeight * (fontScale >= 1.5 ? 0.34 : 0.42)));
   const {preferences,places}=useDriverData();
   const menu=useScrollMenu();
+  const trackScroll=useMemo(()=>scrollMenu(menu.setHidden),[menu.setHidden]);
   const motion=useDrivingSafety();
   const [expanded,setExpanded]=useState(false);
   const [dockHeight,setDockHeight]=useState(210);
@@ -289,7 +291,7 @@ export default function MapScreen() {
       </View>
       {!searchFocused&&<View onLayout={e=>setDockHeight(e.nativeEvent.layout.height)} style={[styles.sheet,{maxHeight:screenHeight*(fontScale>=1.5?.66:expanded?.5:.38),backgroundColor:theme.colors.surface}]}>
         <Pressable accessibilityRole="button" accessibilityLabel={expanded?'Collapse journey panel':'Expand journey panel'} accessibilityState={{expanded}} onPress={()=>setExpanded(!expanded)} style={styles.sheetHandle}><View style={[styles.handle,{backgroundColor:theme.colors.divider}]}/></Pressable>
-        <ScrollView testID="explore-journey-content" ref={pageScrollRef} keyboardShouldPersistTaps="handled" onScroll={e=>{scrollOffsetRef.current=e.nativeEvent.contentOffset.y;}} contentContainerStyle={styles.sheetContent}>
+        <ScrollView testID="explore-journey-content" ref={pageScrollRef} keyboardShouldPersistTaps="handled" onScroll={e=>{scrollOffsetRef.current=e.nativeEvent.contentOffset.y;trackScroll(scrollOffsetRef.current);}} contentContainerStyle={styles.sheetContent}>
           <DrivingGate><NetworkNotice/>
           <View style={styles.heading}><Text accessibilityRole="header" style={[styles.sheetTitle,{color:theme.colors.ink}]}>{selectedDestination?.name??'Explore with ROVA'}</Text><Text style={{color:theme.colors.inkMuted,fontSize:12}}>Ghana</Text></View>
           {mapReady&&(!mapLoaded||mapLoadError)&&<Text accessibilityRole={mapLoadError?'alert':'summary'} style={{color:theme.colors.inkMuted}}>{mapLoadError??'Loading streets...'}</Text>}
