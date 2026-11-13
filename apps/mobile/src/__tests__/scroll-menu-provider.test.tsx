@@ -15,7 +15,7 @@ test('scrolling a page hides/restores the actual tab wrapper and screen-reader m
   const page=view.getByTestId('page-scroll');
   await waitFor(()=>expect(view.getByTestId('scroll-tab-bar').props.pointerEvents).toBe('auto'));
   await fireEvent.scroll(page,{nativeEvent:{contentOffset:{y:100}}});
-  await waitFor(()=>expect(view.getByTestId('scroll-tab-bar').props.pointerEvents).toBe('none'));
+  await waitFor(()=>expect(view.getByTestId('scroll-tab-bar',{includeHiddenElements:true}).props.pointerEvents).toBe('none'));
   await fireEvent.scroll(page,{nativeEvent:{contentOffset:{y:60}}});
   expect(view.getByTestId('scroll-tab-bar').props.pointerEvents).toBe('auto');
   await act(()=>reader(true));
