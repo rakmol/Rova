@@ -35,6 +35,7 @@ export function Page({
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
       <ScrollView
+        testID="page-scroll"
         ref={scrollRef}
         contentContainerStyle={[
           styles.scrollContent,
