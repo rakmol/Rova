@@ -26,6 +26,8 @@ export class NavigationMachine {
   private arrivalCount = 0;
   private lastReroute = -Infinity;
   private lastAccepted = 0;
+  // The last quality-checked fix is independent of route-direction confirmation.
+  get locationFix(): Fix | null { return this.previous; }
   preview(route: RoutingOption) {
     if (route.isSample) throw new Error("Sample routes cannot be used for navigation.");
     if (!route.maneuvers.length || route.maneuvers.some((step) => step.geometryIndex === undefined || !Number.isInteger(step.geometryIndex) || step.geometryIndex < 0 || step.geometryIndex >= route.geometry.coordinates.length)) throw new Error("This route has missing or unlocated maneuver instructions. Refresh route options before navigating.");

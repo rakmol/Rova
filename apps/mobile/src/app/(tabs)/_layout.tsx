@@ -3,6 +3,7 @@ import { Tabs } from "expo-router";
 import { StyleSheet, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RovaIcon } from "../../components/RovaIcon";
+import { ScrollMenuProvider, ScrollTabBar } from '../../components/ScrollMenuProvider';
 import { useRovaTheme } from "../../theme/ThemeProvider";
 
 const tabItems = {
@@ -17,19 +18,22 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const {fontScale}=useWindowDimensions();
   const iconSize = Math.min(25, 18 + fontScale * 2);
+  const barHeight = Math.max(70, Math.ceil(62 * Math.min(fontScale, 2))) + insets.bottom;
 
   return (
-    <Tabs
+    <ScrollMenuProvider height={barHeight}><Tabs
+      tabBar={props => <ScrollTabBar {...props} />}
       screenOptions={({ route }) => {
         const item = tabItems[route.name as keyof typeof tabItems] ?? tabItems.map;
         return {
           headerShown: false,
+          tabBarHideOnKeyboard: true,
           tabBarActiveTintColor: theme.colors.brandStrong,
           tabBarInactiveTintColor: theme.colors.inkMuted,
           tabBarStyle: {
             backgroundColor: theme.colors.surface,
             borderTopColor: theme.colors.border,
-            height: Math.max(70, Math.ceil(62 * Math.min(fontScale, 2))) + insets.bottom,
+            height: barHeight,
             paddingTop: 6,
             paddingBottom: 6 + insets.bottom,
           },
@@ -47,7 +51,7 @@ export default function TabLayout() {
       <Tabs.Screen name="reports" options={{ title: tabItems.reports.title }} />
       <Tabs.Screen name="saved" options={{ title: tabItems.saved.title }} />
       <Tabs.Screen name="settings" options={{ title: tabItems.settings.title }} />
-    </Tabs>
+    </Tabs></ScrollMenuProvider>
   );
 }
 

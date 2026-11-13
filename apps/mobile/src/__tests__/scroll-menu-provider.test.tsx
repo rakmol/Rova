@@ -1,0 +1,25 @@
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { AccessibilityInfo, ScrollView, Text } from 'react-native';
+import { ScrollMenuProvider, ScrollTabBar } from '../components/ScrollMenuProvider';
+import { ThemeProvider } from '../theme/ThemeProvider';
+import { Page } from '../components/ui';
+import type { BottomTabBarProps } from 'expo-router/js-tabs';
+jest.mock('expo-router/js-tabs',()=>({BottomTabBar:()=>null}));
+const props={state:{index:0}} as BottomTabBarProps;
+afterEach(()=>jest.restoreAllMocks());
+test('scrolling a page hides/restores the actual tab wrapper and screen-reader mode keeps it visible',async()=>{
+  jest.spyOn(AccessibilityInfo,'isScreenReaderEnabled').mockResolvedValue(false);
+  let reader!:(value:boolean)=>void;
+  jest.spyOn(AccessibilityInfo,'addEventListener').mockImplementation((_,fn)=>{reader=fn as typeof reader;return{remove:jest.fn()};});
+  const view=await render(<ThemeProvider><ScrollMenuProvider height={80}><Page><Text>Page content</Text></Page><ScrollTabBar {...props}/></ScrollMenuProvider></ThemeProvider>);
+  const page=view.UNSAFE_getByType(ScrollView);
+  await waitFor(()=>expect(view.getByTestId('scroll-tab-bar').props.pointerEvents).toBe('auto'));
+  await fireEvent.scroll(page,{nativeEvent:{contentOffset:{y:100}}});
+  await waitFor(()=>expect(view.getByTestId('scroll-tab-bar').props.pointerEvents).toBe('none'));
+  await fireEvent.scroll(page,{nativeEvent:{contentOffset:{y:60}}});
+  expect(view.getByTestId('scroll-tab-bar').props.pointerEvents).toBe('auto');
+  await act(()=>reader(true));
+  await fireEvent.scroll(page,{nativeEvent:{contentOffset:{y:200}}});
+  expect(view.getByTestId('scroll-tab-bar').props.accessibilityElementsHidden).toBe(false);
+  await view.unmount();
+});

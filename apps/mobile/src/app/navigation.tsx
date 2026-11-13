@@ -44,7 +44,7 @@ export default function NavigationScreen(){
     <NavigationInstruction snapshot={s} ink={theme.colors.ink} muted={theme.colors.inkMuted}/>
    </Surface>
    <View style={[styles.map,{height:mapHeight}]} testID="navigation-map-area">
-    {mapReady?<MapboxMap fill center={s.progress?.coordinate??route.origin} routeGeometry={displayRoute.geometry} destination={route.destination} locationEnabled={s.gpsReliable&&!['paused','arrived','idle','error'].includes(s.state)} onMapLoaded={()=>setMapError(null)} onMapError={setMapError}/>:<Text style={muted}>{mapError??'Preparing navigation map...'}</Text>}
+    {mapReady?<MapboxMap fill navigationMode center={session.mapFix?.coordinate??s.progress?.coordinate??route.origin} navigationFix={session.mapFix??undefined} routeGeometry={displayRoute.geometry} destination={route.destination} locationEnabled={(session.mapFix?session.updatedAt-session.mapFix.timestamp<=10000:s.gpsReliable)&&!['paused','arrived','idle','error'].includes(s.state)} onMapLoaded={()=>setMapError(null)} onMapError={setMapError}/>:<Text style={muted}>{mapError??'Preparing navigation map...'}</Text>}
    </View>
    <Surface style={styles.card}>
     <JourneyMetrics metrics={[{label:tx('nav.arrivalLabel'),value:eta},{label:tx('nav.remainingLabel'),value:tx('nav.minutes',{minutes:Math.ceil(seconds/60)})},{label:tx('nav.distanceLabel'),value:travelDistance(remaining,preferences.units)},{label:preferences.units==='imperial'?tx('nav.speedMphLabel'):tx('nav.speedLabel'),value:s.speedKmh===null||!s.gpsReliable?'--':String(Math.round(s.speedKmh/(preferences.units==='imperial'?1.609344:1)))}]} />

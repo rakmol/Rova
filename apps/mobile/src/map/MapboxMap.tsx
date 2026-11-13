@@ -6,10 +6,12 @@ import Mapbox, {
   LineLayer,
   ShapeSource,
   CircleLayer,
+  CustomLocationProvider,
 } from "@rnmapbox/maps";
 import type { MapCoordinate, MapLineString } from "./types";
 import { useRovaTheme } from "../theme/ThemeProvider";
 import { NavigationLocationPuck, NavigationMarkerImages } from "./NavigationLocationPuck";
+import type { Fix } from '../navigation/session';
 
 type MapboxMapProps = {
   fill?: boolean;
@@ -17,6 +19,8 @@ type MapboxMapProps = {
   routeGeometry?: MapLineString;
   destination?: MapCoordinate;
   locationEnabled: boolean;
+  navigationFix?: Fix;
+  navigationMode?: boolean;
   onMapLoaded: () => void;
   onMapError: (message: string) => void;
 };
@@ -27,12 +31,14 @@ export function MapboxMap({
   routeGeometry,
   destination,
   locationEnabled,
+  navigationFix,
+  navigationMode = false,
   onMapLoaded,
   onMapError,
 }: MapboxMapProps) {
   const { theme } = useRovaTheme();
   const camera = useRef<Camera>(null);
-  const currentZoom = useRef(12);
+  const currentZoom = useRef(navigationMode ? 16 : 12);
   function changeZoom(amount: number) {
     const next = Math.max(0, Math.min(22, currentZoom.current + amount));
     currentZoom.current = next;
@@ -66,7 +72,7 @@ export function MapboxMap({
           )
         }
       >
-        <Camera ref={camera} centerCoordinate={center} defaultSettings={{ zoomLevel: 12 }} />
+        <Camera ref={camera} centerCoordinate={center} animationDuration={navigationMode ? 300 : undefined} animationMode={navigationMode ? 'linearTo' : undefined} defaultSettings={{ zoomLevel: navigationMode ? 16 : 12 }} />
         <NavigationMarkerImages />
         {routeShape && (
           <ShapeSource id="rova-route-preview" shape={routeShape}>
@@ -81,7 +87,8 @@ export function MapboxMap({
             />
           </ShapeSource>
         )}
-        {locationEnabled && <NavigationLocationPuck />}
+        {locationEnabled && navigationFix && <CustomLocationProvider coordinate={navigationFix.coordinate} heading={navigationFix.heading !== null && navigationFix.heading >= 0 ? navigationFix.heading : undefined} />}
+        {locationEnabled && <NavigationLocationPuck fix={navigationFix} />}
         {destination && <ShapeSource id="rova-destination" shape={{ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: destination } }}>
           <CircleLayer id="rova-destination-pin" style={{ circleRadius: 10, circleColor: theme.colors.brandStrong, circleStrokeColor: "#ffffff", circleStrokeWidth: 3 }} />
         </ShapeSource>}

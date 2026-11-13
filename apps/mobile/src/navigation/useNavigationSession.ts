@@ -27,6 +27,7 @@ export function useNavigationSession(destination: RoutingCoordinate | undefined,
   useEffect(() => { hazardsRef.current = communityHazards; }, [communityHazards]);
   const [congestionAlert, setCongestionAlert] = useState<CongestionAlert | null>(null);
   const [updatedAt, setUpdatedAt] = useState(Date.now);
+  const [mapFix, setMapFix] = useState<Fix | null>(null);
   const [muted, setMuted] = useState(false);
   const mutedRef = useRef(false);
   const [smartAlerts, setSmartAlerts] = useState(emptySmartAlert);
@@ -79,6 +80,7 @@ export function useNavigationSession(destination: RoutingCoordinate | undefined,
       const next = machine.snapshot;
       if(!outcome&&['error','arrived','idle'].includes(next.state)){outcome=true;pilotRuntime.record(next.state==='error'?'nav_failures':next.state==='arrived'?'nav_arrivals':'nav_cancelled');}
       setSnapshot({ ...next });
+      setMapFix(machine.locationFix);
       setUpdatedAt(Date.now());
       const now = Date.now();
       const safetyActive = foregroundState === "active" && next.state === "navigating" && next.gpsReliable && !!lastFix && !!next.progress;
@@ -218,7 +220,7 @@ export function useNavigationSession(destination: RoutingCoordinate | undefined,
     return () => { if(!outcome)pilotRuntime.record('nav_cancelled');navigationInteraction(false); active = false; controller.abort(); rerouteAbort?.abort(); safetyRequest?.abort(); watchGeneration++; watch?.remove(); voice.stop(); appState.remove(); clearInterval(timer); control.current = null; };
   }, [lon, lat, selected, retry, vehicleType]);
 
-  return { snapshot, voiceError, muted, updatedAt, smartAlerts, alertAudio,reportedRoadAlert,communityHazards,congestionAlert,
+  return { snapshot, mapFix, voiceError, muted, updatedAt, smartAlerts, alertAudio,reportedRoadAlert,communityHazards,congestionAlert,
     toggleAlertAudio: () => { alertAudioRef.current = !alertAudioRef.current; setAlertAudio(alertAudioRef.current); if (!alertAudioRef.current) control.current?.silence(); },
     toggleMuted: () => { mutedRef.current = !mutedRef.current; setMuted(mutedRef.current); if (mutedRef.current) control.current?.silence(); },
     pause: () => control.current?.pause(), resume: () => control.current?.resume(), stop: () => control.current?.stop(), retry: () => setRetry((value) => value + 1) };

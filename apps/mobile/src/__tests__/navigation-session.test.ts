@@ -4,6 +4,18 @@ const route: RoutingOption = { id: "test-route", label: "Automated test route", 
 const epoch = 1000000;
 const fix = (coordinate: [number, number], seconds = 0, extras: Partial<Fix> = {}): Fix => ({ coordinate, timestamp: epoch + seconds * 1000, accuracy: 8, heading: 90, speed: 10, ...extras });
 function started() { const machine = new NavigationMachine(); machine.preview(route); machine.start(); return machine; }
+
+test('map fixes keep moving while direction confirmation holds route progress, and reject bad GPS', () => {
+  const machine = started(); machine.update(fix([0.001,0]),epoch);
+  const before = machine.snapshot.progress;
+  const current = fix([0.0012,0],1,{heading:270});
+  machine.update(current,epoch+1000);
+  expect(machine.snapshot.progress).toBe(before);
+  expect(machine.snapshot.gpsReliable).toBe(false);
+  expect(machine.locationFix).toBe(current);
+  machine.update(fix([0.002,0],2,{accuracy:80}),epoch+2000);
+  expect(machine.locationFix).toBe(current);
+});
 test("session moves idle -> previewing -> navigating; progress uses projected geometry and located provider maneuvers", () => {
   const machine = new NavigationMachine(); expect(machine.snapshot.state).toBe("idle");
   machine.preview(route); expect(machine.snapshot.state).toBe("previewing"); machine.start();
