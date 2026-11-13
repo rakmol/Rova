@@ -1,5 +1,5 @@
 import {tx} from "../i18n";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Mapbox, {
   Camera,
@@ -13,6 +13,7 @@ import type { MapCoordinate, MapLineString } from "./types";
 import { useRovaTheme } from "../theme/ThemeProvider";
 import { NavigationLocationPuck, NavigationMarkerImages } from "./NavigationLocationPuck";
 import type { Fix } from '../navigation/session';
+import { splitRouteAtProgress } from './routeProgress';
 
 type MapboxMapProps = {
   fill?: boolean;
@@ -23,6 +24,7 @@ type MapboxMapProps = {
   navigationFix?: Fix;
   navigationMode?: boolean;
   navigationBearing?: number | null;
+  routeProgressMeters?: number;
   onMapLoaded: () => void;
   onMapError: (message: string) => void;
 };
@@ -36,6 +38,7 @@ export function MapboxMap({
   navigationFix,
   navigationMode = false,
   navigationBearing,
+  routeProgressMeters = 0,
   onMapLoaded,
   onMapError,
 }: MapboxMapProps) {
@@ -55,11 +58,17 @@ export function MapboxMap({
     currentZoom.current = next;
     camera.current?.zoomTo(next, 200);
   }
-  const routeShape = routeGeometry
+  const routeParts = useMemo(() => routeGeometry
+    ? splitRouteAtProgress(routeGeometry, navigationMode ? routeProgressMeters : 0)
+    : undefined, [routeGeometry, navigationMode, routeProgressMeters]);
+  const completedShape = routeParts?.completed
+    ? { type: 'Feature' as const, properties: {}, geometry: routeParts.completed }
+    : undefined;
+  const routeShape = routeParts?.remaining
     ? {
         type: "Feature" as const,
         properties: {},
-        geometry: routeGeometry,
+        geometry: routeParts.remaining,
       }
     : undefined;
 
@@ -86,6 +95,9 @@ export function MapboxMap({
         <Camera ref={camera} centerCoordinate={!navigationMode || following ? center : undefined} heading={navigationMode && following ? bearing ?? undefined : undefined} animationDuration={navigationMode ? 300 : undefined} animationMode={navigationMode ? 'linearTo' : undefined} defaultSettings={{ zoomLevel: navigationMode ? 16 : 12 }} />
         {navigationMode && <CameraGestureObserver onCameraChanged={event => { if (event.nativeEvent.properties.isUserInteraction) setFollowing(false); }} />}
         <NavigationMarkerImages />
+        {completedShape && <ShapeSource id="rova-route-completed" shape={completedShape}>
+          <LineLayer id="rova-route-completed-line" style={{ lineColor: theme.mode === 'dark' ? '#A1ABB2' : '#89949A', lineWidth: 6, lineCap: 'round', lineJoin: 'round' }} />
+        </ShapeSource>}
         {routeShape && (
           <ShapeSource id="rova-route-preview" shape={routeShape}>
             <LineLayer

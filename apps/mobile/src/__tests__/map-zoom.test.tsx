@@ -7,6 +7,7 @@ const mockCameraProps = jest.fn();
 const mockPositionSource = jest.fn();
 const mockSymbol = jest.fn();
 const mockSetCamera = jest.fn();
+const mockLine = jest.fn();
 
 jest.mock("@rnmapbox/maps", () => {
   // Native map rendering is verified on the phone; exercise its camera commands here.
@@ -26,7 +27,7 @@ jest.mock("@rnmapbox/maps", () => {
     Camera: MockCamera,
     SymbolLayer: (props: object) => { mockSymbol(props); return null; },
     CameraGestureObserver: (props: object) => React.createElement(View, { ...props, testID: 'camera-gestures' }),
-    LineLayer: () => null,
+    LineLayer: (props: object) => { mockLine(props); return null; },
     LocationPuck: () => null,
     Images: () => null,
     ShapeSource: (props: object) => { mockPositionSource(props); return React.createElement(View,props); },
@@ -34,6 +35,26 @@ jest.mock("@rnmapbox/maps", () => {
 });
 
 beforeEach(() => mockZoomTo.mockClear());
+
+test('only the accepted travelled section is grey; the upcoming route stays highlighted and a new route resets it', async () => {
+  const geometry={type:'LineString' as const,coordinates:[[0,0],[0.001,0],[0.001,0.001]] as [number,number][]};
+  const renderMap=(progress:number,navigationMode=true)=><ThemeProvider><MapboxMap navigationMode={navigationMode} center={[0,0]} routeGeometry={geometry} routeProgressMeters={progress} locationEnabled={false} onMapLoaded={()=>{}} onMapError={()=>{}}/></ThemeProvider>;
+  const view=await render(renderMap(55));
+  const completed=mockPositionSource.mock.calls.filter(([p])=>p.id==='rova-route-completed').at(-1)?.[0].shape.geometry.coordinates;
+  const ahead=mockPositionSource.mock.calls.filter(([p])=>p.id==='rova-route-preview').at(-1)?.[0].shape.geometry.coordinates;
+  expect(completed.at(-1)).toEqual(ahead[0]);
+  expect(ahead.at(-1)).toEqual(geometry.coordinates.at(-1));
+  expect(completed.at(-1)[0]).toBeCloseTo(0.000495,5);
+  expect(mockLine.mock.calls.filter(([p])=>p.id==='rova-route-completed-line').at(-1)?.[0].style.lineColor).toBe('#89949A');
+  expect(mockLine.mock.calls.filter(([p])=>p.id==='rova-route-line').at(-1)?.[0].style.lineColor).not.toBe('#89949A');
+  for(const args of [[0,true],[55,false]] as const){
+    mockPositionSource.mockClear();
+    await view.rerender(renderMap(...args));
+    expect(mockPositionSource.mock.calls.some(([p])=>p.id==='rova-route-completed')).toBe(false);
+    expect(mockPositionSource.mock.calls.filter(([p])=>p.id==='rova-route-preview').at(-1)?.[0].shape.geometry.coordinates).toEqual(geometry.coordinates);
+  }
+  await view.unmount();
+});
 
 test('navigation sends each accepted fix to the marker and a short street-level camera transition',async()=>{
   const fix={coordinate:[-.2,5.6] as [number,number],accuracy:8,speed:4,heading:90,timestamp:Date.now()};
