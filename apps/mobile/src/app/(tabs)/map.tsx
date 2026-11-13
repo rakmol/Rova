@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import * as Location from "expo-location";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ComponentRef } from "react";
 import {
   Keyboard,
@@ -13,7 +13,13 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { ActionButton, ContentFrame, Page, Pill, Surface } from "../../components/ui";
+import { ActionButton, Pill } from "../../components/ui";
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { scrollMenu } from '../../components/scrollMenu';
+import { useScrollMenu } from '../../components/ScrollMenuContext';
+import { NetworkNotice } from '../../offline/NetworkNotice';
+import { useDrivingSafety } from '../../safety/driving';
+import { DrivingGate } from '../../safety/DrivingGate';
 import { HomeBackGuard } from "../../components/HomeBackGuard";
 import { RovaIcon } from "../../components/RovaIcon";
 import { useRoutePreview } from "../../map/RouteProvider";
@@ -39,7 +45,12 @@ export default function MapScreen() {
   const { theme } = useRovaTheme();
   const { height: screenHeight, fontScale } = useWindowDimensions();
   const mapHeight = Math.max(240, Math.min(390, screenHeight * (fontScale >= 1.5 ? 0.34 : 0.42)));
-  const {preferences}=useDriverData();
+  const {preferences,places}=useDriverData();
+  const menu=useScrollMenu();
+  const trackScroll=useMemo(()=>scrollMenu(menu.setHidden),[menu.setHidden]);
+  const motion=useDrivingSafety();
+  const [expanded,setExpanded]=useState(false);
+  const [dockHeight,setDockHeight]=useState(210);
   const { vehicleType, setVehicleType, route, setRoute, pickedDestination, setPickedDestination, selectedRoutingOption, setSelectedRoutingOption } = useRoutePreview();
   const mapboxConfigured = isMapboxConfigured();
   const sessionToken = useRef(createSearchSessionToken());
@@ -159,6 +170,7 @@ export default function MapScreen() {
     if (!pickedDestination) return;
     const frame = requestAnimationFrame(() => {
       setSelectedDestination(pickedDestination);
+      setExpanded(true);
       setCenter(pickedDestination.coordinate);
       setQuery(pickedDestination.name);
       setSearchEnabled(false);
@@ -181,6 +193,7 @@ export default function MapScreen() {
       );
       sessionToken.current = createSearchSessionToken();
       setSelectedDestination(destination);
+      setExpanded(true);
       setQuery(destination.name);
       setCenter(destination.coordinate);
       await buildRoute(destination);
@@ -254,490 +267,55 @@ export default function MapScreen() {
 
   const { distanceMeters = 0, durationSeconds = 0, trafficAware = false } = route ?? {};
 
-  return (
-    <Page
-      scrollRef={pageScrollRef}
-      extraBottomPadding={searchFocused ? Math.max(280, keyboardHeight) : 0}
-      onScroll={(event) => {
-        scrollOffsetRef.current = event.nativeEvent.contentOffset.y;
-      }}
-    >
-      <HomeBackGuard />
-      <ContentFrame>
-        <View style={styles.topBar}>
-          <View>
-            <Text accessibilityRole="header" style={[styles.brand, { color: theme.colors.brandStrong }]}>rova</Text>
-            <Text style={[styles.tagline, { color: theme.colors.inkMuted }]}>
-              Move with confidence.
-            </Text>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Open settings"
-            onPress={() => router.push("/(tabs)/settings")}
-            style={[
-              styles.headerButton,
-              { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
-            ]}
-          >
-            <RovaIcon name="settings" color={theme.colors.brandStrong} size={21} />
-          </Pressable>
+  const openSaved=(kind:'home'|'work')=>{const place=places.find(p=>p.kind===kind);if(place){setPickedDestination({name:place.label,detail:place.address,coordinate:[place.lon,place.lat]});}else router.push('/(tabs)/saved');};
+  return <View style={[styles.screen,{backgroundColor:theme.colors.background}]}>
+    <HomeBackGuard/>
+    <View style={StyleSheet.absoluteFill} testID="explore-map-background">
+      {mapReady?<MapboxMap fill center={center} destination={selectedDestination?.coordinate} locationEnabled={locationEnabled} routeGeometry={selectedRoutingOption?.geometry??route?.geometry} mapBottomInset={dockHeight+menu.height} controlsTopInset={110} onMapLoaded={()=>{setMapLoaded(true);setMapLoadError(null);}} onMapError={setMapLoadError}/>:<View style={[styles.placeholder,{backgroundColor:theme.colors.surfaceRaised}]}><Text style={{color:theme.colors.ink}}>{mapError?'Map could not be loaded':mapboxConfigured?'Loading the Accra map':'Mapbox token required'}</Text></View>}
+    </View>
+    <SafeAreaView edges={['top']} pointerEvents="box-none" style={[styles.screen,{paddingBottom:menu.height}]}>
+      <View style={styles.floatingTop}>
+        <View ref={searchFieldRef} style={[styles.search,{backgroundColor:theme.colors.surface,boxShadow:theme.mode==='dark'?'0 3px 14px rgba(0,0,0,.28)':'0 3px 14px rgba(16,42,53,.12)'}]}>
+          <RovaIcon name="search" color={theme.colors.brandStrong}/>
+          <TextInput accessibilityLabel="Search destinations in Ghana" editable={mapboxConfigured&&selectingId===null} value={query} placeholder="Search here" placeholderTextColor={theme.colors.inkMuted} maxLength={256} autoCorrect={false} style={[styles.input,{color:theme.colors.ink}]} onFocus={()=>{setSearchFocused(true);revealSearchResults();}} onBlur={()=>setSearchFocused(false)} onChangeText={text=>{setQuery(text);setSearchEnabled(true);setSelectedDestination(null);setRoute(null);setRouteError(null);setSuggestions([]);setSearchState('idle');setSearchMessage(null);}}/>
+          <Pressable accessibilityRole="button" accessibilityLabel="Open settings" onPress={()=>router.push('/(tabs)/settings')} style={[styles.profile,{backgroundColor:theme.colors.brandTint}]}><RovaIcon name="account" color={theme.colors.brandStrong}/></Pressable>
         </View>
-
-        <View style={styles.exploreHeader}><Text style={[styles.sectionLabel, { color: theme.colors.inkMuted }]}>EXPLORE YOUR AREA</Text><Text style={{ color: theme.colors.inkMuted, fontSize: 12 }}>Accra, Ghana</Text></View>
-        <View style={[styles.mapFrame, { height: mapHeight }]}>
-          {mapReady ? (
-            <MapboxMap
-              fill
-              center={center}
-              destination={selectedDestination?.coordinate}
-              locationEnabled={locationEnabled}
-              routeGeometry={selectedRoutingOption?.geometry ?? route?.geometry}
-              onMapLoaded={() => {
-                setMapLoaded(true);
-                setMapLoadError(null);
-              }}
-              onMapError={setMapLoadError}
-            />
-          ) : (
-            <View
-              accessibilityRole="summary"
-              style={[
-                styles.mapPlaceholder,
-                {
-                  backgroundColor: theme.colors.surfaceRaised,
-                  borderColor: theme.colors.border,
-                },
-              ]}
-            >
-              <Text style={[styles.mapTitle, { color: theme.colors.ink }]}>
-                {mapError
-                  ? "Map could not be loaded"
-                  : mapboxConfigured
-                    ? "Loading the Accra map"
-                    : "Mapbox token required"}
-              </Text>
-              <Text style={[styles.mapDescription, { color: theme.colors.inkMuted }]}>
-                {mapError ??
-                  (mapboxConfigured
-                    ? "Connecting to Mapbox. Check your connection if the map does not appear."
-                    : "Add a public pk. token to apps/mobile/.env to load live map tiles and search.")}
-              </Text>
-            </View>
-          )}
-          {mapReady && (!mapLoaded || mapLoadError) && (
-            <View
-              accessibilityRole={mapLoadError ? "alert" : "summary"}
-              style={[
-                styles.mapNotice,
-                { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
-              ]}
-            >
-              <Text style={[styles.mapNoticeTitle, { color: theme.colors.ink }]}>
-                {mapLoadError ? "Map tiles unavailable" : "Loading Mapbox streets"}
-              </Text>
-              <Text style={[styles.mapDescription, { color: theme.colors.inkMuted }]}>
-                {mapLoadError ?? "Waiting for map tiles from Mapbox."}
-              </Text>
-            </View>
-          )}
-          {mapReady && (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Locate me"
-              onPress={handleLocate}
-              style={[
-                styles.locateButton,
-                { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
-              ]}
-            >
-              <RovaIcon name="locate" color={theme.colors.brandStrong} size={22} />
-              <Text style={[styles.locateText, { color: theme.colors.brandStrong }]}>Locate</Text>
-            </Pressable>
-          )}
-        </View>
-
-        <Surface style={styles.destinationCard}>
-          <View style={styles.destinationHeading}>
-            <Text style={[styles.destinationTitle, { color: theme.colors.ink }]}>
-              Where are you heading?
-            </Text>
-
-          </View>
-          <View
-            ref={searchFieldRef}
-            style={[
-              styles.searchField,
-              { backgroundColor: theme.colors.background, borderColor: theme.colors.border },
-            ]}
-          >
-            <RovaIcon name="search" color={theme.colors.brandStrong} size={22} />
-            <TextInput
-              accessibilityLabel="Search destinations in Ghana"
-              editable={mapboxConfigured && selectingId === null}
-              maxLength={256}
-              onFocus={() => { setSearchFocused(true); revealSearchResults(); }}
-              onBlur={() => setSearchFocused(false)}
-              onChangeText={(text) => {
-                setQuery(text);
-                setSearchEnabled(true);
-                setSelectedDestination(null);
-                setRoute(null);
-                setRouteError(null);
-                setSuggestions([]);
-                setSearchState("idle");
-                setSearchMessage(null);
-              }}
-              placeholder={
-                mapboxConfigured ? "Search places in Ghana" : "Add a Mapbox public token to search"
-              }
-              placeholderTextColor={theme.colors.inkSubtle}
-              value={query}
-              style={[styles.searchInput, { color: theme.colors.ink }]}
-            />
-          </View>
-
-          {searchState === "loading" && (
-            <Text style={[styles.statusText, { color: theme.colors.inkMuted }]}>
-              Searching places…
-            </Text>
-          )}
-          {searchMessage && (
-            <Text accessibilityRole="alert" style={[styles.inlineNotice, { color: theme.colors.danger }]}>
-              {searchMessage}
-            </Text>
-          )}
-          {suggestions.length > 0 && (
-            <ScrollView
-              testID="destination-suggestions"
-              onLayout={searchFocused ? revealSearchResults : undefined}
-              keyboardShouldPersistTaps="always"
-              keyboardDismissMode="none"
-              nestedScrollEnabled
-              style={styles.suggestionList}
-            >
-              {suggestions.map((suggestion) => (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Choose ${suggestion.name}`}
-                  disabled={selectingId !== null}
-                  key={suggestion.id}
-                  onPress={() => handleSelectDestination(suggestion)}
-                  style={[styles.suggestion, { borderTopColor: theme.colors.border }]}
-                >
-                  <Text style={[styles.suggestionName, { color: theme.colors.ink }]}>
-                    {selectingId === suggestion.id ? "Loading destination…" : suggestion.name}
-                  </Text>
-                  <Text style={[styles.suggestionDetail, { color: theme.colors.inkMuted }]}>
-                    {suggestion.detail}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          )}
-
-          {routeLoading && (
-            <Text style={[styles.statusText, { color: theme.colors.inkMuted }]}>
-              Calculating route…
-            </Text>
-          )}
-          {routeError && (
-            <Text accessibilityRole="alert" style={[styles.inlineNotice, { color: theme.colors.danger }]}>
-              {routeError}
-            </Text>
-          )}
-          {route && selectedDestination && (
-            <View style={[styles.routeSummary, { borderTopColor: theme.colors.border }]}>
-              <View style={styles.routeHeading}>
-                <View style={styles.routeCopy}>
-                  <Text style={[styles.routeTitle, { color: theme.colors.ink }]}>
-                    {selectedDestination.name}
-                  </Text>
-                  <Text style={[styles.routeDetails, { color: theme.colors.inkMuted }]}>
-                    {route.originLabel} · {travelDistance(selectedRoutingOption?.distanceMeters ?? distanceMeters,preferences.units)} · estimated{" "}
-                    {Math.max(1, Math.round((selectedRoutingOption?.durationSeconds ?? durationSeconds) / 60))} min
-                  </Text>
-                </View>
-                <Pill tone={trafficAware ? "warning" : "neutral"}>
-                  {trafficAware ? "TRAFFIC DATA UNVERIFIED" : "NO LIVE TRAFFIC"}
-                </Pill>
-              </View>
-              {selectedRoutingOption && <Text style={[styles.disclaimer, { color: theme.colors.inkSubtle }]}>{selectedRoutingOption.label} · Toll information {selectedRoutingOption.tolls === "unknown" ? "unknown" : selectedRoutingOption.tolls === "present" ? "reported" : "not reported"}. Guidance follows this selected route using GPS. Road validation is pending.</Text>}
-              <ActionButton title="Compare route options" secondary onPress={() => router.push({ pathname: "/route-options", params: { origin: route.origin.join(","), destination: route.destination.join(","), title: route.destinationLabel } })} />
-              <Text style={[styles.disclaimer, { color: theme.colors.inkSubtle }]}>
-                {route.originIsLive
-                  ? trafficAware
-                    ? "Mapbox traffic mode is enabled, but traffic coverage in Ghana has not been verified."
-                    : "Mapbox driving estimate; live traffic is not included."
-                  : "Preview starts from Accra city center, not your GPS location. Locate yourself to refresh it."}
-              </Text>
-              <VehicleSelector value={vehicleType} onChange={setVehicleType} />
-              <ActionButton
-                title={route.originIsLive ? "Start navigation" : "Locate me to navigate"}
-                disabled={!route.originIsLive}
-                onPress={async () => {
-                  router.push("/navigation");
-                }}
-              />
-            </View>
-          )}
-          <ActionButton
-            title={locationEnabled ? "Update route from my location" : "Use my location"}
-            disabled={!mapboxConfigured}
-            onPress={handleLocate}
-          />
-          <Pressable accessibilityRole="button" accessibilityLabel="Search destinations & recent searches" onPress={() => router.push("/destination-search")} style={styles.recentLink}><Text style={{ color: theme.colors.brandStrong, fontWeight: "700" }}>Recent searches & saved places  →</Text></Pressable>
-        </Surface>
-
-
-
-        {locationStatus && (
-          <Text
-            accessibilityRole="alert"
-            style={[styles.inlineNotice, { color: theme.colors.warning }]}
-          >
-            {locationStatus}
-          </Text>
-        )}
-
-        <View style={styles.limitHeader}>
-          <Text style={[styles.sectionLabel, { color: theme.colors.inkMuted }]}>
-            ROAD SAFETY
-          </Text>
-          <Text style={[styles.limitCaption, { color: theme.colors.inkSubtle }]}>
-            Verified ROVA data only
-          </Text>
-        </View>
-        <Surface style={styles.limitCard}>
-          <View style={[styles.limitIcon, { backgroundColor: theme.colors.warningTint }]}>
-            <Text style={[styles.limitIconText, { color: theme.colors.warning }]}>!</Text>
-          </View>
-          <View style={styles.limitCopy}>
-            <Text style={[styles.limitTitle, { color: theme.colors.ink }]}>
-              Speed limit unavailable
-            </Text>
-            <Text style={[styles.limitDescription, { color: theme.colors.inkMuted }]}>
-              No approved ROVA speed-limit record is available here.
-            </Text>
-          </View>
-          <Pill tone="warning">UNKNOWN</Pill>
-        </Surface>
-
-
-      </ContentFrame>
-    </Page>
-  );
+        {(searchState==='loading'||searchMessage||suggestions.length>0)&&<View style={[styles.searchResults,{backgroundColor:theme.colors.surface}]}>
+          {searchState==='loading'&&<Text style={{color:theme.colors.inkMuted}}>Searching places...</Text>}
+          {searchMessage&&<Text accessibilityRole="alert" style={{color:theme.colors.danger}}>{searchMessage}</Text>}
+          {!!suggestions.length&&<ScrollView testID="destination-suggestions" keyboardShouldPersistTaps="always" keyboardDismissMode="none" nestedScrollEnabled style={{maxHeight:240}}>{suggestions.map(suggestion=><Pressable key={suggestion.id} accessibilityRole="button" accessibilityLabel={'Choose '+suggestion.name} disabled={selectingId!==null} onPress={()=>void handleSelectDestination(suggestion)} style={[styles.result,{borderBottomColor:theme.colors.divider}]}><RovaIcon name="locate" color={theme.colors.inkMuted}/><View style={{flex:1,gap:4}}><Text style={[styles.rowTitle,{color:theme.colors.ink}]}>{selectingId===suggestion.id?'Loading destination...':suggestion.name}</Text><Text style={{color:theme.colors.inkMuted}}>{suggestion.detail}</Text></View></Pressable>)}</ScrollView>}
+        </View>}
+      </View>
+      <View style={styles.mapSpace} pointerEvents="box-none">
+        {mapReady&&<Pressable accessibilityRole="button" accessibilityLabel="Locate me" onPress={()=>void handleLocate()} style={[styles.locate,{backgroundColor:theme.colors.surface}]}><RovaIcon name="locate" color={theme.colors.brandStrong}/></Pressable>}
+      </View>
+      {!searchFocused&&<View onLayout={e=>setDockHeight(e.nativeEvent.layout.height)} style={[styles.sheet,{maxHeight:screenHeight*(fontScale>=1.5?.66:expanded?.5:.38),backgroundColor:theme.colors.surface}]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={expanded?'Collapse journey panel':'Expand journey panel'} accessibilityState={{expanded}} onPress={()=>setExpanded(!expanded)} style={styles.sheetHandle}><View style={[styles.handle,{backgroundColor:theme.colors.divider}]}/></Pressable>
+        <ScrollView testID="explore-journey-content" ref={pageScrollRef} keyboardShouldPersistTaps="handled" onScroll={e=>{scrollOffsetRef.current=e.nativeEvent.contentOffset.y;trackScroll(scrollOffsetRef.current);}} contentContainerStyle={styles.sheetContent}>
+          <DrivingGate><NetworkNotice/>
+          <View style={styles.heading}><Text accessibilityRole="header" style={[styles.sheetTitle,{color:theme.colors.ink}]}>{selectedDestination?.name??'Explore with ROVA'}</Text><Text style={{color:theme.colors.inkMuted,fontSize:12}}>Ghana</Text></View>
+          {mapReady&&(!mapLoaded||mapLoadError)&&<Text accessibilityRole={mapLoadError?'alert':'summary'} style={{color:theme.colors.inkMuted}}>{mapLoadError??'Loading streets...'}</Text>}
+          {routeLoading&&<Text accessibilityLiveRegion="polite" style={{color:theme.colors.inkMuted}}>Calculating route...</Text>}
+          {routeError&&<Text accessibilityRole="alert" style={{color:theme.colors.danger}}>{routeError}</Text>}
+          {locationStatus&&<Text accessibilityRole="alert" style={{color:theme.colors.warning}}>{locationStatus}</Text>}
+          {route&&selectedDestination?<>
+            <View style={styles.routeMetrics}><Text style={[styles.duration,{color:theme.colors.brandStrong}]}>{Math.max(1,Math.round((selectedRoutingOption?.durationSeconds??durationSeconds)/60))} min</Text><Text style={{color:theme.colors.inkMuted}}>{travelDistance(selectedRoutingOption?.distanceMeters??distanceMeters,preferences.units)} | estimate</Text><Pill tone="neutral">{trafficAware?'TRAFFIC UNVERIFIED':'NO LIVE TRAFFIC'}</Pill></View>
+            <VehicleSelector compact value={vehicleType} onChange={setVehicleType}/>
+            <View style={{flex:1,minWidth:140}}><ActionButton title="Compare route options" secondary onPress={()=>router.push({pathname:'/route-options',params:{origin:route.origin.join(','),destination:route.destination.join(','),title:route.destinationLabel}})}/></View>
+            <Text style={{color:theme.colors.inkMuted,fontSize:12}}>{route.originIsLive?'From your location':'Preview from Accra city centre; locate yourself before navigating.'} | Toll information {selectedRoutingOption?.tolls??'unknown'}.</Text>
+          </>:<View style={styles.actions}>
+            {([{label:'Home',icon:'home',press:()=>openSaved('home')},{label:'Work',icon:'work',press:()=>openSaved('work')},{label:'Contribute',icon:'contribute',press:()=>router.push('/(tabs)/contribute')}] as const).map(item=><Pressable key={item.label} accessibilityRole="button" accessibilityLabel={item.label} onPress={item.press} style={[styles.shortcut,{backgroundColor:theme.colors.surfaceRaised}]}><RovaIcon name={item.icon} color={theme.colors.brandStrong}/><Text style={[styles.rowTitle,{color:theme.colors.ink}]}>{item.label}</Text></Pressable>)}
+          </View>}
+          <Pressable accessibilityRole="button" accessibilityLabel="Search destinations & recent searches" onPress={()=>router.push('/destination-search')} style={styles.result}><RovaIcon name="search" color={theme.colors.inkMuted}/><Text style={{color:theme.colors.ink,flex:1}}>Recent searches & saved places</Text><RovaIcon name="chevron" color={theme.colors.inkMuted}/></Pressable>
+          <View style={[styles.safety,{backgroundColor:theme.colors.warningTint}]}><RovaIcon name="privacy" color={theme.colors.warning}/><View style={{flex:1,gap:4}}><Text style={[styles.rowTitle,{color:theme.colors.ink}]}>Speed limit unavailable</Text><Text style={{color:theme.colors.inkMuted,fontSize:12}}>No approved ROVA speed-limit record is available here.</Text></View></View>
+          </DrivingGate>
+        </ScrollView>
+        {route&&selectedDestination&&(!motion.locked||motion.passenger)&&<View testID="persistent-route-start" style={{paddingHorizontal:20,paddingBottom:12,paddingTop:8,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:theme.colors.divider}}><ActionButton title={route.originIsLive?'Start navigation':'Locate me to navigate'} onPress={()=>{if(route.originIsLive)router.push('/navigation');else void handleLocate();}}/></View>}
+      </View>}
+      {searchFocused&&<View style={{height:Math.max(0,Math.min(mapHeight,keyboardHeight?0:48))}}/>}
+    </SafeAreaView>
+  </View>;
 }
-
-const styles = StyleSheet.create({
-  exploreHeader: { flexDirection: "row", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginTop: 24, marginBottom: 12 },
-  headerButton: { width: 48, height: 48, alignItems: "center", justifyContent: "center", borderRadius: 24, borderWidth: 1 },
-  recentLink: { minHeight: 48, justifyContent: "center", alignItems: "center" },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingTop: 8,
-    paddingBottom: 18,
-  },
-  brand: {
-    fontSize: 34,
-    fontWeight: "900",
-    letterSpacing: -1.7,
-  },
-  tagline: {
-    marginTop: 2,
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  mapFrame: {
-    position: "relative",
-    overflow: "hidden",
-    borderRadius: 24,
-  },
-  mapPlaceholder: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 24,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 26,
-  },
-  mapTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    textAlign: "center",
-  },
-  mapNotice: {
-    position: "absolute",
-    left: 18,
-    right: 18,
-    top: 90,
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 14,
-  },
-  mapNoticeTitle: {
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  mapDescription: {
-    maxWidth: 290,
-    marginTop: 8,
-    fontSize: 13,
-    lineHeight: 19,
-    textAlign: "center",
-  },
-  locateButton: {
-    position: "absolute",
-    right: 12,
-    bottom: 12,
-    minHeight: 48,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 13,
-    gap: 7,
-  },
-  locateText: {
-    fontSize: 13,
-    fontWeight: "800",
-  },
-  inlineNotice: {
-    marginTop: 9,
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  limitHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 23,
-    marginBottom: 10,
-  },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 1.2,
-  },
-  limitCaption: {
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  limitCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    padding: 15,
-    borderRadius: 19,
-  },
-  limitIcon: {
-    width: 39,
-    height: 39,
-    borderRadius: 13,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  limitIconText: {
-    fontSize: 22,
-    fontWeight: "900",
-  },
-  limitCopy: {
-    flex: 1,
-  },
-  limitTitle: {
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  limitDescription: {
-    marginTop: 4,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  destinationCard: {
-    marginTop: 0,
-    gap: 14,
-    borderTopWidth: 0,
-    padding: 20,
-  },
-  destinationHeading: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-  destinationTitle: {
-    fontSize: 26,
-    lineHeight: 34,
-    fontWeight: "800",
-  },
-  searchField: {
-    minHeight: 54,
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderRadius: 17,
-    paddingHorizontal: 13,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    minHeight: 54,
-    paddingVertical: 10,
-  },
-  statusText: {
-    fontSize: 12,
-  },
-  suggestion: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    minHeight: 64,
-    justifyContent: "center",
-    paddingTop: 10,
-    paddingBottom: 10,
-    paddingHorizontal: 8,
-  },
-  suggestionList: {
-    maxHeight: 240,
-    flexGrow: 0,
-  },
-  suggestionName: {
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  suggestionDetail: {
-    marginTop: 3,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  routeSummary: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 13,
-    gap: 10,
-  },
-  routeHeading: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  routeCopy: {
-    flex: 1,
-    minWidth: 180,
-  },
-  routeTitle: {
-    fontSize: 15,
-    fontWeight: "800",
-  },
-  routeDetails: {
-    marginTop: 4,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  disclaimer: {
-    fontSize: 11,
-    lineHeight: 16,
-    textAlign: "left",
-  },
+const styles=StyleSheet.create({
+ screen:{flex:1},placeholder:{flex:1,alignItems:'center',justifyContent:'center'},floatingTop:{marginHorizontal:14,marginTop:8,zIndex:2},search:{minHeight:58,borderRadius:30,flexDirection:'row',alignItems:'center',paddingLeft:18,paddingRight:7,gap:10},input:{flex:1,minWidth:0,minHeight:54,fontSize:17,paddingVertical:10},profile:{width:44,height:44,borderRadius:22,alignItems:'center',justifyContent:'center'},searchResults:{marginTop:6,padding:12,borderRadius:22},mapSpace:{flex:1,minHeight:60,alignItems:'flex-end',justifyContent:'flex-end',padding:14},locate:{width:52,height:52,borderRadius:26,alignItems:'center',justifyContent:'center',boxShadow:'0 2px 10px rgba(0,0,0,.14)'},sheet:{borderTopLeftRadius:28,borderTopRightRadius:28,boxShadow:'0 -2px 16px rgba(0,0,0,.10)'},sheetHandle:{minHeight:30,alignItems:'center',justifyContent:'center'},handle:{width:36,height:4,borderRadius:2},sheetContent:{paddingHorizontal:20,paddingBottom:16,gap:14},heading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12},sheetTitle:{fontSize:22,fontWeight:'700',flex:1},rowTitle:{fontSize:15,fontWeight:'600'},routeMetrics:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:10},duration:{fontSize:26,fontWeight:'800'},actions:{flexDirection:'row',flexWrap:'wrap',gap:10},shortcut:{flex:1,minWidth:82,minHeight:76,borderRadius:20,alignItems:'center',justifyContent:'center',gap:7},result:{minHeight:64,flexDirection:'row',alignItems:'center',gap:12,paddingVertical:12,borderBottomWidth:StyleSheet.hairlineWidth},safety:{padding:12,borderRadius:16,flexDirection:'row',alignItems:'center',gap:12}
 });

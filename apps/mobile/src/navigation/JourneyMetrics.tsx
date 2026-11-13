@@ -2,13 +2,13 @@ import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useRovaTheme } from '../theme/ThemeProvider';
 
 export type JourneyMetric = { label: string; value: string };
-export function JourneyMetrics({ metrics }: { metrics: JourneyMetric[] }) {
+export function JourneyMetrics({ metrics, compact=false }: { metrics: JourneyMetric[]; compact?:boolean }) {
   const { theme } = useRovaTheme();
   const { width, fontScale } = useWindowDimensions();
   const columns = fontScale >= 1.8 ? 1 : width < 600 || fontScale >= 1.2 ? 2 : 4;
   return <View testID="journey-metrics" style={styles.grid}>
-    {metrics.map(metric => <View key={metric.label} accessible accessibilityLabel={`${metric.label}: ${metric.value}`} style={[styles.metric, { width: columns === 1 ? '100%' : columns === 2 ? '48%' : '23.5%', backgroundColor: theme.colors.surfaceRaised, borderColor: theme.colors.border }]}>
-      <Text style={[styles.value, { color: theme.colors.ink }]}>{metric.value}</Text>
+    {metrics.map(metric => <View key={metric.label} accessible accessibilityLabel={`${metric.label}: ${metric.value}`} style={[styles.metric, { width: columns === 1 ? '100%' : columns === 2 ? '48%' : '23.5%', backgroundColor: compact?'transparent':theme.colors.surfaceRaised, borderColor: theme.colors.border },compact&&{borderWidth:0,padding:2}]}>
+      <Text style={[styles.value, { color: theme.colors.ink },compact&&{fontSize:21,lineHeight:27}]}>{metric.value}</Text>
       <Text style={[styles.label, { color: theme.colors.inkMuted }]}>{metric.label}</Text>
     </View>)}
   </View>;

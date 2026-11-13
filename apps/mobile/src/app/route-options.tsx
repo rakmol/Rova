@@ -6,6 +6,7 @@ import { Linking, Pressable, Text, View } from "react-native";
 import type { RoutingCoordinate, RoutingResponse } from "@rova/shared";
 import { ActionButton, ContentFrame, Page, PageHeader, Surface } from "../components/ui";
 import { RovaIcon } from "../components/RovaIcon";
+import { ScreenTopBar } from '../components/ScreenTopBar';
 import { useRoutePreview } from "../map/RouteProvider";
 import { MapLibreRouteMap } from "../routing/MapLibreRouteMap";
 import { routingProvider } from "../routing/runtime";
@@ -62,8 +63,9 @@ export default function RouteOptionsScreen() {
   const selected = data?.routes.find((option) => option.id === selectedId);
   const ink = { color: theme.colors.ink }; const muted = { color: theme.colors.inkMuted };
   return <Page><ContentFrame>
-    <ActionButton title="Back to map" secondary onPress={() => router.back()} />
+    <ScreenTopBar title="Directions" backLabel="Back to map" onBack={() => router.back()} />
     <PageHeader eyebrow="Route options" title={params.title || route?.destinationLabel || "Compare routes"} subtitle="Driving estimates without live traffic. Check road conditions and restrictions before travel." />
+    {selected&&<View style={{marginBottom:16,borderRadius:24,overflow:'hidden'}}><MapLibreRouteMap route={selected} onError={setMapError}/></View>}
     <Surface style={{ marginBottom: 18 }}><VehicleSelector value={vehicleType} onChange={setVehicleType} /></Surface>
     {loading && <Text accessibilityLiveRegion="polite" style={muted}>Calculating supported routes. This may take a few seconds on a slow connection...</Text>}
     {error && <Text accessibilityRole="alert" style={{ color: theme.colors.danger }}>{error}</Text>}
@@ -91,7 +93,6 @@ export default function RouteOptionsScreen() {
     </View>
     {selected && <Surface style={styles.routeDetails}>
       {selected.isSample && <Text accessibilityRole="alert" style={{ color: theme.colors.warning }}>Sample route for testing only. Not for navigation.</Text>}
-      <MapLibreRouteMap route={selected} onError={setMapError} />
       {mapError && <Text accessibilityRole="alert" style={muted}>{mapError}</Text>}
       <Text style={muted}>{selected.attribution}</Text>
       <Text accessibilityRole="link" onPress={() => { void Linking.openURL("https://www.geoapify.com/"); }} style={{ color: theme.colors.brandStrong }}>Powered by Geoapify</Text>

@@ -14,7 +14,7 @@ export default function SavedScreen(){
       <View style={[styles.introIcon,{backgroundColor:theme.colors.brandTint}]}>
         <RovaIcon name="saved" color={theme.colors.brandStrong} size={22}/>
       </View>
-      <Text style={[styles.copy,{color:theme.colors.inkMuted}]}>Search for a destination and choose Save as Home, Work or favorite. Places stay on this phone unless you explicitly back them up to an account in Settings.</Text>
+      <Text style={[styles.copy,{color:theme.colors.inkMuted}]}>Your everyday places, ready when you need them. Search a place to save it as Home, Work or a favorite.</Text>
       <ActionButton title="Find a place to save" onPress={()=>router.push('/destination-search')}/>
     </Surface>
     {!data.places.length&&<Surface style={styles.empty}>
@@ -33,6 +33,7 @@ export default function SavedScreen(){
         <ActionButton title={`Remove ${place.label}`} secondary onPress={()=>{void updateDriverData(d=>({...d,places:d.places.filter(p=>p.clientKey!==place.clientKey)})).then(()=>setMessage('Removed from this phone. Account copies change only when you sync.')).catch(()=>setMessage('Could not remove the saved place.'));}}/>
       </Surface>)}
       {!!message&&<Text accessibilityLiveRegion="polite" style={{color:theme.colors.inkMuted}}>{message}</Text>}
+      <Text style={[styles.attribution,{color:theme.colors.inkMuted}]}>Saved on this phone. Optional account backup is available in Settings.</Text>
   </ContentFrame></Page>;
 }
 const styles = StyleSheet.create({

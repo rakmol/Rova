@@ -49,7 +49,7 @@ export async function buildApp(options: { config?: ApiConfig; database?: Pool; l
   app.get("/health", { config: { rateLimit: false } }, async () => ({ service: "rova-api", status: "ok" }));
   app.get("/ready", async (_request, reply) => {
     try {
-      const result = await database.query("SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname='postgis') AS postgis, to_regclass('public.speed_limit_rules') IS NOT NULL AS schema_ready, EXISTS (SELECT 1 FROM schema_migrations WHERE version='015_hosting.sql') AS migrated");
+      const result = await database.query("SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname='postgis') AS postgis, to_regclass('public.speed_limit_rules') IS NOT NULL AS schema_ready, EXISTS (SELECT 1 FROM schema_migrations WHERE version='016_community_contributions.sql') AS migrated");
       if (!result.rows[0]?.postgis || !result.rows[0]?.schema_ready || !result.rows[0]?.migrated) throw new Error("Database setup incomplete");
       return { status: "ready" };
     } catch { app.log.warn({ dependency: "database" }, "Readiness check failed"); return reply.code(503).send({ status: "not_ready", dependency: "database" }); }
@@ -63,7 +63,7 @@ export async function buildApp(options: { config?: ApiConfig; database?: Pool; l
   registerOfflineSafety(app,database,config);
   registerNotificationRoutes(app,database,config);
   registerAccountRoutes(app,database,options.driverAuth??supabaseProvider({url:config.SUPABASE_URL,publishableKey:config.SUPABASE_PUBLISHABLE_KEY,secretKey:config.SUPABASE_SECRET_KEY}),config.PLACES_STORAGE_SIGNING_KEY);
-  registerIncidentRoutes(app, database, { ipHashKey: config.INCIDENT_IP_HASH_KEY, moderatorToken: config.NODE_ENV==='test'?config.ROVA_INCIDENT_MODERATOR_TOKEN:undefined, production: config.NODE_ENV === 'production',authorizeModerator:config.NODE_ENV==='test'?undefined:async request=>(await opsAccess(request,['reviewer','administrator'])).name,legacyReadOnly:config.NODE_ENV!=='test' });
+  registerIncidentRoutes(app, database, { ipHashKey: config.INCIDENT_IP_HASH_KEY, moderatorToken: config.NODE_ENV==='test'?config.ROVA_INCIDENT_MODERATOR_TOKEN:undefined, production: config.NODE_ENV === 'production',authorizeContributions:config.NODE_ENV==='test'&&!options.adminAuth?undefined:async request=>(await opsAccess(request,['reviewer','administrator'])).name,authorizeModerator:config.NODE_ENV==='test'?undefined:async request=>(await opsAccess(request,['reviewer','administrator'])).name,legacyReadOnly:config.NODE_ENV!=='test' });
   registerComplianceRoute(app, database, { enabled: config.COMPLIANCE_ALERTS_ENABLED === "true", transitions: config.COMPLIANCE_TRANSITIONS_ENABLED === "true", corridors: config.COMPLIANCE_CORRIDORS_ENABLED === "true", reportedRoads: config.REPORTED_ROAD_ALERTS_ENABLED === "true", pilotRestricted:config.PILOT_REGION_GATING_ENABLED==='true' });
   const usage=postgresUsage(database,config);
   registerPlacesRoutes(app, { provider: config.PLACES_PROVIDER, geoapifyKey: config.GEOAPIFY_API_KEY, token: config.MAPBOX_PLACES_ACCESS_TOKEN, permanentStorage: config.MAPBOX_PLACES_PERMANENT_STORAGE === "true", usage, storageKey:config.PLACES_STORAGE_SIGNING_KEY, dailyBudget: config.PLACES_DAILY_REQUEST_BUDGET });

@@ -3,6 +3,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { Pool, PoolClient } from 'pg';
 import { z } from 'zod';
 import { registerIncidentRealtime } from './incident-realtime.js';
+import { registerContributions } from './contributions.js';
 import type { CommunityIncident, IncidentCategory } from '@rova/shared';
 
 export const incidentCategories = ['pothole','flood','collision','closure','congestion','obstacle'] as const;
@@ -36,7 +37,7 @@ async function quota(c:PoolClient, key:string, max:number, seconds:number) {
     WHERE incident_abuse_buckets.count<$3 RETURNING count`,[sha(key),seconds,max]);
   if(!r.rowCount)throw failure(429,'Too many reports.');
 }
-export function registerIncidentRoutes(app:FastifyInstance,db:Pool,options:{ipHashKey?:string;moderatorToken?:string;production:boolean;authorizeModerator?:(request:FastifyRequest)=>Promise<string>;legacyReadOnly?:boolean}) {
+export function registerIncidentRoutes(app:FastifyInstance,db:Pool,options:{ipHashKey?:string;moderatorToken?:string;production:boolean;authorizeModerator?:(request:FastifyRequest)=>Promise<string>;authorizeContributions?:(request:FastifyRequest)=>Promise<string>;legacyReadOnly?:boolean}) {
   const key=options.ipHashKey??randomBytes(32).toString('hex');
   const ipKey=(request:FastifyRequest)=>createHmac('sha256',key).update(request.ip).digest('hex');
   const configured=()=>{if(options.production&&!options.ipHashKey)throw failure(503,'Incident reporting is not configured.');};
@@ -54,6 +55,7 @@ export function registerIncidentRoutes(app:FastifyInstance,db:Pool,options:{ipHa
   }
   const bounded={bodyLimit:4096,config:{rateLimit:{max:20,timeWindow:60000}}};
   registerIncidentRealtime(app,db,{actor,moderator,toIncident:dto});
+  registerContributions(app,db,{actor,moderator:options.authorizeContributions??moderator,quota,ipKey});
   app.post('/v1/incidents/erase-device',bounded,async request=>{
     const device=await actor(request);
     await transaction(db,async c=>{

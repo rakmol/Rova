@@ -1,0 +1,56 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { AppState, BackHandler, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import * as Location from 'expo-location';
+import { ActionButton, ContentFrame, Page, PageHeader, Pill, Surface } from '../../components/ui';
+import { RovaIcon } from '../../components/RovaIcon';
+import { useRovaTheme } from '../../theme/ThemeProvider';
+import { MapboxMap } from '../../map/MapboxMap';
+import { accraDevelopmentCenter, mapboxProvider } from '../../map/mapboxProvider';
+import type { MapCoordinate } from '../../map/types';
+import { myContributions, submitContribution, type Contribution, type ContributionKind } from '../../contributions/client';
+
+const categories={place:[['landmark','Landmark'],['market','Market'],['business','Business'],['junction','Junction'],['other','Other place']],fixed_camera:[['fixed_speed','Fixed speed camera'],['red_light','Red-light camera'],['unknown','Equipment type unknown']]} as const;
+export default function ContributeScreen(){
+ const {theme}=useRovaTheme(),ink={color:theme.colors.ink},muted={color:theme.colors.inkMuted};
+ const [kind,setKind]=useState<ContributionKind|null>(null),[mode,setMode]=useState<'parked'|'passenger'|null>(null);
+ const [name,setName]=useState(''),[category,setCategory]=useState('landmark'),[note,setNote]=useState(''),[direction,setDirection]=useState('');
+ const [point,setPoint]=useState<MapCoordinate|null>(null),[mapReady,setMapReady]=useState(false),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[rows,setRows]=useState<Contribution[]|null>(null);
+ const working=useRef(false),mounted=useRef(true);
+ useEffect(()=>{mounted.current=true;void mapboxProvider.initialize().then(()=>{if(mounted.current)setMapReady(true);}).catch(()=>{});const sub=AppState.addEventListener('change',s=>{if(s!=='active')setMode(null);});return()=>{mounted.current=false;sub.remove();};},[]);
+ const close=useCallback(()=>{setKind(null);setMode(null);setName('');setNote('');setDirection('');setPoint(null);setMessage('');},[]);
+ useFocusEffect(useCallback(()=>{const sub=BackHandler.addEventListener('hardwareBackPress',()=>{if(Keyboard.isVisible()){Keyboard.dismiss();return true;}if(kind){close();return true;}return false;});return()=>sub.remove();},[kind,close]));
+ async function run(work:()=>Promise<void>){if(working.current)return;working.current=true;setBusy(true);setMessage('');try{await work();}catch(e){if(mounted.current)setMessage(e instanceof Error?e.message:'Could not connect. Please retry.');}finally{working.current=false;if(mounted.current)setBusy(false);}}
+ const choose=(next:ContributionKind)=>{close();setKind(next);setCategory(next==='place'?'landmark':'unknown');};
+ const refresh=async()=>{const result=await myContributions();if(mounted.current)setRows(result);};
+ return <Page><ContentFrame>
+  {kind&&<ActionButton title="All contributions" secondary onPress={close}/>}
+  <PageHeader eyebrow="Community" title={kind==='place'?'Add a missing place':kind==='fixed_camera'?'Report fixed equipment':'Contribute'} subtitle={kind?'Help improve the map with a specific, first-hand observation.':'Local knowledge makes better journeys.'}/>
+  {!kind?<>
+   <Surface style={styles.hero}><View style={[styles.heroIcon,{backgroundColor:theme.colors.brandTint}]}><RovaIcon name="contribute" color={theme.colors.brandStrong} size={30}/></View><Text style={[styles.title,ink]}>You know your roads.</Text><Text style={muted}>Add a missing place, share a road problem, or suggest fixed enforcement equipment for review.</Text></Surface>
+   {([{title:'Add a place',detail:'Landmarks, markets, businesses and junctions',icon:'locate',action:()=>choose('place')},{title:'Report a road problem',detail:'Potholes, flooding, closures and more',icon:'reports',action:()=>router.push('/(tabs)/reports')},{title:'Report fixed enforcement equipment',detail:'A fixed camera or red-light camera you observed',icon:'camera',action:()=>choose('fixed_camera')}] as const).map(item=><Pressable key={item.title} accessibilityRole="button" accessibilityLabel={item.title} onPress={item.action} style={[styles.action,{backgroundColor:theme.colors.surface,borderColor:theme.colors.divider}]}><View style={[styles.icon,{backgroundColor:theme.colors.brandTint}]}><RovaIcon name={item.icon} color={theme.colors.brandStrong}/></View><View style={{flex:1,gap:5}}><Text style={[styles.rowTitle,ink]}>{item.title}</Text><Text style={muted}>{item.detail}</Text></View><RovaIcon name="chevron" color={theme.colors.inkMuted}/></Pressable>)}
+   <View style={styles.section}><Text style={[styles.title,ink]}>Your contributions</Text><ActionButton title={busy?'Loading…':'Refresh my contributions'} secondary disabled={busy} onPress={()=>void run(refresh)}/></View>
+   {rows?.length===0&&<Text style={muted}>No active place or equipment suggestions from this phone. Road hazards are managed in Road reports.</Text>}
+   {rows?.map(row=><Surface key={row.id} style={styles.history}><Text style={[styles.rowTitle,ink]}>{row.name}</Text><Pill tone={row.status==='pending'?'warning':'neutral'}>{row.status==='pending'?'PENDING REVIEW':row.status==='reviewed'?'REVIEWED SUGGESTION':'NOT ACCEPTED'}</Pill><Text style={muted}>Community suggestion · not authority verified</Text></Surface>)}
+  </>:<Surface style={styles.form}>
+   <Pill tone="warning">COMMUNITY SUGGESTION · NOT VERIFIED</Pill>
+   <Text style={muted}>Use this form only when safely parked or as a passenger.</Text>
+   <View style={styles.wrap}>{(['parked','passenger'] as const).map(value=><View key={value} style={{flex:1,minWidth:130}}><ActionButton title={value==='parked'?(mode===value?'Parked selected':"I'm safely parked"):(mode===value?'Passenger selected':"I'm a passenger")} secondary onPress={()=>setMode(value)} disabled={busy}/></View>)}</View>
+   {mode&&<>
+    <Text style={[styles.rowTitle,ink]}>{kind==='place'?'Place name':'Road or landmark near the equipment'}</Text>
+    <TextInput accessibilityLabel="Contribution name" value={name} onChangeText={setName} maxLength={120} placeholder={kind==='place'?'Name used locally':'Road or junction name'} placeholderTextColor={theme.colors.inkSubtle} style={[styles.input,ink,{borderColor:theme.colors.border}]} editable={!busy}/>
+    <View accessibilityRole="radiogroup" accessibilityLabel="Contribution category" style={styles.wrap}>{categories[kind].map(([value,label])=><Pressable key={value} accessibilityRole="radio" accessibilityLabel={label} accessibilityState={{checked:category===value}} onPress={()=>setCategory(value)} disabled={busy} style={[styles.chip,{backgroundColor:category===value?theme.colors.brandTint:theme.colors.surfaceRaised,borderColor:category===value?theme.colors.brandStrong:theme.colors.divider}]}><Text style={ink}>{label}</Text></Pressable>)}</View>
+    <Text style={[styles.rowTitle,ink]}>Choose the place on the map</Text><Text style={muted}>Tap the observed location. We send this one selected point, not your route or travel history.</Text>
+    {mapReady?<MapboxMap center={point??accraDevelopmentCenter} destination={point??undefined} locationEnabled={false} onPickCoordinate={coordinate=>{if(!busy)setPoint(coordinate);}} onMapLoaded={()=>{}} onMapError={()=>setMessage('Map unavailable. Try again when connected.')}/>:<Text style={muted}>Map preview unavailable. Reconnect to choose a point.</Text>}
+    <ActionButton title="Use my current position as the pin" secondary disabled={busy} onPress={()=>void run(async()=>{const p=await Location.requestForegroundPermissionsAsync();if(!p.granted)throw new Error('Location permission is off. You can select a point on the map instead.');let timer:ReturnType<typeof setTimeout>|undefined;try{const fix=await Promise.race([Location.getCurrentPositionAsync({accuracy:Location.Accuracy.High}),new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(new Error('Location is taking too long. Select a point on the map instead.')),12000);})]);if(fix.coords.accuracy===null||fix.coords.accuracy>50)throw new Error('Location is imprecise. Check the map and select the actual place.');if(mounted.current)setPoint([fix.coords.longitude,fix.coords.latitude]);}finally{clearTimeout(timer);}})}/>
+    <Text style={muted}>{point?'Selected pin: '+point[1].toFixed(5)+', '+point[0].toFixed(5):'Select a pin before submitting.'}</Text>
+    {kind==='fixed_camera'&&<><Text style={muted}>Report fixed equipment only. Do not submit mobile enforcement positions. Type unknown if you cannot identify the equipment; do not guess its speed limit.</Text><TextInput accessibilityLabel="Observed travel direction" value={direction} onChangeText={setDirection} maxLength={120} placeholder="Travel direction, if known (optional)" placeholderTextColor={theme.colors.inkSubtle} style={[styles.input,ink,{borderColor:theme.colors.border}]} editable={!busy}/></>}
+    <TextInput accessibilityLabel="Contribution details" value={note} onChangeText={setNote} maxLength={500} multiline placeholder="What did you observe? No personal or vehicle details." placeholderTextColor={theme.colors.inkSubtle} style={[styles.input,ink,{borderColor:theme.colors.border,minHeight:90}]} editable={!busy}/>
+    <Text style={muted}>Suggestions stay pending until reviewed. Review does not automatically publish a place, confirm a camera, or set a legal speed limit. Suggestions expire after 90 days. Erasing reporting data from this phone removes these submissions.</Text>
+    <ActionButton title={busy?'Sending…':'Send for review'} disabled={busy||!point||name.trim().length<2} onPress={()=>{if(!point||!mode)return;const proposal={kind,name:name.trim(),category,lon:point[0],lat:point[1],note:note.trim(),direction:direction.trim(),interaction:mode};void run(async()=>{const result=await submitContribution(proposal);if(!mounted.current)return;close();setMessage(result.duplicate?'You already submitted this suggestion.':'Sent for review. Thank you for helping improve ROVA.');await refresh();});}}/>
+   </>}
+  </Surface>}
+  {!!message&&<Text accessibilityLiveRegion="polite" style={[muted,{marginVertical:16}]}>{message}</Text>}
+ </ContentFrame></Page>;
+}
+const styles=StyleSheet.create({hero:{gap:12,marginBottom:20},heroIcon:{width:60,height:60,borderRadius:30,alignItems:'center',justifyContent:'center'},title:{fontSize:21,fontWeight:'700'},rowTitle:{fontSize:16,fontWeight:'600'},action:{flexDirection:'row',alignItems:'center',gap:12,padding:18,borderWidth:1,borderRadius:20,marginBottom:10,minHeight:94},icon:{width:44,height:44,borderRadius:22,alignItems:'center',justifyContent:'center'},section:{gap:12,marginVertical:20},history:{gap:10,marginBottom:12},form:{gap:16},wrap:{flexDirection:'row',flexWrap:'wrap',gap:8},input:{borderWidth:1,borderRadius:14,padding:14,minHeight:52,fontSize:16},chip:{minHeight:48,paddingHorizontal:14,paddingVertical:12,borderRadius:24,borderWidth:1,justifyContent:'center'}});

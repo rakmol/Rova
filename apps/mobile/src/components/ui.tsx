@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: 28,
     paddingHorizontal: 18,
   },
   actionButtonText: {

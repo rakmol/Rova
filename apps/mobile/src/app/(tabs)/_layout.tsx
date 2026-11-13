@@ -10,6 +10,7 @@ const tabItems = {
   map: { title: tx('tab.map'), icon: "map" },
   reports: { title: tx('tab.reports'), icon: "reports" },
   saved: { title: tx('tab.saved'), icon: "saved" },
+  contribute: { title: 'Contribute', icon: 'contribute' },
   settings: { title: tx('tab.settings'), icon: "settings" },
 } as const;
 
@@ -22,6 +23,7 @@ export default function TabLayout() {
 
   return (
     <ScrollMenuProvider height={barHeight}><Tabs
+      backBehavior="history"
       tabBar={props => <ScrollTabBar {...props} />}
       screenOptions={({ route }) => {
         const item = tabItems[route.name as keyof typeof tabItems] ?? tabItems.map;
@@ -47,9 +49,10 @@ export default function TabLayout() {
         };
       }}
     >
-      <Tabs.Screen name="map" options={{ title: tabItems.map.title }} />
-      <Tabs.Screen name="reports" options={{ title: tabItems.reports.title }} />
+      <Tabs.Screen name="map" options={{ title: 'Explore' }} />
+      <Tabs.Screen name="reports" options={{ title: tabItems.reports.title, href: null }} />
       <Tabs.Screen name="saved" options={{ title: tabItems.saved.title }} />
+      <Tabs.Screen name="contribute" options={{ title: tabItems.contribute.title }} />
       <Tabs.Screen name="settings" options={{ title: tabItems.settings.title }} />
     </Tabs></ScrollMenuProvider>
   );

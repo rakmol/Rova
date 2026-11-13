@@ -46,8 +46,8 @@ export interface RovaTheme {
 
 const designTokens = {
   spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 },
-  radii: { sm: 12, md: 16, lg: 24, pill: 999 },
-  typography: { caption: 12, body: 15, title: 32, bodyLine: 22 },
+  radii: { sm: 12, md: 16, lg: 20, pill: 999 },
+  typography: { caption: 12, body: 15, title: 28, bodyLine: 22 },
 } as const;
 
 const themes: Record<"light" | "dark", RovaTheme> = {
@@ -55,14 +55,14 @@ const themes: Record<"light" | "dark", RovaTheme> = {
     mode: "light",
     ...designTokens,
     colors: {
-      background: "#F4F7F6",
+      background: "#F7F9F8",
       surface: "#FFFFFF",
       surfaceRaised: "#F8FBFA",
       ink: "#102A35",
       inkMuted: "#536970",
       inkSubtle: "#536970",
       border: "#7A918B",
-      divider: "#C7D6D1",
+      divider: "#DEE6E3",
       brand: "#08786F",
       brandStrong: "#075D58",
       brandTint: "#E3F4F1",

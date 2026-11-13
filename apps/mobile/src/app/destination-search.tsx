@@ -1,7 +1,8 @@
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Keyboard, Linking, Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native";
-import { ActionButton, ContentFrame, Page, PageHeader, Surface } from "../components/ui";
+import { ActionButton, ContentFrame, Page, Surface } from "../components/ui";
+import { ScreenTopBar } from '../components/ScreenTopBar';
 import { RovaIcon } from "../components/RovaIcon";
 import { MapboxMap } from "../map/MapboxMap";
 import { mapboxProvider, accraDevelopmentCenter } from "../map/mapboxProvider";
@@ -25,6 +26,7 @@ export default function DestinationSearchScreen() {
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
+  const [coverageOpen, setCoverageOpen] = useState(false);
   const generation = useRef(0);
   useEffect(() => {
     let active = true;
@@ -68,8 +70,7 @@ export default function DestinationSearchScreen() {
   const ink = { color: theme.colors.ink };
   const muted = { color: theme.colors.inkMuted };
   return <Page><ContentFrame>
-    <ActionButton title="Back to map" secondary onPress={() => router.back()} />
-    <PageHeader eyebrow="Accra & Ghana" title="Where are you going?" subtitle={landmarkSearchEnabled ? "Search streets, markets, hospitals, malls and landmarks by name. Availability depends on mapped data." : "Search streets, addresses and suburbs. Landmark search will be available once the places backend is configured."} />
+    <ScreenTopBar title="Search destinations" backLabel="Back to map" onBack={() => router.back()} />
     <View style={[styles.searchField,{borderColor:theme.colors.border,backgroundColor:theme.colors.surface}]}>
       <RovaIcon name="search" color={theme.colors.brandStrong} size={22}/>
       <TextInput accessibilityLabel="Search Ghana places" autoFocus autoCorrect={false} maxLength={256} value={query} onChangeText={edit} placeholder={landmarkSearchEnabled ? "Street, landmark, market or suburb" : "Street, suburb or place name"} placeholderTextColor={theme.colors.inkSubtle} style={[styles.input, ink]} />
@@ -99,7 +100,8 @@ export default function DestinationSearchScreen() {
       {(storageError||historyStorageStatus().error) && <Text accessibilityRole="alert" style={{ color: theme.colors.danger }}>{storageError||historyStorageStatus().error}</Text>}
       {history.enabled && <><ActionButton title="Clear recent searches" secondary onPress={() => updateHistory({ enabled: true, queries: [] })} />{!history.queries.length && <Text style={muted}>No recent searches yet.</Text>}{history.queries.map((text) => <Pressable key={text} accessibilityRole="button" accessibilityLabel={`Search again for ${text}`} onPress={() => edit(text)} style={styles.result}><Text style={ink}>{text}</Text></Pressable>)}</>}
     </Surface>
-    <Surface style={styles.details}><Text style={[styles.name, ink]}>Search coverage & costs</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel="Search coverage & costs" accessibilityState={{expanded:coverageOpen}} onPress={()=>setCoverageOpen(!coverageOpen)} style={styles.result}><RovaIcon name="about" color={theme.colors.inkMuted}/><Text style={[muted,{flex:1}]}>Search coverage & costs</Text><RovaIcon name="chevron" color={theme.colors.inkMuted}/></Pressable>
+    {coverageOpen&&<Surface style={styles.details}><Text style={[styles.name, ink]}>Search coverage & costs</Text>
       {landmarkSearchEnabled ? <>
         <Text style={muted}>Geoapify searches streets, addresses, suburbs and named amenities in Ghana, biased toward Accra. Mapped markets, hospitals, malls and landmarks can appear; missing or informal names may return no match. No matches are invented.</Text>
         <Text style={muted}>Search text and the Accra bias go through ROVA’s backend to Geoapify. The key stays on the server. Maps and navigation continue to use Mapbox.</Text>
@@ -115,7 +117,7 @@ export default function DestinationSearchScreen() {
       <Text style={muted}>Result caching is off for temporary geocoding. Licensed permanent mode enables a 5-minute cache of up to 40 queries. Recent history contains only text you typed.</Text>
       <ActionButton title="View Mapbox pricing" secondary onPress={() => { void Linking.openURL("https://www.mapbox.com/pricing").catch(() => setError("Could not open pricing. Visit mapbox.com/pricing.")); }} />
       </>}
-    </Surface>
+    </Surface>}
   </ContentFrame></Page>;
 }
 const styles = StyleSheet.create({

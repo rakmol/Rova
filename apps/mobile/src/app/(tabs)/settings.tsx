@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { BackHandler, Keyboard, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { ActionButton, ContentFrame, Page, PageHeader, Surface } from '../../components/ui';
 import { RovaIcon } from '../../components/RovaIcon';
 import { VehicleSelector } from '../../components/VehicleSelector';
@@ -29,6 +30,14 @@ export default function SettingsScreen() {
   const { mode, setMode, theme } = useRovaTheme();
   const { vehicleType, setVehicleType } = useRoutePreview();
   const [section, setSection] = useState<Section | null>(null);
+  useFocusEffect(useCallback(() => {
+    const subscription=BackHandler.addEventListener('hardwareBackPress',()=>{
+      if(Keyboard.isVisible()){Keyboard.dismiss();return true;}
+      if(section){setSection(null);return true;}
+      return false;
+    });
+    return()=>subscription.remove();
+  },[section]));
   const selected = sections.find(item => item.id === section);
   const ink = { color: theme.colors.ink }, muted = { color: theme.colors.inkMuted };
   return <Page key={section ?? 'menu'}><ContentFrame>
