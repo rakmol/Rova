@@ -1,0 +1,7 @@
+'use client';
+import {useState} from 'react';
+type Row={id:string;kind:string;name:string;category:string;note:string;direction:string;lon:number;lat:number;status:string;revision:number};
+export function Contributions({data,busy,review}:{data:{rows:Row[];scope:string};busy:boolean;review:(body:unknown)=>Promise<void>}){
+ const [comment,setComment]=useState('');
+ return <section className="panel"><p className="notice">{data.scope} Marking a suggestion reviewed does not add it to search or navigation. Create a sourced road/enforcement record through the existing independent approval workflow where appropriate.</p><label>Review comment (at least 10 characters)<textarea value={comment} onChange={e=>setComment(e.target.value)} maxLength={1000}/></label>{!data.rows.length&&<p>No active suggestions.</p>}{data.rows.map(row=><article key={row.id} className="revision"><h2>{row.name}</h2><p>{row.kind} · {row.category} · {row.status}</p><p>Selected point: {Number(row.lat).toFixed(5)}, {Number(row.lon).toFixed(5)}{row.direction?' · '+row.direction:''}</p><p>{row.note||'No additional note.'}</p><div className="actions"><button disabled={busy||comment.trim().length<10||row.status==='reviewed'} onClick={()=>void review({id:row.id,revision:row.revision,status:'reviewed',comment})}>Mark suggestion reviewed</button><button className="danger" disabled={busy||comment.trim().length<10||row.status==='rejected'} onClick={()=>void review({id:row.id,revision:row.revision,status:'rejected',comment})}>Reject suggestion</button></div></article>)}</section>;
+}

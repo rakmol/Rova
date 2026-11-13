@@ -2,6 +2,12 @@ import { SymbolView } from "expo-symbols";
 import type { ColorValue } from "react-native";
 
 const iconNames = {
+  home: { ios: 'house.fill', android: 'home', web: 'home' },
+  work: { ios: 'briefcase.fill', android: 'work', web: 'work' },
+  contribute: { ios: 'plus.circle.fill', android: 'add_circle', web: 'add_circle' },
+  camera: { ios: 'camera.fill', android: 'camera_alt', web: 'camera_alt' },
+  back: { ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' },
+  close: { ios: 'xmark', android: 'close', web: 'close' },
   map: { ios: "map.fill", android: "map", web: "map" },
   reports: { ios: "exclamationmark.bubble.fill", android: "campaign", web: "campaign" },
   saved: { ios: "heart.fill", android: "favorite", web: "favorite" },

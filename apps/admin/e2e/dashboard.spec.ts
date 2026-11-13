@@ -37,3 +37,25 @@ test('browser supports password-only login with RBAC and full independently revi
  await admin.page.getByRole('link',{name:'Audit trail',exact:true}).click();await expect(admin.page.getByRole('cell',{name:'revert',exact:true}).first()).toBeVisible();
  for(const c of [editor.context,r1.context,r2.context,admin.context,viewer.context])await c.close();
 });
+
+test('community suggestions require reviewer access and reviewed suggestions do not become confirmed safety records',async({browser})=>{
+ const admin=await login(browser,'administrator'),viewer=await login(browser,'viewer');
+ let token='';
+ try{
+  const session=await admin.context.request.post('http://127.0.0.1:4101/v1/incidents/session',{data:{platform:'android'}});expect(session.status()).toBe(201);token=(await session.json()).token;
+  const headers={Authorization:'Bearer '+token};
+  const sent=await admin.context.request.post('http://127.0.0.1:4101/v1/incidents/contributions',{headers,data:{kind:'fixed_camera',name:'ISOLATED BROWSER EQUIPMENT',category:'unknown',lon:-.2,lat:5.6,interaction:'passenger'}});expect(sent.status()).toBe(201);
+  expect((await viewer.context.request.get('/api/ops/contributions')).status()).toBe(403);
+  await expect(viewer.page.getByRole('link',{name:'Community contributions',exact:true})).toHaveCount(0);
+  await admin.page.getByRole('link',{name:'Community contributions',exact:true}).click();
+  await expect(admin.page.getByRole('heading',{name:'ISOLATED BROWSER EQUIPMENT',exact:true})).toBeVisible();
+  await expect(admin.page.getByRole('button',{name:'Mark suggestion reviewed',exact:true})).toBeDisabled();
+  await admin.page.getByLabel('Review comment (at least 10 characters)').fill('ISOLATED fixture review; not verified enforcement');
+  await admin.page.getByRole('button',{name:'Mark suggestion reviewed',exact:true}).click();
+  await expect(admin.page.getByRole('alert')).toContainText('Suggestion review saved');
+  const mine=await admin.context.request.get('http://127.0.0.1:4101/v1/incidents/contributions/mine',{headers});expect((await mine.json()).rows[0].status).toBe('reviewed');expect((await mine.json()).authorityVerified).toBe(false);
+ }finally{
+  if(token)await admin.context.request.post('http://127.0.0.1:4101/v1/incidents/erase-device',{headers:{Authorization:'Bearer '+token},data:{}});
+  await admin.context.close();await viewer.context.close();
+ }
+});

@@ -1,7 +1,7 @@
 import {cookies}from'next/headers';
 import {NextRequest,NextResponse}from'next/server';
-const allowed=new Set(['pilot','pilot/corridors','pilot/review','pilot/control','pilot/incident-check','login','session','logout','schema','overview','records','detail','revise','revert','review','publish','withdraw','freshness','analytics','audit','coverage','sponsored','provider-costs','members','member']);
-const readOnly=new Set(['pilot','session','schema','overview','records','detail','freshness','analytics','audit','coverage','sponsored','provider-costs','members']);
+const allowed=new Set(['contributions','contributions/review','pilot','pilot/corridors','pilot/review','pilot/control','pilot/incident-check','login','session','logout','schema','overview','records','detail','revise','revert','review','publish','withdraw','freshness','analytics','audit','coverage','sponsored','provider-costs','members','member']);
+const readOnly=new Set(['contributions','pilot','session','schema','overview','records','detail','freshness','analytics','audit','coverage','sponsored','provider-costs','members']);
 const base=process.env.ROVA_API_URL??'http://127.0.0.1:4000';
 async function handle(request:NextRequest,context:{params:Promise<{path:string[]}>}){
  const params=await context.params;const path=params.path.join('/');if(!allowed.has(path))return NextResponse.json({error:'Unknown endpoint'},{status:404});

@@ -1,6 +1,6 @@
 import { act, fireEvent, render } from "@testing-library/react-native";
 import type { ReactElement } from "react";
-import { Pressable, Text } from "react-native";
+import { BackHandler, Keyboard, Pressable, Text } from "react-native";
 import MapScreen from "../app/(tabs)/map";
 import SettingsScreen from "../app/(tabs)/settings";
 import { FeedbackMessage } from "../components/ui";
@@ -9,6 +9,8 @@ import { RouteProvider, useRoutePreview } from "../map/RouteProvider";
 import { ThemeProvider } from "../theme/ThemeProvider";
 
 jest.mock("expo-router", () => ({
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  useFocusEffect: (callback:()=>void)=>require("react").useEffect(callback,[callback]),
   router: {
     push: jest.fn(),
     back: jest.fn(),
@@ -130,6 +132,18 @@ describe("mobile screen foundation", () => {
     await fireEvent.press(view.getByRole('button', { name: 'Location & privacy' }));
     expect(view.getByText('Location and privacy')).toBeTruthy();
     expect(view.queryByText('Voice and units')).toBeNull();
+  });
+
+  it('Android Back closes a settings category before leaving Settings, and dismisses the keyboard first',async()=>{
+    let back!:()=>boolean|null|undefined;
+    const listener=jest.spyOn(BackHandler,'addEventListener').mockImplementation((_,fn)=>{back=fn;return{remove:jest.fn()};});
+    const keyboard=jest.spyOn(Keyboard,'isVisible').mockReturnValue(false),dismiss=jest.spyOn(Keyboard,'dismiss').mockImplementation(()=>{});
+    const view=await renderWithTheme(<SettingsScreen/>);
+    try{
+      await fireEvent.press(view.getByRole('button',{name:'Appearance'}));
+      keyboard.mockReturnValue(true);await act(()=>{expect(back()).toBe(true);});expect(dismiss).toHaveBeenCalled();expect(view.getByRole('radio',{name:'Dark'})).toBeTruthy();
+      keyboard.mockReturnValue(false);await act(()=>{expect(back()).toBe(true);});expect(view.queryByRole('radio',{name:'Dark'})).toBeNull();expect(view.getByRole('button',{name:'Appearance'})).toBeTruthy();expect(back()).toBe(false);
+    }finally{await view.unmount();listener.mockRestore();keyboard.mockRestore();dismiss.mockRestore();}
   });
 
   it("renders a clear permission-denied state without implying location access", async () => {

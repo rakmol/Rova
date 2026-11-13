@@ -25,6 +25,9 @@ type MapboxMapProps = {
   navigationMode?: boolean;
   navigationBearing?: number | null;
   routeProgressMeters?: number;
+  mapBottomInset?: number;
+  controlsTopInset?: number;
+  onPickCoordinate?: (coordinate: MapCoordinate) => void;
   onMapLoaded: () => void;
   onMapError: (message: string) => void;
 };
@@ -39,6 +42,9 @@ export function MapboxMap({
   navigationMode = false,
   navigationBearing,
   routeProgressMeters = 0,
+  mapBottomInset = 0,
+  controlsTopInset = 12,
+  onPickCoordinate,
   onMapLoaded,
   onMapError,
 }: MapboxMapProps) {
@@ -79,6 +85,9 @@ export function MapboxMap({
         requestDisallowInterceptTouchEvent
         zoomEnabled
         scrollEnabled
+        logoPosition={{left:8,bottom:mapBottomInset+8}}
+        attributionPosition={{left:100,bottom:mapBottomInset+8}}
+        onPress={event => { const geometry=event.geometry; if(onPickCoordinate&&geometry.type==='Point') onPickCoordinate(geometry.coordinates as MapCoordinate); }}
         gestureSettings={{ pinchZoomEnabled: true, doubleTapToZoomInEnabled: true }}
         onCameraChanged={(state) => { currentZoom.current = state.properties.zoom; }}
         styleURL={
@@ -92,7 +101,7 @@ export function MapboxMap({
           )
         }
       >
-        <Camera ref={camera} centerCoordinate={!navigationMode || following ? center : undefined} heading={navigationMode && following ? bearing ?? undefined : undefined} animationDuration={navigationMode ? 300 : undefined} animationMode={navigationMode ? 'linearTo' : undefined} defaultSettings={{ zoomLevel: navigationMode ? 16 : 12 }} />
+        <Camera ref={camera} padding={mapBottomInset>0?{paddingTop:controlsTopInset,paddingBottom:mapBottomInset+16,paddingLeft:16,paddingRight:16}:undefined} centerCoordinate={!navigationMode || following ? center : undefined} heading={navigationMode && following ? bearing ?? undefined : undefined} animationDuration={navigationMode ? 300 : undefined} animationMode={navigationMode ? 'linearTo' : undefined} defaultSettings={{ zoomLevel: navigationMode ? 16 : 12 }} />
         {navigationMode && <CameraGestureObserver onCameraChanged={event => { if (event.nativeEvent.properties.isUserInteraction) setFollowing(false); }} />}
         <NavigationMarkerImages />
         {completedShape && <ShapeSource id="rova-route-completed" shape={completedShape}>
@@ -119,14 +128,14 @@ export function MapboxMap({
           <CircleLayer id="rova-destination-pin" style={{ circleRadius: 10, circleColor: theme.colors.brandStrong, circleStrokeColor: "#ffffff", circleStrokeWidth: 3 }} />
         </ShapeSource>}
       </Mapbox.MapView>
-      <View style={[styles.zoomControls, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+      <View style={[styles.zoomControls, { top: controlsTopInset, backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
         {([{ label: tx('map.zoomIn'), symbol: "+", amount: 1 }, { label: tx('map.zoomOut'), symbol: "−", amount: -1 }] as const).map((control) => (
           <Pressable key={control.label} accessibilityRole="button" accessibilityLabel={control.label} onPress={() => changeZoom(control.amount)} style={styles.zoomButton}>
             <Text style={[styles.zoomText, { color: theme.colors.brandStrong }]}>{control.symbol}</Text>
           </Pressable>
         ))}
       </View>
-      {navigationMode && <Pressable accessibilityRole="button" accessibilityLabel="Recenter on your position and follow travel direction" accessibilityState={{ disabled: !locationEnabled || !navigationFix, selected: following }} disabled={!locationEnabled || !navigationFix} onPress={recenter} style={[styles.recenter, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, opacity: locationEnabled && navigationFix ? 1 : 0.55 }]}>
+      {navigationMode && <Pressable accessibilityRole="button" accessibilityLabel="Recenter on your position and follow travel direction" accessibilityState={{ disabled: !locationEnabled || !navigationFix, selected: following }} disabled={!locationEnabled || !navigationFix} onPress={recenter} style={[styles.recenter, { bottom:mapBottomInset+34, backgroundColor: theme.colors.surface, borderColor: theme.colors.border, opacity: locationEnabled && navigationFix ? 1 : 0.55 }]}>
         <Text style={{ color: theme.colors.brandStrong, fontSize: 14, fontWeight: '800' }}>Recenter</Text>
       </Pressable>}
     </View>

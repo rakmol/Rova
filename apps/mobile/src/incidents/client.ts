@@ -19,7 +19,7 @@ export function canInteract(mode:SafeInteraction|null,f:IncidentFix,now=Date.now
     &&(mode==='passenger'||(f.speed!==null&&Number.isFinite(f.speed)&&f.speed>=0&&f.speed<1.4));
 }
 export class IncidentRequestError extends Error {constructor(message:string,readonly status:number){super(message);}}
-async function request(path:string,method='GET',body?:unknown,token?:string,signal?:AbortSignal):Promise<unknown> {
+export async function reportingRequest(path:string,method='GET',body?:unknown,token?:string,signal?:AbortSignal):Promise<unknown> {
   if(!endpoint)throw new Error('Road reporting is not connected.');
   const base=new URL(endpoint);if(base.protocol!=='https:'&&!['localhost','127.0.0.1'].includes(base.hostname))throw new Error('Reporting requires a secure connection.');
   const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),12000);
@@ -31,6 +31,7 @@ async function request(path:string,method='GET',body?:unknown,token?:string,sign
     return await r.json();
   }finally{clearTimeout(timer);signal?.removeEventListener('abort',cancel);}
 }
+const request=reportingRequest;
 export async function incidentSession():Promise<string> {
   if(sessionToken)return sessionToken;
   if(sessionPromise)return sessionPromise;
