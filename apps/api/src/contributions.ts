@@ -3,12 +3,12 @@ import type { Pool, PoolClient } from 'pg';
 import { z } from 'zod';
 import { denied } from './admin-auth.js';
 
-const text = (max: number) => z.string().trim().max(max).refine(v => !/[\p{Cc}]/u.test(v), 'Use plain text.');
+const text = (max: number, multiline=false) => z.string().trim().max(max).refine(v => !/[\p{Cc}]/u.test(multiline?v.replace(/[\r\n\t]/g,''):v), 'Use plain text.');
 export const contributionBody = z.object({
   kind: z.enum(['place', 'fixed_camera']), name: text(120).pipe(z.string().min(2)),
   category: z.enum(['landmark', 'market', 'business', 'junction', 'other', 'fixed_speed', 'red_light', 'unknown']),
   lon: z.number().finite().min(-4).max(2), lat: z.number().finite().min(4).max(12),
-  note: text(500).default(''), direction: text(120).default(''), interaction: z.enum(['parked', 'passenger']),
+  note: text(500,true).default(''), direction: text(120).default(''), interaction: z.enum(['parked', 'passenger']),
 }).strict().refine(v => (v.kind === 'place' ? ['landmark','market','business','junction','other'] : ['fixed_speed','red_light','unknown']).includes(v.category), 'Choose a category for this contribution.');
 
 type Access = {

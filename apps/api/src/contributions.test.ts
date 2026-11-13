@@ -7,6 +7,8 @@ import type { Pool } from 'pg';
 test('place and equipment proposals accept Ghana points and bounded observations, never authority flags or mobile cameras',()=>{
  const place={kind:'place',name:'TEST ONLY landmark',category:'landmark',lon:-.2,lat:5.6,interaction:'parked'};
  assert.equal(contributionBody.parse(place).kind,'place');
+ assert.equal(contributionBody.parse({...place,note:'First observation\nAdditional detail'}).note,'First observation\nAdditional detail');
+ assert.equal(contributionBody.safeParse({...place,note:'Hidden\u0000control'}).success,false);
  assert.equal(contributionBody.parse({...place,kind:'fixed_camera',category:'unknown'}).category,'unknown');
  for(const extra of [{authorityVerified:true},{status:'reviewed'},{device_id:'spoofed'},{kind:'fixed_camera'},{category:'mobile_camera'},{interaction:'driver'},{lon:50},{lat:90},{name:'x'},{note:'x'.repeat(501)}])assert.equal(contributionBody.safeParse({...place,...extra}).success,false,JSON.stringify(extra));
 });
