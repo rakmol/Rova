@@ -19,6 +19,7 @@ jest.mock("expo-router", () => ({
 jest.mock("expo-symbols", () => ({
   SymbolView: () => null,
 }));
+jest.mock('../components/HomeBackGuard', () => ({ HomeBackGuard: () => null }));
 
 jest.mock("../map/mapboxProvider", () => ({
   accraDevelopmentCenter: [-0.187, 5.6037],

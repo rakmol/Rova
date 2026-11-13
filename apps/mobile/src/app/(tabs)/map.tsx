@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { ActionButton, ContentFrame, Page, Pill, Surface } from "../../components/ui";
+import { HomeBackGuard } from "../../components/HomeBackGuard";
 import { RovaIcon } from "../../components/RovaIcon";
 import { useRoutePreview } from "../../map/RouteProvider";
 import {
@@ -261,6 +262,7 @@ export default function MapScreen() {
         scrollOffsetRef.current = event.nativeEvent.contentOffset.y;
       }}
     >
+      <HomeBackGuard />
       <ContentFrame>
         <View style={styles.topBar}>
           <View>
@@ -280,6 +282,79 @@ export default function MapScreen() {
           >
             <RovaIcon name="settings" color={theme.colors.brandStrong} size={21} />
           </Pressable>
+        </View>
+
+        <View style={styles.exploreHeader}><Text style={[styles.sectionLabel, { color: theme.colors.inkMuted }]}>EXPLORE YOUR AREA</Text><Text style={{ color: theme.colors.inkMuted, fontSize: 12 }}>Accra, Ghana</Text></View>
+        <View style={[styles.mapFrame, { height: mapHeight }]}>
+          {mapReady ? (
+            <MapboxMap
+              fill
+              center={center}
+              destination={selectedDestination?.coordinate}
+              locationEnabled={locationEnabled}
+              routeGeometry={selectedRoutingOption?.geometry ?? route?.geometry}
+              onMapLoaded={() => {
+                setMapLoaded(true);
+                setMapLoadError(null);
+              }}
+              onMapError={setMapLoadError}
+            />
+          ) : (
+            <View
+              accessibilityRole="summary"
+              style={[
+                styles.mapPlaceholder,
+                {
+                  backgroundColor: theme.colors.surfaceRaised,
+                  borderColor: theme.colors.border,
+                },
+              ]}
+            >
+              <Text style={[styles.mapTitle, { color: theme.colors.ink }]}>
+                {mapError
+                  ? "Map could not be loaded"
+                  : mapboxConfigured
+                    ? "Loading the Accra map"
+                    : "Mapbox token required"}
+              </Text>
+              <Text style={[styles.mapDescription, { color: theme.colors.inkMuted }]}>
+                {mapError ??
+                  (mapboxConfigured
+                    ? "Connecting to Mapbox. Check your connection if the map does not appear."
+                    : "Add a public pk. token to apps/mobile/.env to load live map tiles and search.")}
+              </Text>
+            </View>
+          )}
+          {mapReady && (!mapLoaded || mapLoadError) && (
+            <View
+              accessibilityRole={mapLoadError ? "alert" : "summary"}
+              style={[
+                styles.mapNotice,
+                { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+              ]}
+            >
+              <Text style={[styles.mapNoticeTitle, { color: theme.colors.ink }]}>
+                {mapLoadError ? "Map tiles unavailable" : "Loading Mapbox streets"}
+              </Text>
+              <Text style={[styles.mapDescription, { color: theme.colors.inkMuted }]}>
+                {mapLoadError ?? "Waiting for map tiles from Mapbox."}
+              </Text>
+            </View>
+          )}
+          {mapReady && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Locate me"
+              onPress={handleLocate}
+              style={[
+                styles.locateButton,
+                { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+              ]}
+            >
+              <RovaIcon name="locate" color={theme.colors.brandStrong} size={22} />
+              <Text style={[styles.locateText, { color: theme.colors.brandStrong }]}>Locate</Text>
+            </Pressable>
+          )}
         </View>
 
         <Surface style={styles.destinationCard}>
@@ -414,78 +489,7 @@ export default function MapScreen() {
           <Pressable accessibilityRole="button" accessibilityLabel="Search destinations & recent searches" onPress={() => router.push("/destination-search")} style={styles.recentLink}><Text style={{ color: theme.colors.brandStrong, fontWeight: "700" }}>Recent searches & saved places  →</Text></Pressable>
         </Surface>
 
-        <View style={styles.exploreHeader}><Text style={[styles.sectionLabel, { color: theme.colors.inkMuted }]}>EXPLORE YOUR AREA</Text><Text style={{ color: theme.colors.inkMuted, fontSize: 12 }}>Accra, Ghana</Text></View>
-        <View style={[styles.mapFrame, { height: mapHeight }]}>
-          {mapReady ? (
-            <MapboxMap
-              fill
-              center={center}
-              destination={selectedDestination?.coordinate}
-              locationEnabled={locationEnabled}
-              routeGeometry={selectedRoutingOption?.geometry ?? route?.geometry}
-              onMapLoaded={() => {
-                setMapLoaded(true);
-                setMapLoadError(null);
-              }}
-              onMapError={setMapLoadError}
-            />
-          ) : (
-            <View
-              accessibilityRole="summary"
-              style={[
-                styles.mapPlaceholder,
-                {
-                  backgroundColor: theme.colors.surfaceRaised,
-                  borderColor: theme.colors.border,
-                },
-              ]}
-            >
-              <Text style={[styles.mapTitle, { color: theme.colors.ink }]}>
-                {mapError
-                  ? "Map could not be loaded"
-                  : mapboxConfigured
-                    ? "Loading the Accra map"
-                    : "Mapbox token required"}
-              </Text>
-              <Text style={[styles.mapDescription, { color: theme.colors.inkMuted }]}>
-                {mapError ??
-                  (mapboxConfigured
-                    ? "Connecting to Mapbox. Check your connection if the map does not appear."
-                    : "Add a public pk. token to apps/mobile/.env to load live map tiles and search.")}
-              </Text>
-            </View>
-          )}
-          {mapReady && (!mapLoaded || mapLoadError) && (
-            <View
-              accessibilityRole={mapLoadError ? "alert" : "summary"}
-              style={[
-                styles.mapNotice,
-                { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
-              ]}
-            >
-              <Text style={[styles.mapNoticeTitle, { color: theme.colors.ink }]}>
-                {mapLoadError ? "Map tiles unavailable" : "Loading Mapbox streets"}
-              </Text>
-              <Text style={[styles.mapDescription, { color: theme.colors.inkMuted }]}>
-                {mapLoadError ?? "Waiting for map tiles from Mapbox."}
-              </Text>
-            </View>
-          )}
-          {mapReady && (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Locate me"
-              onPress={handleLocate}
-              style={[
-                styles.locateButton,
-                { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
-              ]}
-            >
-              <RovaIcon name="locate" color={theme.colors.brandStrong} size={22} />
-              <Text style={[styles.locateText, { color: theme.colors.brandStrong }]}>Locate</Text>
-            </Pressable>
-          )}
-        </View>
+
 
         {locationStatus && (
           <Text

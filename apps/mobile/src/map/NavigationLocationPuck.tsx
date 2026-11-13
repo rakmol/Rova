@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Mapbox, { Images, LocationPuck } from "@rnmapbox/maps";
 import { getLocationMotion, type LocationMotion, type MotionReading } from "./locationMotion";
+import type { Fix } from '../navigation/session';
 
 const markerImages = {
   "rova-navigation-moving": require("../../assets/images/navigation/moving.png"),
@@ -13,7 +14,7 @@ export function NavigationMarkerImages() {
   return <Images images={markerImages} />;
 }
 
-export function NavigationLocationPuck() {
+export function NavigationLocationPuck({ fix }: { fix?: Fix } = {}) {
   const [motion, setMotion] = useState<LocationMotion>("unknown");
   useEffect(() => {
     let reading: MotionReading | null = null;
@@ -21,11 +22,12 @@ export function NavigationLocationPuck() {
       reading = location;
       setMotion((previous) => getLocationMotion(location, previous, Date.now()));
     };
-    // Reuse the map SDK's location stream; do not create another Expo GPS watcher.
-    Mapbox.locationManager.addListener(update);
+    // Navigation supplies its own quality-checked fix; browsing uses the SDK feed.
+    if (fix) update({ timestamp: fix.timestamp, coords: { accuracy: fix.accuracy ?? undefined, speed: fix.speed ?? undefined, course: fix.heading ?? undefined } });
+    else Mapbox.locationManager.addListener(update);
     const timer = setInterval(() => setMotion((previous) => getLocationMotion(reading, previous, Date.now())), 2000);
-    return () => { clearInterval(timer); Mapbox.locationManager.removeListener(update); };
-  }, []);
+    return () => { clearInterval(timer); if (!fix) Mapbox.locationManager.removeListener(update); };
+  }, [fix]);
   const moving = motion === 'moving';
   // Keep stopped/unknown icons visible on the top layer without deprecated render modes.
   return <LocationPuck

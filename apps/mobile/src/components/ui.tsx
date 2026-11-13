@@ -1,4 +1,7 @@
 import type { ReactNode, RefObject } from "react";
+import { useMemo } from 'react';
+import { useScrollMenu } from './ScrollMenuContext';
+import { scrollMenu } from './scrollMenu';
 import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -27,17 +30,20 @@ export function Page({
   extraBottomPadding?: number;
 }) {
   const { theme } = useRovaTheme();
+  const menu = useScrollMenu();
+  const trackScroll = useMemo(() => scrollMenu(menu.setHidden), [menu.setHidden]);
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
       <ScrollView
+        testID="page-scroll"
         ref={scrollRef}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: theme.spacing.xl + extraBottomPadding },
+          { paddingBottom: theme.spacing.xl + extraBottomPadding + menu.height },
         ]}
         automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled"
-        onScroll={onScroll}
+        onScroll={event => { trackScroll(event.nativeEvent.contentOffset.y); onScroll?.(event); }}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
