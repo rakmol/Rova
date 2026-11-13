@@ -4,7 +4,9 @@ import { ThemeProvider } from "../theme/ThemeProvider";
 
 const mockZoomTo = jest.fn();
 const mockCameraProps = jest.fn();
-const mockCustomProvider = jest.fn();
+const mockPositionSource = jest.fn();
+const mockSymbol = jest.fn();
+const mockSetCamera = jest.fn();
 
 jest.mock("@rnmapbox/maps", () => {
   // Native map rendering is verified on the phone; exercise its camera commands here.
@@ -15,18 +17,19 @@ jest.mock("@rnmapbox/maps", () => {
   const MockMapView = (props: object) => React.createElement(View, { ...props, testID: "native-map" });
   const MockCamera = React.forwardRef(function CameraMock(props: object, ref: object) {
     mockCameraProps(props);
-    React.useImperativeHandle(ref, () => ({ zoomTo: mockZoomTo }));
+    React.useImperativeHandle(ref, () => ({ zoomTo: mockZoomTo, setCamera: mockSetCamera }));
     return null;
   });
   return {
     __esModule: true,
     default: { MapView: MockMapView, StyleURL: { Dark: "dark", Light: "light" } },
     Camera: MockCamera,
-    CustomLocationProvider: (props: object) => { mockCustomProvider(props); return null; },
+    SymbolLayer: (props: object) => { mockSymbol(props); return null; },
+    CameraGestureObserver: (props: object) => React.createElement(View, { ...props, testID: 'camera-gestures' }),
     LineLayer: () => null,
     LocationPuck: () => null,
     Images: () => null,
-    ShapeSource: View,
+    ShapeSource: (props: object) => { mockPositionSource(props); return React.createElement(View,props); },
   };
 });
 
@@ -35,11 +38,17 @@ beforeEach(() => mockZoomTo.mockClear());
 test('navigation sends each accepted fix to the marker and a short street-level camera transition',async()=>{
   const fix={coordinate:[-.2,5.6] as [number,number],accuracy:8,speed:4,heading:90,timestamp:Date.now()};
   const view=await render(<ThemeProvider><MapboxMap navigationMode navigationFix={fix} center={fix.coordinate} locationEnabled onMapLoaded={()=>{}} onMapError={()=>{}}/></ThemeProvider>);
-  expect(mockCustomProvider.mock.calls.at(-1)?.[0]).toMatchObject({coordinate:fix.coordinate,heading:90});
+  expect(mockPositionSource.mock.calls.filter(([p])=>p.id==='rova-navigation-position').at(-1)?.[0].shape.geometry.coordinates).toEqual(fix.coordinate);
   const next={...fix,coordinate:[-.1999,5.6] as [number,number],timestamp:fix.timestamp+1000};
-  await view.rerender(<ThemeProvider><MapboxMap navigationMode navigationFix={next} center={next.coordinate} locationEnabled onMapLoaded={()=>{}} onMapError={()=>{}}/></ThemeProvider>);
-  expect(mockCustomProvider.mock.calls.at(-1)?.[0]).toMatchObject({coordinate:next.coordinate});
-  expect(mockCameraProps.mock.calls.at(-1)?.[0]).toMatchObject({centerCoordinate:next.coordinate,animationDuration:300,defaultSettings:{zoomLevel:16}});
+  await view.rerender(<ThemeProvider><MapboxMap navigationMode navigationFix={next} navigationBearing={270} center={next.coordinate} locationEnabled onMapLoaded={()=>{}} onMapError={()=>{}}/></ThemeProvider>);
+  expect(mockPositionSource.mock.calls.filter(([p])=>p.id==='rova-navigation-position').at(-1)?.[0].shape.geometry.coordinates).toEqual(next.coordinate);
+  expect(mockSymbol.mock.calls.at(-1)?.[0].style).toMatchObject({iconRotate:270,iconRotationAlignment:'map'});
+  expect(mockCameraProps.mock.calls.at(-1)?.[0]).toMatchObject({centerCoordinate:next.coordinate,heading:270,animationDuration:300,defaultSettings:{zoomLevel:16}});
+  await fireEvent(view.getByTestId('camera-gestures'),'cameraChanged',{nativeEvent:{properties:{isUserInteraction:true}}});
+  expect(mockCameraProps.mock.calls.at(-1)?.[0].centerCoordinate).toBeUndefined();
+  await fireEvent.press(view.getByRole('button',{name:'Recenter on your position and follow travel direction'}));
+  expect(mockSetCamera).toHaveBeenLastCalledWith(expect.objectContaining({centerCoordinate:next.coordinate,heading:270,zoomLevel:16}));
+  expect(mockCameraProps.mock.calls.at(-1)?.[0].centerCoordinate).toEqual(next.coordinate);
   await view.unmount();
 });
 

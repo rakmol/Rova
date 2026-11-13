@@ -33,18 +33,17 @@ export default function NavigationScreen(){
  const large=fontScale>=1.3||height<650||width>height||(s.progress?.instruction?.length??0)>120;
  const compact=motion.locked&&!motion.passenger;
  const mapHeight=Math.max(180,Math.min(320,height*(large?0.3:0.36)));
- const controls=<View style={[styles.row,{flexWrap:fontScale>=1.8?'wrap':'nowrap'}]}><View style={styles.control}><ActionButton title={session.muted?tx('nav.unmute'):tx('nav.mute')} secondary onPress={session.toggleMuted}/></View>{s.state==='error'&&<View style={styles.control}><ActionButton title={tx('nav.retry')} onPress={session.retry}/></View>}<View style={styles.control}><ActionButton title={s.state==='arrived'?tx('nav.done'):tx('nav.end')} onPress={end}/></View></View>;
+ const controls=<View style={[styles.row,{flexWrap:'wrap'}]}><View style={styles.control}><ActionButton title={session.muted?tx('nav.unmute'):tx('nav.mute')} secondary onPress={session.toggleMuted}/></View>{s.state==='error'&&<View style={styles.control}><ActionButton title={tx('nav.retry')} onPress={session.retry}/></View>}<View style={styles.control}><ActionButton title={s.state==='arrived'?tx('nav.done'):tx('nav.end')} onPress={end}/></View></View>;
  return <SafeAreaView style={[styles.screen,{backgroundColor:theme.colors.background}]}>
-  <ScrollView testID="navigation-accessible-content" scrollEnabled contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+  <ScrollView testID="navigation-accessible-content" style={{flex:1}} scrollEnabled contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
    <Surface style={styles.card}>
     <NetworkNotice/>
     <View style={[styles.row,{flexWrap:'wrap'}]}><Text accessibilityLabel={route.destinationLabel} style={[styles.title,ink]}>{route.destinationLabel}</Text><Pill tone={active?'brand':'warning'}>{(s.state==='navigating'&&!s.gpsReliable)||s.state==='paused'?tx('nav.state.paused'):tx(('nav.state.'+s.state) as import('../i18n').MessageKey)}</Pill></View>
     {['idle','previewing','error','off-route','rerouting'].includes(s.state)&&<Text accessibilityLiveRegion="polite" style={[styles.note,muted]}>{s.message}</Text>}
-    {large&&controls}
     <NavigationInstruction snapshot={s} ink={theme.colors.ink} muted={theme.colors.inkMuted}/>
    </Surface>
    <View style={[styles.map,{height:mapHeight}]} testID="navigation-map-area">
-    {mapReady?<MapboxMap fill navigationMode center={session.mapFix?.coordinate??s.progress?.coordinate??route.origin} navigationFix={session.mapFix??undefined} routeGeometry={displayRoute.geometry} destination={route.destination} locationEnabled={(session.mapFix?session.updatedAt-session.mapFix.timestamp<=10000:s.gpsReliable)&&!['paused','arrived','idle','error'].includes(s.state)} onMapLoaded={()=>setMapError(null)} onMapError={setMapError}/>:<Text style={muted}>{mapError??'Preparing navigation map...'}</Text>}
+    {mapReady?<MapboxMap fill navigationMode center={session.mapFix?.coordinate??s.progress?.coordinate??route.origin} navigationFix={session.mapFix??undefined} navigationBearing={session.mapBearing} routeGeometry={displayRoute.geometry} destination={route.destination} locationEnabled={(session.mapFix?session.updatedAt-session.mapFix.timestamp<=10000:s.gpsReliable)&&!['paused','arrived','idle','error'].includes(s.state)} onMapLoaded={()=>setMapError(null)} onMapError={setMapError}/>:<Text style={muted}>{mapError??'Preparing navigation map...'}</Text>}
    </View>
    <Surface style={styles.card}>
     <JourneyMetrics metrics={[{label:tx('nav.arrivalLabel'),value:eta},{label:tx('nav.remainingLabel'),value:tx('nav.minutes',{minutes:Math.ceil(seconds/60)})},{label:tx('nav.distanceLabel'),value:travelDistance(remaining,preferences.units)},{label:preferences.units==='imperial'?tx('nav.speedMphLabel'):tx('nav.speedLabel'),value:s.speedKmh===null||!s.gpsReliable?'--':String(Math.round(s.speedKmh/(preferences.units==='imperial'?1.609344:1)))}]} />
@@ -60,9 +59,9 @@ export default function NavigationScreen(){
     <Text style={[styles.credit,muted]}>Powered by Geoapify | OpenStreetMap contributors</Text>
     {!compact&&<Text style={[styles.credit,muted]}>{tx('nav.experimental')}</Text>}
     </ScrollView>
-    {!large&&controls}
    </Surface>
   </ScrollView>
+  <View testID="persistent-navigation-controls" style={[styles.fixedControls,{backgroundColor:theme.colors.surface,borderColor:theme.colors.border}]}>{controls}</View>
  </SafeAreaView>;
 }
-const styles=StyleSheet.create({screen:{flex:1},content:{flexGrow:1},empty:{flex:1,padding:24,justifyContent:'center',gap:16},card:{marginHorizontal:12,marginVertical:8,padding:16,gap:12},row:{flexDirection:'row',gap:8,alignItems:'center'},title:{flex:1,minWidth:160,fontSize:18,lineHeight:26,fontWeight:'800'},instruction:{fontSize:28,lineHeight:36,fontWeight:'800'},map:{minHeight:180,overflow:'hidden',justifyContent:'center',marginVertical:4},metric:{flex:1,minWidth:0},control:{flex:1,minWidth:110},value:{fontSize:22,fontWeight:'800'},label:{fontSize:13,marginTop:3},note:{fontSize:16,lineHeight:24},credit:{fontSize:12,lineHeight:18}});
+const styles=StyleSheet.create({fixedControls:{paddingHorizontal:16,paddingVertical:10,borderTopWidth:1},screen:{flex:1},content:{flexGrow:1},empty:{flex:1,padding:24,justifyContent:'center',gap:16},card:{marginHorizontal:12,marginVertical:8,padding:16,gap:12},row:{flexDirection:'row',gap:8,alignItems:'center'},title:{flex:1,minWidth:160,fontSize:18,lineHeight:26,fontWeight:'800'},instruction:{fontSize:28,lineHeight:36,fontWeight:'800'},map:{minHeight:180,overflow:'hidden',justifyContent:'center',marginVertical:4},metric:{flex:1,minWidth:0},control:{flex:1,minWidth:110},value:{fontSize:22,fontWeight:'800'},label:{fontSize:13,marginTop:3},note:{fontSize:16,lineHeight:24},credit:{fontSize:12,lineHeight:18}});

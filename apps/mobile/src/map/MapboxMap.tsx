@@ -1,12 +1,13 @@
 import {tx} from "../i18n";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Mapbox, {
   Camera,
   LineLayer,
   ShapeSource,
   CircleLayer,
-  CustomLocationProvider,
+  SymbolLayer,
+  CameraGestureObserver,
 } from "@rnmapbox/maps";
 import type { MapCoordinate, MapLineString } from "./types";
 import { useRovaTheme } from "../theme/ThemeProvider";
@@ -21,6 +22,7 @@ type MapboxMapProps = {
   locationEnabled: boolean;
   navigationFix?: Fix;
   navigationMode?: boolean;
+  navigationBearing?: number | null;
   onMapLoaded: () => void;
   onMapError: (message: string) => void;
 };
@@ -33,12 +35,21 @@ export function MapboxMap({
   locationEnabled,
   navigationFix,
   navigationMode = false,
+  navigationBearing,
   onMapLoaded,
   onMapError,
 }: MapboxMapProps) {
   const { theme } = useRovaTheme();
   const camera = useRef<Camera>(null);
   const currentZoom = useRef(navigationMode ? 16 : 12);
+  const [following, setFollowing] = useState(true);
+  const bearing = navigationBearing === undefined ? navigationFix?.heading ?? null : navigationBearing;
+  function recenter() {
+    if (!locationEnabled || !navigationFix) return;
+    setFollowing(true);
+    currentZoom.current = 16;
+    camera.current?.setCamera({ centerCoordinate: navigationFix.coordinate, heading: bearing ?? 0, zoomLevel: 16, animationDuration: 450, animationMode: 'easeTo' });
+  }
   function changeZoom(amount: number) {
     const next = Math.max(0, Math.min(22, currentZoom.current + amount));
     currentZoom.current = next;
@@ -72,7 +83,8 @@ export function MapboxMap({
           )
         }
       >
-        <Camera ref={camera} centerCoordinate={center} animationDuration={navigationMode ? 300 : undefined} animationMode={navigationMode ? 'linearTo' : undefined} defaultSettings={{ zoomLevel: navigationMode ? 16 : 12 }} />
+        <Camera ref={camera} centerCoordinate={!navigationMode || following ? center : undefined} heading={navigationMode && following ? bearing ?? undefined : undefined} animationDuration={navigationMode ? 300 : undefined} animationMode={navigationMode ? 'linearTo' : undefined} defaultSettings={{ zoomLevel: navigationMode ? 16 : 12 }} />
+        {navigationMode && <CameraGestureObserver onCameraChanged={event => { if (event.nativeEvent.properties.isUserInteraction) setFollowing(false); }} />}
         <NavigationMarkerImages />
         {routeShape && (
           <ShapeSource id="rova-route-preview" shape={routeShape}>
@@ -87,8 +99,10 @@ export function MapboxMap({
             />
           </ShapeSource>
         )}
-        {locationEnabled && navigationFix && <CustomLocationProvider coordinate={navigationFix.coordinate} heading={navigationFix.heading !== null && navigationFix.heading >= 0 ? navigationFix.heading : undefined} />}
-        {locationEnabled && <NavigationLocationPuck fix={navigationFix} />}
+        {locationEnabled && navigationFix && <ShapeSource id="rova-navigation-position" shape={{ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: navigationFix.coordinate } }}>
+          <SymbolLayer id="rova-navigation-arrow" style={{ iconImage: bearing === null ? 'rova-navigation-unknown' : 'rova-navigation-moving', iconRotate: bearing ?? 0, iconRotationAlignment: 'map', iconPitchAlignment: 'map', iconSize: 1, iconAllowOverlap: true, iconIgnorePlacement: true }} />
+        </ShapeSource>}
+        {locationEnabled && !navigationFix && <NavigationLocationPuck />}
         {destination && <ShapeSource id="rova-destination" shape={{ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: destination } }}>
           <CircleLayer id="rova-destination-pin" style={{ circleRadius: 10, circleColor: theme.colors.brandStrong, circleStrokeColor: "#ffffff", circleStrokeWidth: 3 }} />
         </ShapeSource>}
@@ -100,11 +114,15 @@ export function MapboxMap({
           </Pressable>
         ))}
       </View>
+      {navigationMode && <Pressable accessibilityRole="button" accessibilityLabel="Recenter on your position and follow travel direction" accessibilityState={{ disabled: !locationEnabled || !navigationFix, selected: following }} disabled={!locationEnabled || !navigationFix} onPress={recenter} style={[styles.recenter, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, opacity: locationEnabled && navigationFix ? 1 : 0.55 }]}>
+        <Text style={{ color: theme.colors.brandStrong, fontSize: 14, fontWeight: '800' }}>Recenter</Text>
+      </Pressable>}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  recenter: { position: 'absolute', right: 12, bottom: 34, minHeight: 48, minWidth: 96, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 14, borderWidth: 1, borderRadius: 16 },
   zoomControls: {
     position: "absolute",
     right: 12,
