@@ -10,5 +10,7 @@ jobs:
     params:
       build_id: fab792c1-da23-4d42-8366-61f177967456
       profile: preview
-      js_bundle_only: false
+      # Preserve the native build's remotely assigned Android versionCode.
+      # Rewriting native metadata would restore the local minimum (4).
+      js_bundle_only: true
       message: "Preview: redesigned map, contributions and preserved driving lock"
