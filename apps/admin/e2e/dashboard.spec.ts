@@ -26,7 +26,7 @@ test('browser supports password-only login with RBAC and full independently revi
  await openSource(editor.page,title);await editor.page.getByLabel('Record fields (JSON)').fill(JSON.stringify({...source,title:title+' REVISED'}));await editor.page.getByLabel('Review comment / evidence reference').fill('ISOLATED changed evidence must be reviewed');await editor.page.getByRole('button',{name:'Save new revision for review'}).click();await expect(editor.page.getByRole('heading',{name:'Revision 2',exact:true})).toBeVisible();
  await openSource(admin.page,title+' REVISED');await admin.page.getByLabel('Review comment / evidence reference').fill('ISOLATED premature publication attempt');admin.page.once('dialog',dialog=>dialog.accept());await admin.page.getByRole('button',{name:'Publish reviewed revision',exact:true}).click();await expect(admin.page.locator('p[role=alert]')).toContainText('Independent approvals');
  await openSource(editor.page,title+' REVISED');await editor.page.getByLabel('Review comment / evidence reference').fill('ISOLATED restore prior content without approval');await editor.page.getByRole('button',{name:'Restore content before revision 2',exact:true}).click();await expect(editor.page.getByRole('heading',{name:'Revision 3',exact:true})).toBeVisible();
- const viewer=await login(browser,'viewer');await openSource(viewer.page,title);await expect(viewer.page.getByRole('button',{name:'New draft',exact:true})).toHaveCount(0);await expect(viewer.page.getByRole('button',{name:'Approve current revision',exact:true})).toHaveCount(0);
+ const viewer=await login(browser,'viewer');expect((await viewer.context.request.get('/api/ops/contributions')).status()).toBe(403);await expect(viewer.page.getByRole('link',{name:'Community contributions',exact:true})).toHaveCount(0);await openSource(viewer.page,title);await expect(viewer.page.getByRole('button',{name:'New draft',exact:true})).toHaveCount(0);await expect(viewer.page.getByRole('button',{name:'Approve current revision',exact:true})).toHaveCount(0);
  const csrf=await viewer.context.request.post('/api/ops/revise',{headers:{Origin:'https://untrusted.invalid','X-ROVA-OPS':'1'},data:{}});expect(csrf.status()).toBe(403);
  const forbidden=await viewer.context.request.post('/api/ops/revise',{headers:{Origin:'http://localhost:3002','X-ROVA-OPS':'1'},data:{}});expect(forbidden.status()).toBe(403);
  await viewer.page.getByRole('link',{name:'Sponsorship plan & analytics',exact:true}).click();await expect(viewer.page.getByText('Reviews prepare drafts only; there is no way to publish an ad.',{exact:false})).toBeVisible();
@@ -39,23 +39,21 @@ test('browser supports password-only login with RBAC and full independently revi
 });
 
 test('community suggestions require reviewer access and reviewed suggestions do not become confirmed safety records',async({browser})=>{
- const admin=await login(browser,'administrator'),viewer=await login(browser,'viewer');
+ const admin=await login(browser,'administrator');
  let token='';
  try{
   const session=await admin.context.request.post('http://127.0.0.1:4101/v1/incidents/session',{data:{platform:'android'}});expect(session.status()).toBe(201);token=(await session.json()).token;
   const headers={Authorization:'Bearer '+token};
   const sent=await admin.context.request.post('http://127.0.0.1:4101/v1/incidents/contributions',{headers,data:{kind:'fixed_camera',name:'ISOLATED BROWSER EQUIPMENT',category:'unknown',lon:-.2,lat:5.6,interaction:'passenger'}});expect(sent.status()).toBe(201);
-  expect((await viewer.context.request.get('/api/ops/contributions')).status()).toBe(403);
-  await expect(viewer.page.getByRole('link',{name:'Community contributions',exact:true})).toHaveCount(0);
   await admin.page.getByRole('link',{name:'Community contributions',exact:true}).click();
   await expect(admin.page.getByRole('heading',{name:'ISOLATED BROWSER EQUIPMENT',exact:true})).toBeVisible();
   await expect(admin.page.getByRole('button',{name:'Mark suggestion reviewed',exact:true})).toBeDisabled();
   await admin.page.getByLabel('Review comment (at least 10 characters)').fill('ISOLATED fixture review; not verified enforcement');
   await admin.page.getByRole('button',{name:'Mark suggestion reviewed',exact:true}).click();
-  await expect(admin.page.getByRole('alert')).toContainText('Suggestion review saved');
+  await expect(admin.page.locator('p[role=alert]')).toContainText('Suggestion review saved');
   const mine=await admin.context.request.get('http://127.0.0.1:4101/v1/incidents/contributions/mine',{headers});expect((await mine.json()).rows[0].status).toBe('reviewed');expect((await mine.json()).authorityVerified).toBe(false);
  }finally{
   if(token)await admin.context.request.post('http://127.0.0.1:4101/v1/incidents/erase-device',{headers:{Authorization:'Bearer '+token},data:{}});
-  await admin.context.close();await viewer.context.close();
+  await admin.context.close();
  }
 });
