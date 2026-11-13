@@ -76,6 +76,7 @@ export default function MapScreen() {
   const [selectedDestination, setSelectedDestination] = useState<Destination | null>(null);
   const [routeLoading, setRouteLoading] = useState(false);
   const [routeError, setRouteError] = useState<string | null>(null);
+  useEffect(()=>{if(motion.locked&&!motion.passenger){Keyboard.dismiss();}},[motion.locked,motion.passenger]);
 
   useEffect(() => {
     if (!mapboxConfigured) return;
@@ -277,10 +278,10 @@ export default function MapScreen() {
       <View style={styles.floatingTop}>
         <View ref={searchFieldRef} style={[styles.search,{backgroundColor:theme.colors.surface,boxShadow:theme.mode==='dark'?'0 3px 14px rgba(0,0,0,.28)':'0 3px 14px rgba(16,42,53,.12)'}]}>
           <RovaIcon name="search" color={theme.colors.brandStrong}/>
-          <TextInput accessibilityLabel="Search destinations in Ghana" editable={mapboxConfigured&&selectingId===null} value={query} placeholder="Search here" placeholderTextColor={theme.colors.inkMuted} maxLength={256} autoCorrect={false} style={[styles.input,{color:theme.colors.ink}]} onFocus={()=>{setSearchFocused(true);revealSearchResults();}} onBlur={()=>setSearchFocused(false)} onChangeText={text=>{setQuery(text);setSearchEnabled(true);setSelectedDestination(null);setRoute(null);setRouteError(null);setSuggestions([]);setSearchState('idle');setSearchMessage(null);}}/>
+          <TextInput accessibilityLabel="Search destinations in Ghana" editable={mapboxConfigured&&selectingId===null&&(!motion.locked||motion.passenger)} value={query} placeholder="Search here" placeholderTextColor={theme.colors.inkMuted} maxLength={256} autoCorrect={false} style={[styles.input,{color:theme.colors.ink}]} onFocus={()=>{setSearchFocused(true);revealSearchResults();}} onBlur={()=>setSearchFocused(false)} onChangeText={text=>{setQuery(text);setSearchEnabled(true);setSelectedDestination(null);setRoute(null);setRouteError(null);setSuggestions([]);setSearchState('idle');setSearchMessage(null);}}/>
           <Pressable accessibilityRole="button" accessibilityLabel="Open settings" onPress={()=>router.push('/(tabs)/settings')} style={[styles.profile,{backgroundColor:theme.colors.brandTint}]}><RovaIcon name="account" color={theme.colors.brandStrong}/></Pressable>
         </View>
-        {(searchState==='loading'||searchMessage||suggestions.length>0)&&<View style={[styles.searchResults,{backgroundColor:theme.colors.surface}]}>
+        {(!motion.locked||motion.passenger)&&(searchState==='loading'||searchMessage||suggestions.length>0)&&<View style={[styles.searchResults,{backgroundColor:theme.colors.surface}]}>
           {searchState==='loading'&&<Text style={{color:theme.colors.inkMuted}}>Searching places...</Text>}
           {searchMessage&&<Text accessibilityRole="alert" style={{color:theme.colors.danger}}>{searchMessage}</Text>}
           {!!suggestions.length&&<ScrollView testID="destination-suggestions" keyboardShouldPersistTaps="always" keyboardDismissMode="none" nestedScrollEnabled style={{maxHeight:240}}>{suggestions.map(suggestion=><Pressable key={suggestion.id} accessibilityRole="button" accessibilityLabel={'Choose '+suggestion.name} disabled={selectingId!==null} onPress={()=>void handleSelectDestination(suggestion)} style={[styles.result,{borderBottomColor:theme.colors.divider}]}><RovaIcon name="locate" color={theme.colors.inkMuted}/><View style={{flex:1,gap:4}}><Text style={[styles.rowTitle,{color:theme.colors.ink}]}>{selectingId===suggestion.id?'Loading destination...':suggestion.name}</Text><Text style={{color:theme.colors.inkMuted}}>{suggestion.detail}</Text></View></Pressable>)}</ScrollView>}
@@ -289,7 +290,7 @@ export default function MapScreen() {
       <View style={styles.mapSpace} pointerEvents="box-none">
         {mapReady&&<Pressable accessibilityRole="button" accessibilityLabel="Locate me" onPress={()=>void handleLocate()} style={[styles.locate,{backgroundColor:theme.colors.surface}]}><RovaIcon name="locate" color={theme.colors.brandStrong}/></Pressable>}
       </View>
-      {!searchFocused&&<View onLayout={e=>setDockHeight(e.nativeEvent.layout.height)} style={[styles.sheet,{maxHeight:screenHeight*(fontScale>=1.5?.66:expanded?.5:.38),backgroundColor:theme.colors.surface}]}>
+      {(!searchFocused||(motion.locked&&!motion.passenger))&&<View onLayout={e=>setDockHeight(e.nativeEvent.layout.height)} style={[styles.sheet,{maxHeight:screenHeight*(fontScale>=1.5?.66:expanded?.5:.38),backgroundColor:theme.colors.surface}]}>
         <Pressable accessibilityRole="button" accessibilityLabel={expanded?'Collapse journey panel':'Expand journey panel'} accessibilityState={{expanded}} onPress={()=>setExpanded(!expanded)} style={styles.sheetHandle}><View style={[styles.handle,{backgroundColor:theme.colors.divider}]}/></Pressable>
         <ScrollView testID="explore-journey-content" ref={pageScrollRef} keyboardShouldPersistTaps="handled" onScroll={e=>{scrollOffsetRef.current=e.nativeEvent.contentOffset.y;trackScroll(scrollOffsetRef.current);}} contentContainerStyle={styles.sheetContent}>
           <DrivingGate><NetworkNotice/>
@@ -312,7 +313,7 @@ export default function MapScreen() {
         </ScrollView>
         {route&&selectedDestination&&(!motion.locked||motion.passenger)&&<View testID="persistent-route-start" style={{paddingHorizontal:20,paddingBottom:12,paddingTop:8,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:theme.colors.divider}}><ActionButton title={route.originIsLive?'Start navigation':'Locate me to navigate'} onPress={()=>{if(route.originIsLive)router.push('/navigation');else void handleLocate();}}/></View>}
       </View>}
-      {searchFocused&&<View style={{height:Math.max(0,Math.min(mapHeight,keyboardHeight?0:48))}}/>}
+      {searchFocused&&(!motion.locked||motion.passenger)&&<View style={{height:Math.max(0,Math.min(mapHeight,keyboardHeight?0:48))}}/>}
     </SafeAreaView>
   </View>;
 }

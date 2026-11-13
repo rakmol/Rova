@@ -1,0 +1,14 @@
+# Manual QA-only repack. Compare the current native fingerprint with this source
+# build before running. Use a full build when native/config dependencies differ.
+name: Repack reviewed ROVA preview
+jobs:
+  preview:
+    type: repack
+    environment: preview
+    env:
+      ROVA_APP_VARIANT: preview
+    params:
+      build_id: fab792c1-da23-4d42-8366-61f177967456
+      profile: preview
+      js_bundle_only: false
+      message: "Preview: redesigned map, contributions and preserved driving lock"

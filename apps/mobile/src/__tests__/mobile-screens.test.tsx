@@ -3,6 +3,7 @@ import type { ReactElement } from "react";
 import { BackHandler, Keyboard, Pressable, Text } from "react-native";
 import MapScreen from "../app/(tabs)/map";
 import SettingsScreen from "../app/(tabs)/settings";
+import * as Driving from "../safety/driving";
 import { FeedbackMessage } from "../components/ui";
 import { isMapboxConfigured, mapboxProvider } from "../map/mapboxProvider";
 import { RouteProvider, useRoutePreview } from "../map/RouteProvider";
@@ -112,6 +113,20 @@ describe("mobile screen foundation", () => {
     expect(suggestionList.props.keyboardShouldPersistTaps).toBe("always");
     expect(suggestionList.props.nestedScrollEnabled).toBe(true);
     expect(suggestionList.props.style).toEqual(expect.objectContaining({ maxHeight: 240 }));
+  });
+
+  it('keeps floating destination search locked during driving and available to a passenger',async()=>{
+    jest.mocked(isMapboxConfigured).mockReturnValue(true);
+    const motion=jest.spyOn(Driving,'useDrivingSafety').mockReturnValue({locked:true,navigation:false,passenger:false});
+    const dismiss=jest.spyOn(Keyboard,'dismiss').mockImplementation(()=>{});
+    const view=await renderWithTheme(<MapScreen/>);
+    try{
+      expect(view.getByLabelText('Search destinations in Ghana').props.editable).toBe(false);
+      expect(dismiss).toHaveBeenCalled();expect(view.queryByTestId('destination-suggestions')).toBeNull();
+      motion.mockReturnValue({locked:true,navigation:false,passenger:true});
+      await view.rerender(<ThemeProvider><RouteProvider><MapScreen/></RouteProvider></ThemeProvider>);
+      expect(view.getByLabelText('Search destinations in Ghana').props.editable).toBe(true);
+    }finally{await view.unmount();motion.mockRestore();dismiss.mockRestore();}
   });
 
   it("allows switching to an explicit dark theme", async () => {
