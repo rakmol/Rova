@@ -17,6 +17,7 @@ import { ActionButton, Pill } from "../../components/ui";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useScrollMenu } from '../../components/ScrollMenuContext';
 import { NetworkNotice } from '../../offline/NetworkNotice';
+import { useDrivingSafety } from '../../safety/driving';
 import { DrivingGate } from '../../safety/DrivingGate';
 import { HomeBackGuard } from "../../components/HomeBackGuard";
 import { RovaIcon } from "../../components/RovaIcon";
@@ -45,6 +46,7 @@ export default function MapScreen() {
   const mapHeight = Math.max(240, Math.min(390, screenHeight * (fontScale >= 1.5 ? 0.34 : 0.42)));
   const {preferences,places}=useDriverData();
   const menu=useScrollMenu();
+  const motion=useDrivingSafety();
   const [expanded,setExpanded]=useState(false);
   const [dockHeight,setDockHeight]=useState(210);
   const { vehicleType, setVehicleType, route, setRoute, pickedDestination, setPickedDestination, selectedRoutingOption, setSelectedRoutingOption } = useRoutePreview();
@@ -166,6 +168,7 @@ export default function MapScreen() {
     if (!pickedDestination) return;
     const frame = requestAnimationFrame(() => {
       setSelectedDestination(pickedDestination);
+      setExpanded(true);
       setCenter(pickedDestination.coordinate);
       setQuery(pickedDestination.name);
       setSearchEnabled(false);
@@ -188,6 +191,7 @@ export default function MapScreen() {
       );
       sessionToken.current = createSearchSessionToken();
       setSelectedDestination(destination);
+      setExpanded(true);
       setQuery(destination.name);
       setCenter(destination.coordinate);
       await buildRoute(destination);
@@ -275,28 +279,28 @@ export default function MapScreen() {
           <Pressable accessibilityRole="button" accessibilityLabel="Open settings" onPress={()=>router.push('/(tabs)/settings')} style={[styles.profile,{backgroundColor:theme.colors.brandTint}]}><RovaIcon name="account" color={theme.colors.brandStrong}/></Pressable>
         </View>
         {(searchState==='loading'||searchMessage||suggestions.length>0)&&<View style={[styles.searchResults,{backgroundColor:theme.colors.surface}]}>
-          {searchState==='loading'&&<Text style={{color:theme.colors.inkMuted}}>Searching places?</Text>}
+          {searchState==='loading'&&<Text style={{color:theme.colors.inkMuted}}>Searching places...</Text>}
           {searchMessage&&<Text accessibilityRole="alert" style={{color:theme.colors.danger}}>{searchMessage}</Text>}
-          {!!suggestions.length&&<ScrollView testID="destination-suggestions" keyboardShouldPersistTaps="always" keyboardDismissMode="none" nestedScrollEnabled style={{maxHeight:240}}>{suggestions.map(suggestion=><Pressable key={suggestion.id} accessibilityRole="button" accessibilityLabel={'Choose '+suggestion.name} disabled={selectingId!==null} onPress={()=>void handleSelectDestination(suggestion)} style={[styles.result,{borderBottomColor:theme.colors.divider}]}><RovaIcon name="locate" color={theme.colors.inkMuted}/><View style={{flex:1,gap:4}}><Text style={[styles.rowTitle,{color:theme.colors.ink}]}>{selectingId===suggestion.id?'Loading destination?':suggestion.name}</Text><Text style={{color:theme.colors.inkMuted}}>{suggestion.detail}</Text></View></Pressable>)}</ScrollView>}
+          {!!suggestions.length&&<ScrollView testID="destination-suggestions" keyboardShouldPersistTaps="always" keyboardDismissMode="none" nestedScrollEnabled style={{maxHeight:240}}>{suggestions.map(suggestion=><Pressable key={suggestion.id} accessibilityRole="button" accessibilityLabel={'Choose '+suggestion.name} disabled={selectingId!==null} onPress={()=>void handleSelectDestination(suggestion)} style={[styles.result,{borderBottomColor:theme.colors.divider}]}><RovaIcon name="locate" color={theme.colors.inkMuted}/><View style={{flex:1,gap:4}}><Text style={[styles.rowTitle,{color:theme.colors.ink}]}>{selectingId===suggestion.id?'Loading destination...':suggestion.name}</Text><Text style={{color:theme.colors.inkMuted}}>{suggestion.detail}</Text></View></Pressable>)}</ScrollView>}
         </View>}
       </View>
       <View style={styles.mapSpace} pointerEvents="box-none">
         {mapReady&&<Pressable accessibilityRole="button" accessibilityLabel="Locate me" onPress={()=>void handleLocate()} style={[styles.locate,{backgroundColor:theme.colors.surface}]}><RovaIcon name="locate" color={theme.colors.brandStrong}/></Pressable>}
       </View>
-      {!searchFocused&&<View onLayout={e=>setDockHeight(e.nativeEvent.layout.height)} style={[styles.sheet,{maxHeight:screenHeight*(expanded||fontScale>=1.5?.66:.38),backgroundColor:theme.colors.surface}]}>
+      {!searchFocused&&<View onLayout={e=>setDockHeight(e.nativeEvent.layout.height)} style={[styles.sheet,{maxHeight:screenHeight*(fontScale>=1.5?.66:expanded?.5:.38),backgroundColor:theme.colors.surface}]}>
         <Pressable accessibilityRole="button" accessibilityLabel={expanded?'Collapse journey panel':'Expand journey panel'} accessibilityState={{expanded}} onPress={()=>setExpanded(!expanded)} style={styles.sheetHandle}><View style={[styles.handle,{backgroundColor:theme.colors.divider}]}/></Pressable>
-        <ScrollView ref={pageScrollRef} keyboardShouldPersistTaps="handled" onScroll={e=>{scrollOffsetRef.current=e.nativeEvent.contentOffset.y;}} contentContainerStyle={styles.sheetContent}>
+        <ScrollView testID="explore-journey-content" ref={pageScrollRef} keyboardShouldPersistTaps="handled" onScroll={e=>{scrollOffsetRef.current=e.nativeEvent.contentOffset.y;}} contentContainerStyle={styles.sheetContent}>
           <DrivingGate><NetworkNotice/>
           <View style={styles.heading}><Text accessibilityRole="header" style={[styles.sheetTitle,{color:theme.colors.ink}]}>{selectedDestination?.name??'Explore with ROVA'}</Text><Text style={{color:theme.colors.inkMuted,fontSize:12}}>Ghana</Text></View>
-          {mapReady&&(!mapLoaded||mapLoadError)&&<Text accessibilityRole={mapLoadError?'alert':'summary'} style={{color:theme.colors.inkMuted}}>{mapLoadError??'Loading streets?'}</Text>}
-          {routeLoading&&<Text accessibilityLiveRegion="polite" style={{color:theme.colors.inkMuted}}>Calculating route?</Text>}
+          {mapReady&&(!mapLoaded||mapLoadError)&&<Text accessibilityRole={mapLoadError?'alert':'summary'} style={{color:theme.colors.inkMuted}}>{mapLoadError??'Loading streets...'}</Text>}
+          {routeLoading&&<Text accessibilityLiveRegion="polite" style={{color:theme.colors.inkMuted}}>Calculating route...</Text>}
           {routeError&&<Text accessibilityRole="alert" style={{color:theme.colors.danger}}>{routeError}</Text>}
           {locationStatus&&<Text accessibilityRole="alert" style={{color:theme.colors.warning}}>{locationStatus}</Text>}
           {route&&selectedDestination?<>
-            <View style={styles.routeMetrics}><Text style={[styles.duration,{color:theme.colors.brandStrong}]}>{Math.max(1,Math.round((selectedRoutingOption?.durationSeconds??durationSeconds)/60))} min</Text><Text style={{color:theme.colors.inkMuted}}>{travelDistance(selectedRoutingOption?.distanceMeters??distanceMeters,preferences.units)} ? estimate</Text><Pill tone="neutral">{trafficAware?'TRAFFIC UNVERIFIED':'NO LIVE TRAFFIC'}</Pill></View>
-            <VehicleSelector value={vehicleType} onChange={setVehicleType}/>
-            <View style={styles.actions}><View style={{flex:1,minWidth:140}}><ActionButton title={route.originIsLive?'Start navigation':'Locate me to navigate'} onPress={()=>{if(route.originIsLive)router.push('/navigation');else void handleLocate();}}/></View><View style={{flex:1,minWidth:140}}><ActionButton title="Compare route options" secondary onPress={()=>router.push({pathname:'/route-options',params:{origin:route.origin.join(','),destination:route.destination.join(','),title:route.destinationLabel}})}/></View></View>
-            <Text style={{color:theme.colors.inkMuted,fontSize:12}}>{route.originIsLive?'From your location':'Preview from Accra city centre; locate yourself before navigating.'} ? Toll information {selectedRoutingOption?.tolls??'unknown'}.</Text>
+            <View style={styles.routeMetrics}><Text style={[styles.duration,{color:theme.colors.brandStrong}]}>{Math.max(1,Math.round((selectedRoutingOption?.durationSeconds??durationSeconds)/60))} min</Text><Text style={{color:theme.colors.inkMuted}}>{travelDistance(selectedRoutingOption?.distanceMeters??distanceMeters,preferences.units)} | estimate</Text><Pill tone="neutral">{trafficAware?'TRAFFIC UNVERIFIED':'NO LIVE TRAFFIC'}</Pill></View>
+            <VehicleSelector compact value={vehicleType} onChange={setVehicleType}/>
+            <View style={{flex:1,minWidth:140}}><ActionButton title="Compare route options" secondary onPress={()=>router.push({pathname:'/route-options',params:{origin:route.origin.join(','),destination:route.destination.join(','),title:route.destinationLabel}})}/></View>
+            <Text style={{color:theme.colors.inkMuted,fontSize:12}}>{route.originIsLive?'From your location':'Preview from Accra city centre; locate yourself before navigating.'} | Toll information {selectedRoutingOption?.tolls??'unknown'}.</Text>
           </>:<View style={styles.actions}>
             {([{label:'Home',icon:'home',press:()=>openSaved('home')},{label:'Work',icon:'work',press:()=>openSaved('work')},{label:'Contribute',icon:'contribute',press:()=>router.push('/(tabs)/contribute')}] as const).map(item=><Pressable key={item.label} accessibilityRole="button" accessibilityLabel={item.label} onPress={item.press} style={[styles.shortcut,{backgroundColor:theme.colors.surfaceRaised}]}><RovaIcon name={item.icon} color={theme.colors.brandStrong}/><Text style={[styles.rowTitle,{color:theme.colors.ink}]}>{item.label}</Text></Pressable>)}
           </View>}
@@ -304,6 +308,7 @@ export default function MapScreen() {
           <View style={[styles.safety,{backgroundColor:theme.colors.warningTint}]}><RovaIcon name="privacy" color={theme.colors.warning}/><View style={{flex:1,gap:4}}><Text style={[styles.rowTitle,{color:theme.colors.ink}]}>Speed limit unavailable</Text><Text style={{color:theme.colors.inkMuted,fontSize:12}}>No approved ROVA speed-limit record is available here.</Text></View></View>
           </DrivingGate>
         </ScrollView>
+        {route&&selectedDestination&&(!motion.locked||motion.passenger)&&<View testID="persistent-route-start" style={{paddingHorizontal:20,paddingBottom:12,paddingTop:8,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:theme.colors.divider}}><ActionButton title={route.originIsLive?'Start navigation':'Locate me to navigate'} onPress={()=>{if(route.originIsLive)router.push('/navigation');else void handleLocate();}}/></View>}
       </View>}
       {searchFocused&&<View style={{height:Math.max(0,Math.min(mapHeight,keyboardHeight?0:48))}}/>}
     </SafeAreaView>

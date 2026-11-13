@@ -1,4 +1,4 @@
-import { act, fireEvent, render } from "@testing-library/react-native";
+import { act, fireEvent, render, within } from "@testing-library/react-native";
 import type { ReactElement } from "react";
 import { BackHandler, Keyboard, Pressable, Text } from "react-native";
 import MapScreen from "../app/(tabs)/map";
@@ -75,6 +75,8 @@ describe("mobile screen foundation", () => {
       frame.mockRestore();
       await act(async () => { deliverDestination(Date.now()); });
       expect(view.getByText("Test suburb")).toBeTruthy();
+      expect(within(view.getByTestId("persistent-route-start")).getByRole("button",{name:"Locate me to navigate"})).toBeTruthy();
+      expect(within(view.getByTestId("explore-journey-content")).queryByRole("button",{name:"Locate me to navigate"})).toBeNull();
       expect(mapboxProvider.requestRoute).toHaveBeenCalledWith([-0.187, 5.6037], [-0.2, 5.6]);
       expect(view.getByLabelText("Search destinations in Ghana").props.value).toBe("Test suburb");
     } finally { await view.unmount(); frame.mockRestore(); }
