@@ -15,6 +15,7 @@ import { NavigationLocationPuck, NavigationMarkerImages } from "./NavigationLoca
 import type { Fix } from '../navigation/session';
 import { splitRouteAtProgress } from './routeProgress';
 import {useCommunityPins} from '../contributions/useCommunityPins';
+import type {CommunityMapPin} from '../contributions/mapPins';
 
 type MapboxMapProps = {
   fill?: boolean;
@@ -24,6 +25,7 @@ type MapboxMapProps = {
   locationEnabled: boolean;
   navigationFix?: Fix;
   navigationMode?: boolean;
+  approvedPins?: CommunityMapPin[];
   navigationBearing?: number | null;
   routeProgressMeters?: number;
   mapBottomInset?: number;
@@ -41,6 +43,7 @@ export function MapboxMap({
   locationEnabled,
   navigationFix,
   navigationMode = false,
+  approvedPins,
   navigationBearing,
   routeProgressMeters = 0,
   mapBottomInset = 0,
@@ -51,8 +54,9 @@ export function MapboxMap({
 }: MapboxMapProps) {
   const { theme } = useRovaTheme();
   const [viewArea,setViewArea]=useState<[number,number]|null>(null);
-  const communityPins=useCommunityPins(navigationMode?center:viewArea??center,!onPickCoordinate);
-  const communityShape=useMemo(()=>({type:'FeatureCollection' as const,features:communityPins.map(pin=>({type:'Feature' as const,id:pin.id,properties:{label:pin.name+' | Community'+(pin.kind==='fixed_camera'?' - unverified equipment':''),kind:pin.kind},geometry:{type:'Point' as const,coordinates:pin.coordinate}}))}),[communityPins]);
+  const fetchedPins=useCommunityPins(navigationMode?center:viewArea??center,!onPickCoordinate&&approvedPins===undefined);
+  const communityPins=approvedPins??fetchedPins;
+  const communityShape=useMemo(()=>({type:'FeatureCollection' as const,features:communityPins.map(pin=>({type:'Feature' as const,id:pin.id,properties:{label:pin.name+' | ROVA verified',kind:pin.kind},geometry:{type:'Point' as const,coordinates:pin.coordinate}}))}),[communityPins]);
   const camera = useRef<Camera>(null);
   const currentZoom = useRef(navigationMode ? 16 : 12);
   const [following, setFollowing] = useState(true);

@@ -19,23 +19,24 @@ type Access = {
 };
 export function registerContributions(app: FastifyInstance, db: Pool, access: Access) {
   const bounded = { bodyLimit: 4096, config: { rateLimit: { max: 20, timeWindow: 60000 } } };
-  app.get('/v1/incidents/contributions/nearby', {config:{rateLimit:{max:12,timeWindow:60000}},logLevel:'silent'}, async (request,reply) => {
+  app.get('/v1/incidents/contributions/nearby', {config:{rateLimit:{max:60,timeWindow:60000}},logLevel:'silent'}, async (request,reply) => {
     const point=z.object({lon:z.coerce.number().finite().min(-4).max(2),lat:z.coerce.number().finite().min(4).max(12)}).strict().parse(request.query);
     reply.header('Cache-Control','no-store');
-    const rows=await db.query(`SELECT id,kind,name,category,direction,expires_at,reviewed_at,ST_X(geometry) AS lon,ST_Y(geometry) AS lat FROM (
-      SELECT id,kind,name,category,direction,geometry,expires_at,published_at AS reviewed_at FROM community_contributions
+    const rows=await db.query(`SELECT id,kind,name,category,direction,revision,approximate_radius,expires_at,reviewed_at,ST_X(geometry) AS lon,ST_Y(geometry) AS lat FROM (
+      SELECT id,kind,name,category,direction,revision,NULL::double precision AS approximate_radius,geometry,expires_at,published_at AS reviewed_at FROM community_contributions
       WHERE status='approved' AND published_at IS NOT NULL AND expires_at>clock_timestamp()
       AND ST_DWithin(geometry::geography,ST_SetSRID(ST_MakePoint($1,$2),4326)::geography,4000)
       UNION ALL
       SELECT id,'hazard' AS kind,CASE incident_type WHEN 'flood' THEN 'Flooding' WHEN 'closure' THEN 'Road closure'
         WHEN 'congestion' THEN 'Reported congestion' ELSE initcap(incident_type) END AS name,incident_type AS category,
-        '' AS direction,geometry,expires_at,NULL::timestamptz AS reviewed_at FROM incident_reports
+        '' AS direction,revision,accuracy_meters::double precision AS approximate_radius,geometry,expires_at,NULL::timestamptz AS reviewed_at FROM incident_reports
       WHERE community_status='verified' AND NOT is_synthetic AND expires_at>clock_timestamp()
       AND ST_DWithin(geometry::geography,ST_SetSRID(ST_MakePoint($1,$2),4326)::geography,4000)
     ) pins ORDER BY ST_Distance(geometry::geography,ST_SetSRID(ST_MakePoint($1,$2),4326)::geography),id LIMIT 101`,[point.lon,point.lat]);
     return {authorityVerified:false,checkedAt:new Date().toISOString(),truncated:rows.rows.length>100,
       pins:rows.rows.slice(0,100).map(r=>({id:r.id,kind:r.kind,name:r.name,category:r.category,direction:r.direction,
-        coordinate:[r.lon,r.lat],expiresAt:r.expires_at,reviewedAt:r.reviewed_at,
+        coordinate:[r.lon,r.lat],expiresAt:r.expires_at,reviewedAt:r.reviewed_at,revision:r.revision,
+        rovaVerified:true,approximateRadiusMeters:r.approximate_radius,
         authorityVerified:false,evidence:'community'}))};
   });
   app.post('/v1/incidents/contributions', bounded, async (request, reply) => {
@@ -65,7 +66,7 @@ export function registerContributions(app: FastifyInstance, db: Pool, access: Ac
     await access.moderator(request);
     return { rows: (await db.query(`SELECT id,kind,name,category,note,direction,status,revision,created_at,expires_at,
       ST_X(geometry) AS lon,ST_Y(geometry) AS lat FROM community_contributions WHERE expires_at>now() ORDER BY status='pending' DESC,created_at DESC LIMIT 100`)).rows,
-      scope: 'Approve for display as a community map pin. Approval does not establish authority verification, speed limits or enforcement alerts. Road problems are reviewed under Hazards.' };
+      scope: 'Approval verifies a community contribution for ROVA map display and route-aware voice alerts. ROVA verification is not official authority verification and never supplies a missing legal speed limit. Road problems are reviewed under Hazards.' };
   });
   app.post('/v1/ops/contributions/review', bounded, async request => {
     const actor = await access.moderator(request);
@@ -78,7 +79,7 @@ export function registerContributions(app: FastifyInstance, db: Pool, access: Ac
       const after=(await c.query("UPDATE community_contributions SET status=$2,revision=revision+1,reviewed_at=now(),published_at=CASE WHEN $2='approved' THEN now() ELSE NULL END WHERE id=$1 RETURNING status,revision,published_at", [b.id,b.status])).rows[0];
       await c.query(`INSERT INTO admin_action_logs(actor,action,entity,entity_id,before_json,after_json,comment)
         VALUES($1,'review_contribution','contribution',$2,$3,$4,$5)`, [String(actor),b.id,JSON.stringify(before),JSON.stringify(after),b.comment]);
-      await c.query('COMMIT'); return { saved:true, authorityVerified:false };
+      await c.query('COMMIT'); return { saved:true, rovaVerified:b.status==='approved', authorityVerified:false };
     } catch (e) { await c.query('ROLLBACK'); throw e; } finally { c.release(); }
   });
 }

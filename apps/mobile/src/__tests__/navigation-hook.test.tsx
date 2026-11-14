@@ -6,7 +6,9 @@ import type { RoutingOption, RoutingResponse } from "@rova/shared";
 import { useNavigationSession } from "../navigation/useNavigationSession";
 import { routingProvider } from "../routing/runtime";
 import { fetchComplianceContext } from "../navigation/compliance-client";
+jest.mock('../contributions/useCommunityPins',()=>({useApprovedContributionFeed:()=>mockApproved}));
 const mockHazards = { reports: [] as import('@rova/shared').CommunityIncident[], checkedAt: null as number|null, stale: true, transport: 'stream' as const, truncated: false };
+const mockApproved:import('../contributions/mapPins').ApprovedContributionFeed={pins:[],checkedAt:null,stale:true};
 jest.mock('../incidents/useHazardFeed',()=>({useHazardFeed:()=>mockHazards}));
 const mockStop = jest.fn(); const mockSpeak = jest.fn();
 jest.mock("../navigation/voice", () => ({ speechAvailable: true, createVoicePlayer: () => ({ stop: mockStop, speak: mockSpeak }) }));
@@ -23,6 +25,7 @@ beforeEach(() => {
   networkObservation({isConnected:true,isInternetReachable:true});
   jest.clearAllMocks(); now = 1000000; jest.spyOn(Date, "now").mockImplementation(() => now);
   mockHazards.reports=[];mockHazards.checkedAt=null;mockHazards.stale=true;
+  mockApproved.pins=[];mockApproved.checkedAt=null;mockApproved.stale=true;
   Object.defineProperty(AppState, "currentState", { value: "active", configurable: true, writable: true });
   jest.spyOn(AppState, "addEventListener").mockImplementation((_, handler) => { changeAppState = handler; return { remove: jest.fn() }; });
   jest.mocked(Location.requestForegroundPermissionsAsync).mockResolvedValue({ granted: true } as Location.LocationPermissionResponse);
@@ -35,9 +38,12 @@ afterEach(() => jest.restoreAllMocks());
 test('navigation speaks community congestion once, without requiring a numeric speed limit',async()=>{
   mockHazards.stale=false;mockHazards.checkedAt=now;
   mockHazards.reports=[{id:'hook-congestion',category:'congestion',status:'verified',coordinate:[.0045,0],approximateRadiusMeters:150,reportedAt:new Date(now-1000).toISOString(),expiresAt:new Date(now+600000).toISOString(),revision:1,confirmations:1,notThere:0,confidence:.5,evidence:'community',authorityVerified:false}];
+  mockApproved.stale=false;mockApproved.checkedAt=now;
+  mockApproved.pins=[{id:'hook-congestion',kind:'hazard',name:'Congestion',category:'congestion',coordinate:[.0045,0],direction:'',expiresAt:new Date(now+600000).toISOString(),reviewedAt:null,revision:1,rovaVerified:true,approximateRadiusMeters:150,authorityVerified:false,evidence:'community'}];
   const hook=await renderHook(()=>useNavigationSession([.005,.005],route));await waitFor(()=>expect(Location.watchPositionAsync).toHaveBeenCalledTimes(1));
   for(let i=0;i<16;i++){now+=1000;await act(async()=>callback(sample()));}
-  expect(mockSpeak.mock.calls.filter(([text])=>String(text).startsWith('Possible congestion'))).toHaveLength(1);
+  expect(mockSpeak.mock.calls.filter(([text])=>String(text).startsWith('ROVA verified congestion'))).toHaveLength(1);
+  expect(mockSpeak.mock.calls.filter(([text])=>String(text).startsWith('Possible congestion'))).toHaveLength(0);
   expect(hook.result.current.congestionAlert?.id).toBe('hook-congestion');
   await hook.unmount();
 });
