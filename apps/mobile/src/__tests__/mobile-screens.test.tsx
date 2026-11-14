@@ -1,6 +1,6 @@
 import { act, fireEvent, render, within } from "@testing-library/react-native";
 import type { ReactElement } from "react";
-import { BackHandler, Keyboard, Pressable, Text } from "react-native";
+import { Animated, BackHandler, Keyboard, Pressable, Text } from "react-native";
 import MapScreen from "../app/(tabs)/map";
 import SettingsScreen from "../app/(tabs)/settings";
 import * as Driving from "../safety/driving";
@@ -9,6 +9,7 @@ import { isMapboxConfigured, mapboxProvider } from "../map/mapboxProvider";
 import { RouteProvider, useRoutePreview } from "../map/RouteProvider";
 import { ThemeProvider } from "../theme/ThemeProvider";
 import {ScrollMenuContext} from '../components/ScrollMenuContext';
+jest.mock('react-native-safe-area-context',()=>({...jest.requireActual('react-native-safe-area-context'),useSafeAreaInsets:()=>({top:24,bottom:24,left:0,right:0})}));
 
 jest.mock("expo-router", () => ({
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -50,13 +51,14 @@ async function renderWithTheme(component: ReactElement) {
 }
 
 beforeEach(() => {
+  jest.spyOn(Animated,'timing').mockImplementation((value,config)=>({start:done=>{(value as Animated.Value).setValue(config.toValue as number);done?.({finished:true});},stop:jest.fn(),reset:jest.fn()}));
   jest.mocked(isMapboxConfigured).mockReturnValue(false);
   jest.mocked(mapboxProvider.initialize).mockResolvedValue(undefined);
   jest.mocked(mapboxProvider.searchDestinations).mockReset();
 });
 
 describe("mobile screen foundation", () => {
-  it('restores the journey panel when search closes and scrolling the panel never hides the menu',async()=>{
+  it('restores the journey panel when search closes and scroll direction requests a menu fade',async()=>{
     jest.mocked(isMapboxConfigured).mockReturnValue(true);
     const setHidden=jest.fn();
     const view=await renderWithTheme(<ScrollMenuContext.Provider value={{height:80,setHidden}}><MapScreen/></ScrollMenuContext.Provider>);
@@ -66,10 +68,12 @@ describe("mobile screen foundation", () => {
       await fireEvent.press(view.getByRole('button',{name:'Close destination search'}));
       expect(view.getByTestId('explore-journey-content')).toBeTruthy();
       await fireEvent.scroll(view.getByTestId('explore-journey-content'),{nativeEvent:{contentOffset:{y:150}}});
-      expect(setHidden).not.toHaveBeenCalledWith(true);
+      expect(setHidden).toHaveBeenLastCalledWith(true);
+      await fireEvent.scroll(view.getByTestId('explore-journey-content'),{nativeEvent:{contentOffset:{y:100}}});
+      expect(setHidden).toHaveBeenLastCalledWith(false);
       await fireEvent.press(view.getByRole('button',{name:'Expand journey panel'}));
       expect(view.getByRole('button',{name:'Collapse journey panel'})).toBeTruthy();
-      expect(setHidden).not.toHaveBeenCalledWith(true);
+      expect(setHidden).toHaveBeenLastCalledWith(false);
     }finally{await view.unmount();}
   });
   it("accepts a destination from the dedicated search screen and previews its route", async () => {

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ComponentRef } from "react";
 import {
   Keyboard,
-  PanResponder,
+  Animated,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,6 +15,8 @@ import {
 } from "react-native";
 import { ActionButton, Pill } from "../../components/ui";
 import { SafeAreaView } from 'react-native-safe-area-context';
+import {JourneySheet} from '../../components/JourneySheet';
+import {scrollMenu} from '../../components/scrollMenu';
 import { useScrollMenu } from '../../components/ScrollMenuContext';
 import { NetworkNotice } from '../../offline/NetworkNotice';
 import { useDrivingSafety } from '../../safety/driving';
@@ -48,12 +50,7 @@ export default function MapScreen() {
   const menu=useScrollMenu();
   const {setHidden:setMenuHidden}=menu;
   const motion=useDrivingSafety();
-  const [expanded,setExpanded]=useState(false);
-  const panelGesture=useMemo(()=>PanResponder.create({
-    onMoveShouldSetPanResponder:(_event,gesture)=>Math.abs(gesture.dy)>10&&Math.abs(gesture.dy)>Math.abs(gesture.dx),
-    onPanResponderGrant:()=>setMenuHidden(false),
-    onPanResponderRelease:(_event,gesture)=>{if(Math.abs(gesture.dy)>20)setExpanded(gesture.dy<0);setMenuHidden(false);},
-  }),[setMenuHidden]);
+  const trackScroll=useMemo(()=>scrollMenu(setMenuHidden),[setMenuHidden]);
   const [dockHeight,setDockHeight]=useState(210);
   const { vehicleType, setVehicleType, route, setRoute, pickedDestination, setPickedDestination, selectedRoutingOption, setSelectedRoutingOption } = useRoutePreview();
   const mapboxConfigured = isMapboxConfigured();
@@ -177,7 +174,6 @@ export default function MapScreen() {
     if (!pickedDestination) return;
     const frame = requestAnimationFrame(() => {
       setSelectedDestination(pickedDestination);
-      setExpanded(true);
       setCenter(pickedDestination.coordinate);
       setQuery(pickedDestination.name);
       setSearchEnabled(false);
@@ -201,7 +197,6 @@ export default function MapScreen() {
       );
       sessionToken.current = createSearchSessionToken();
       setSelectedDestination(destination);
-      setExpanded(true);
       setQuery(destination.name);
       setCenter(destination.coordinate);
       await buildRoute(destination);
@@ -262,9 +257,9 @@ export default function MapScreen() {
   return <View style={[styles.screen,{backgroundColor:theme.colors.background}]}>
     <HomeBackGuard closeSearch={closeSearch}/>
     <View style={StyleSheet.absoluteFill} testID="explore-map-background">
-      {mapReady?<MapboxMap fill center={center} destination={selectedDestination?.coordinate} locationEnabled={locationEnabled} routeGeometry={selectedRoutingOption?.geometry??route?.geometry} mapBottomInset={dockHeight+menu.height} controlsTopInset={110} onMapLoaded={()=>{setMapLoaded(true);setMapLoadError(null);}} onMapError={setMapLoadError}/>:<View style={[styles.placeholder,{backgroundColor:theme.colors.surfaceRaised}]}><Text style={{color:theme.colors.ink}}>{mapError?'Map could not be loaded':mapboxConfigured?'Loading the Accra map':'Mapbox token required'}</Text></View>}
+      {mapReady?<MapboxMap fill center={center} destination={selectedDestination?.coordinate} locationEnabled={locationEnabled} routeGeometry={selectedRoutingOption?.geometry??route?.geometry} mapBottomInset={dockHeight+(menu.hidden?(menu.safeBottom??0):menu.height)} controlsTopInset={110} onMapLoaded={()=>{setMapLoaded(true);setMapLoadError(null);}} onMapError={setMapLoadError}/>:<View style={[styles.placeholder,{backgroundColor:theme.colors.surfaceRaised}]}><Text style={{color:theme.colors.ink}}>{mapError?'Map could not be loaded':mapboxConfigured?'Loading the Accra map':'Mapbox token required'}</Text></View>}
     </View>
-    <SafeAreaView edges={['top']} pointerEvents="box-none" style={[styles.screen,{paddingBottom:menu.height}]}>
+    <Animated.View pointerEvents="box-none" style={[styles.screen,{paddingBottom:menu.bottomInset??menu.height}]}><SafeAreaView edges={['top']} pointerEvents="box-none" style={styles.screen}>
       <View style={styles.floatingTop}>
         <View style={[styles.search,{backgroundColor:theme.colors.surface,boxShadow:theme.mode==='dark'?'0 3px 14px rgba(0,0,0,.28)':'0 3px 14px rgba(16,42,53,.12)'}]}>
           {searchFocused?<Pressable accessibilityRole="button" accessibilityLabel="Close destination search" onPress={closeSearch} style={styles.profile}><RovaIcon name="back" color={theme.colors.brandStrong}/></Pressable>:<RovaIcon name="search" color={theme.colors.brandStrong}/>}
@@ -280,9 +275,8 @@ export default function MapScreen() {
       <View style={styles.mapSpace} pointerEvents="box-none">
         {mapReady&&<Pressable accessibilityRole="button" accessibilityLabel="Locate me" onPress={()=>void handleLocate()} style={[styles.locate,{backgroundColor:theme.colors.surface}]}><RovaIcon name="locate" color={theme.colors.brandStrong}/></Pressable>}
       </View>
-      {(!searchFocused||(motion.locked&&!motion.passenger))&&<View onLayout={e=>setDockHeight(e.nativeEvent.layout.height)} style={[styles.sheet,{maxHeight:screenHeight*(fontScale>=1.5?.66:expanded?.5:.38),backgroundColor:theme.colors.surface}]}>
-        <Pressable {...panelGesture.panHandlers} accessibilityRole="button" accessibilityHint="Drag up to expand or down to collapse. The bottom menu stays visible." accessibilityLabel={expanded?'Collapse journey panel':'Expand journey panel'} accessibilityState={{expanded}} onPress={()=>{setExpanded(!expanded);setMenuHidden(false);}} style={styles.sheetHandle}><View style={[styles.handle,{backgroundColor:theme.colors.divider}]}/></Pressable>
-        <ScrollView testID="explore-journey-content" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.sheetContent}>
+      {(!searchFocused||(motion.locked&&!motion.passenger))&&<JourneySheet key={selectedDestination?.coordinate.join(',')??'explore'} initialExpanded={!!selectedDestination} onSettled={setDockHeight} footer={route&&selectedDestination&&(!motion.locked||motion.passenger)&&<View testID="persistent-route-start" style={{paddingHorizontal:20,paddingBottom:12,paddingTop:8,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:theme.colors.divider}}><ActionButton title={route.originIsLive?'Start navigation':'Locate me to navigate'} onPress={()=>{if(route.originIsLive)router.push('/navigation');else void handleLocate();}}/></View>}>
+        <ScrollView testID="explore-journey-content" keyboardShouldPersistTaps="handled" style={{flex:1,minHeight:0}} onScroll={event=>trackScroll(event.nativeEvent.contentOffset.y)} scrollEventThrottle={16} contentContainerStyle={styles.sheetContent}>
           <DrivingGate><NetworkNotice/>
           <View style={styles.heading}><Text accessibilityRole="header" style={[styles.sheetTitle,{color:theme.colors.ink}]}>{selectedDestination?.name??'Explore with ROVA'}</Text><Text style={{color:theme.colors.inkMuted,fontSize:12}}>Ghana</Text></View>
           {mapReady&&(!mapLoaded||mapLoadError)&&<Text accessibilityRole={mapLoadError?'alert':'summary'} style={{color:theme.colors.inkMuted}}>{mapLoadError??'Loading streets...'}</Text>}
@@ -300,10 +294,9 @@ export default function MapScreen() {
           <Pressable accessibilityRole="button" accessibilityLabel="Search destinations & recent searches" onPress={()=>router.push('/destination-search')} style={styles.result}><RovaIcon name="search" color={theme.colors.inkMuted}/><Text style={{color:theme.colors.ink,flex:1}}>Recent searches & saved places</Text><RovaIcon name="chevron" color={theme.colors.inkMuted}/></Pressable>
           </DrivingGate>
         </ScrollView>
-        {route&&selectedDestination&&(!motion.locked||motion.passenger)&&<View testID="persistent-route-start" style={{paddingHorizontal:20,paddingBottom:12,paddingTop:8,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:theme.colors.divider}}><ActionButton title={route.originIsLive?'Start navigation':'Locate me to navigate'} onPress={()=>{if(route.originIsLive)router.push('/navigation');else void handleLocate();}}/></View>}
-      </View>}
+      </JourneySheet>}
       {searchFocused&&(!motion.locked||motion.passenger)&&<View style={{height:Math.max(0,Math.min(mapHeight,keyboardHeight?0:48))}}/>}
-    </SafeAreaView>
+    </SafeAreaView></Animated.View>
   </View>;
 }
 const styles=StyleSheet.create({
