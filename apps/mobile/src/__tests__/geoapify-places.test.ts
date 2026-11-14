@@ -13,6 +13,7 @@ test("one search adapter accepts both real provider street and landmark records,
   expect(results[0].attribution).toContain("OpenStreetMap");
   expect(await provider.details(results[0])).toEqual(results[0]);
   await provider.autocomplete("Test", [-0.187, 5.6037]);
+  await provider.autocomplete("Test", [-0.18701, 5.60371]);
   expect(fetcher).toHaveBeenCalledTimes(1);
   expect(String(fetcher.mock.calls[0][0])).not.toContain("apiKey");
   const wrongCountry = { ...feature, properties: { ...feature.properties, country_code: "us" } };

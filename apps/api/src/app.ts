@@ -49,7 +49,7 @@ export async function buildApp(options: { config?: ApiConfig; database?: Pool; l
   app.get("/health", { config: { rateLimit: false } }, async () => ({ service: "rova-api", status: "ok" }));
   app.get("/ready", async (_request, reply) => {
     try {
-      const result = await database.query("SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname='postgis') AS postgis, to_regclass('public.speed_limit_rules') IS NOT NULL AS schema_ready, EXISTS (SELECT 1 FROM schema_migrations WHERE version='016_community_contributions.sql') AS migrated");
+      const result = await database.query("SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname='postgis') AS postgis, to_regclass('public.speed_limit_rules') IS NOT NULL AS schema_ready, EXISTS (SELECT 1 FROM schema_migrations WHERE version='017_approved_community_map_pins.sql') AS migrated");
       if (!result.rows[0]?.postgis || !result.rows[0]?.schema_ready || !result.rows[0]?.migrated) throw new Error("Database setup incomplete");
       return { status: "ready" };
     } catch { app.log.warn({ dependency: "database" }, "Readiness check failed"); return reply.code(503).send({ status: "not_ready", dependency: "database" }); }

@@ -2,6 +2,8 @@ import { fireEvent, render } from "@testing-library/react-native";
 import { MapboxMap } from "../map/MapboxMap";
 import { ThemeProvider } from "../theme/ThemeProvider";
 
+jest.mock('../contributions/useCommunityPins',()=>({useCommunityPins:()=>[]}));
+
 const mockZoomTo = jest.fn();
 const mockCameraProps = jest.fn();
 const mockPositionSource = jest.fn();

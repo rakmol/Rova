@@ -7,6 +7,15 @@ jest.mock('expo-router',()=>{
   const React=require('react');
   return {router:{canGoBack:jest.fn(()=>false)},useFocusEffect:(callback:()=>void)=>React.useEffect(callback,[callback])};
 });
+
+test('home Back closes destination search before history or the exit prompt',async()=>{
+ jest.replaceProperty(Platform,'OS','android');let back!:()=>boolean|null|undefined;
+ jest.spyOn(BackHandler,'addEventListener').mockImplementation((_,fn)=>{back=fn;return{remove:jest.fn()};});
+ const alert=jest.spyOn(Alert,'alert').mockImplementation(()=>{}),closeSearch=jest.fn(()=>true);
+ const view=await render(<HomeBackGuard closeSearch={closeSearch}/>);
+ try{await act(()=>{expect(back()).toBe(true);});expect(closeSearch).toHaveBeenCalledTimes(1);expect(alert).not.toHaveBeenCalled();}
+ finally{await view.unmount();jest.restoreAllMocks();}
+});
 test('home Back confirms exit, preserves normal back navigation and cleans up its listener',async()=>{
   jest.replaceProperty(Platform,'OS','android');
   let back!:()=>boolean|null|undefined;

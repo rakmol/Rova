@@ -29,12 +29,12 @@ test("real PostGIS migrations, constraints, synthetic isolation, review guards a
     await client.query("DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='anon') THEN CREATE ROLE anon NOLOGIN; END IF; IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='authenticated') THEN CREATE ROLE authenticated NOLOGIN; END IF;IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='service_role') THEN CREATE ROLE service_role NOLOGIN; END IF; END $$; ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon,authenticated,service_role;ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO anon,authenticated,service_role");
     const migrations = await loadMigrations();
     await t.test("migrations apply once; checksums and transaction rollback protect the ledger", async () => {
-      assert.equal((await migrate(client, migrations)).length, 16);
+      assert.equal((await migrate(client, migrations)).length, 17);
       assert.equal((await migrate(client, migrations)).length, 0);
       await assert.rejects(migrate(client, [{ ...migrations[0], checksum: "0".repeat(64) }, ...migrations.slice(1)]), /checksum mismatch/);
       await assert.rejects(migrate(client, [...migrations, { version: "099_failed_test.sql", checksum: "1".repeat(64), sql: "CREATE TABLE rollback_probe(id int); SELECT missing_function_for_test();" }]));
       assert.equal((await client.query("SELECT to_regclass('public.rollback_probe') AS probe")).rows[0].probe, null);
-      assert.equal((await client.query("SELECT count(*)::int AS n FROM schema_migrations")).rows[0].n, 16);
+      assert.equal((await client.query("SELECT count(*)::int AS n FROM schema_migrations")).rows[0].n, 17);
     });
     await t.test('hosted Supabase API roles cannot bypass the backend through tables/views or safety RPCs',async()=>{for(const who of ['anon','authenticated','service_role']){for(const name of ['speed_limit_rules','audit_logs','road_segments','pilot_telemetry_batches','admin_members','published_speed_limit_rules','hosting_maintenance_runs','community_contributions','spatial_ref_sys'])assert.equal((await client.query("SELECT has_table_privilege($1,$2,'SELECT') AS allowed",[who,name])).rows[0].allowed,false);assert.equal((await client.query("SELECT has_function_privilege($1,'rova_speed_limit_candidates(double precision,double precision,double precision,text)','EXECUTE') AS allowed",[who])).rows[0].allowed,false);}});
     await t.test('pilot consent receipts are idempotent, reject private payloads, and serialize withdrawal against uploads',async()=>{const app=await buildApp({config:readConfig({NODE_ENV:'test',PILOT_TELEMETRY_ENABLED:'true',RATE_LIMIT_MAX:'1000'}),database:new Pool({connectionString}),logger:false});let token='';try{token=await checkPilotTelemetry(app,client);}finally{await app.close();}const off=await buildApp({config:readConfig({NODE_ENV:'test'}),database:new Pool({connectionString}),logger:false});try{assert.equal((await off.inject({method:'POST',url:'/v1/pilot/telemetry/session',payload:{consent:true,consentVersion:1}})).statusCode,503);assert.equal((await off.inject({method:'POST',url:'/v1/pilot/telemetry/erase',payload:{},headers:{authorization:'Bearer '+token}})).statusCode,200);}finally{await off.close();}});
@@ -305,14 +305,22 @@ test("real PostGIS migrations, constraints, synthetic isolation, review guards a
         const mine=(headers=author)=>app.inject({url:'/v1/incidents/contributions/mine',headers});
         assert.equal((await mine()).json().rows[0].status,'pending');assert.equal((await mine(other)).json().rows.length,0);
         assert.equal((await mine()).body.includes('device_id'),false);
-        const review=(revision:number)=>app.inject({method:'POST',url:'/v1/ops/contributions/review',headers:mod,payload:{id,revision,status:'reviewed',comment:'ISOLATED reviewed observation only'}});
+        const nearby=async()=>{const response=await app.inject('/v1/incidents/contributions/nearby?lon=-.2&lat=5.6');assert.equal(response.statusCode,200,response.body);return response.json().pins;};
+        assert.equal((await nearby()).some((p:any)=>p.id===id),false);
+        const review=(revision:number,status='reviewed')=>app.inject({method:'POST',url:'/v1/ops/contributions/review',headers:mod,payload:{id,revision,status,comment:'ISOLATED reviewed observation only'}});
         assert.equal((await review(1)).statusCode,200);assert.equal((await review(1)).statusCode,409);
         assert.equal((await mine()).json().rows[0].status,'reviewed');
+        assert.equal((await nearby()).some((p:any)=>p.id===id),false);
+        assert.equal((await review(2,'approved')).statusCode,200);
+        const pin=(await nearby()).find((p:any)=>p.id===id);assert.deepEqual(pin.coordinate,[-.2,5.6]);assert.equal(pin.authorityVerified,false);assert.equal(pin.evidence,'community');assert.equal(pin.kind,'fixed_camera');assert.equal('note' in pin,false);assert.equal('device_id' in pin,false);
+        assert.equal((await app.inject('/v1/incidents/contributions/nearby?lon=0&lat=10')).json().pins.some((p:any)=>p.id===id),false);
+        assert.equal((await review(3,'rejected')).statusCode,200);assert.equal((await nearby()).some((p:any)=>p.id===id),false);
+        assert.equal((await review(4,'approved')).statusCode,200);
         assert.equal((await client.query('SELECT count(*)::int AS n FROM published_enforcement_zones WHERE id=$1',[id])).rows[0].n,0);
-        assert.equal((await client.query("SELECT count(*)::int AS n FROM admin_action_logs WHERE entity='contribution' AND entity_id=$1",[id])).rows[0].n,1);
+        assert.equal((await client.query("SELECT count(*)::int AS n FROM admin_action_logs WHERE entity='contribution' AND entity_id=$1",[id])).rows[0].n,4);
         for(let n=0;n<3;n++)assert.equal((await submit()).statusCode,200);
         assert.equal((await submit()).statusCode,429);
-        await client.query("UPDATE community_contributions SET expires_at=now()-interval '1 second' WHERE id=$1",[id]);assert.equal((await mine()).json().rows.length,0);assert.equal((await review(2)).statusCode,409);
+        await client.query("UPDATE community_contributions SET expires_at=now()-interval '1 second' WHERE id=$1",[id]);assert.equal((await mine()).json().rows.length,0);assert.equal((await review(5)).statusCode,409);assert.equal((await nearby()).some((p:any)=>p.id===id),false);
         assert.equal((await app.inject({method:'POST',url:'/v1/incidents/erase-device',headers:author,payload:{}})).statusCode,200);
         assert.equal((await client.query('SELECT count(*)::int AS n FROM community_contributions WHERE id=$1',[id])).rows[0].n,0);
       }finally{await app.close();}
@@ -473,7 +481,7 @@ test("real PostGIS migrations, constraints, synthetic isolation, review guards a
       await client.query("INSERT INTO speed_rule_approvals(speed_rule_id,reviewer_id,decision,reason) VALUES($1,'a','approve','test'),($1,'b','approve','test')", [legacyRule]);
       await client.query("UPDATE speed_rules SET status='published',verified_by='a',verified_at=now() WHERE id=$1", [legacyRule]);
       await assert.rejects(migrate(client, migrations), /baseline-legacy/);
-      assert.deepEqual(await migrate(client, migrations, true), ["003_backend_foundation.sql", "004_verified_speed_matching.sql", "005_driver_compliance_alerts.sql", "006_map_data_review_staging.sql", "007_reported_road_advisories.sql", "008_community_incidents.sql", "009_driver_accounts.sql", "010_admin_review.sql", "011_opt_in_notifications.sql", "012_sponsorship_prelaunch.sql", "013_batch_a_protection.sql", "014_accra_pilot.sql", "015_hosting.sql", "016_community_contributions.sql"]);
+      assert.deepEqual(await migrate(client, migrations, true), ["003_backend_foundation.sql", "004_verified_speed_matching.sql", "005_driver_compliance_alerts.sql", "006_map_data_review_staging.sql", "007_reported_road_advisories.sql", "008_community_incidents.sql", "009_driver_accounts.sql", "010_admin_review.sql", "011_opt_in_notifications.sql", "012_sponsorship_prelaunch.sql", "013_batch_a_protection.sql", "014_accra_pilot.sql", "015_hosting.sql", "016_community_contributions.sql", "017_approved_community_map_pins.sql"]);
       const preserved = await client.query("SELECT status,source_id FROM speed_limit_rules WHERE id=$1", [legacyRule]);
       assert.equal(preserved.rows[0].status, "pending_review"); assert.ok(preserved.rows[0].source_id);
       assert.equal((await client.query("SELECT count(*)::int AS n FROM speed_rule_approvals WHERE speed_rule_id=$1", [legacyRule])).rows[0].n, 2);

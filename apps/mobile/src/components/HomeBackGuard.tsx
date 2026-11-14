@@ -3,13 +3,14 @@ import { Alert, BackHandler, Keyboard, Platform } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useScrollMenu } from './ScrollMenuContext';
 
-export function HomeBackGuard() {
+export function HomeBackGuard({ closeSearch }: { closeSearch?: () => boolean }) {
   const showing = useRef(false);
   const { setHidden } = useScrollMenu();
   useFocusEffect(useCallback(() => {
     setHidden(false);
     if (Platform.OS !== 'android') return;
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (closeSearch?.()) return true;
       if (Keyboard.isVisible()) { Keyboard.dismiss(); return true; }
       if (router.canGoBack()) return false;
       if (!showing.current) {
@@ -23,6 +24,6 @@ export function HomeBackGuard() {
       return true;
     });
     return () => { showing.current = false; subscription.remove(); };
-  }, [setHidden]));
+  }, [setHidden, closeSearch]));
   return null;
 }

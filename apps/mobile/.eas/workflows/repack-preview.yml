@@ -13,4 +13,4 @@ jobs:
       # Preserve the native build's remotely assigned Android versionCode.
       # Rewriting native metadata would restore the local minimum (4).
       js_bundle_only: true
-      message: "Preview: redesigned map, contributions and preserved driving lock"
+      message: "Preview: contribution reporting and approved pins, search back and stable home menu"
