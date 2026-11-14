@@ -23,7 +23,7 @@ export default function TabLayout() {
   const barHeight = Math.max(70, Math.ceil(62 * Math.min(fontScale, 2))) + insets.bottom;
 
   return (
-    <ScrollMenuProvider height={barHeight}><Tabs
+    <ScrollMenuProvider height={barHeight} safeBottom={insets.bottom}><Tabs
       backBehavior="firstRoute"
       tabBar={props => <ScrollTabBar {...props} />}
       screenOptions={({ route }) => {

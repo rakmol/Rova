@@ -2,6 +2,7 @@ import type { ReactNode, RefObject } from "react";
 import { useMemo } from 'react';
 import { useScrollMenu } from './ScrollMenuContext';
 import { scrollMenu } from './scrollMenu';
+import {ScrollMenuSpacer} from './ScrollMenuSpacer';
 import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -33,13 +34,13 @@ export function Page({
   const menu = useScrollMenu();
   const trackScroll = useMemo(() => scrollMenu(menu.setHidden), [menu.setHidden]);
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
+    <SafeAreaView edges={menu.height>0?['top']:['top','bottom']} style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
       <ScrollView
         testID="page-scroll"
         ref={scrollRef}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: theme.spacing.xl + extraBottomPadding + menu.height },
+          { paddingBottom: theme.spacing.xl + extraBottomPadding },
         ]}
         automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled"
@@ -51,6 +52,7 @@ export function Page({
           <NetworkNotice />
           {children}
         </DrivingGate>
+        <ScrollMenuSpacer/>
       </ScrollView>
     </SafeAreaView>
   );

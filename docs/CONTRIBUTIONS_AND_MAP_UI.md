@@ -4,7 +4,9 @@ The Explore screen uses a full-screen map, floating search and an expandable jou
 
 Google Maps' official [getting started](https://support.google.com/maps/answer/144349) and [Contribute](https://support.google.com/maps/answer/9678350) documentation informed the organisation. ROVA keeps its own identity, map providers and safety labels; it does not use Google's branding, assets or map data.
 
-Android Back closes an active destination search and restores the journey panel, or closes a Settings category/contribution form. At a top-level tab it returns directly to Explore instead of walking tab visit history. The home search also has an explicit Back arrow. Dragging the journey handle expands/collapses the panel; scrolling this panel never hides the bottom menu. Other full-page lists retain their scroll-to-hide menu behaviour. The unavailable-speed card has been removed from Explore; navigation still honestly indicates unknown limits.
+Android Back closes an active destination search and restores the journey panel, or closes a Settings category/contribution form. At a top-level tab it returns directly to Explore instead of walking tab visit history. The home search also has an explicit Back arrow. The unavailable-speed card has been removed from Explore; navigation still honestly indicates unknown limits.
+
+The bottom menu fades out/in over 200 ms with scroll direction. Its reserved space shrinks/grows with the fade, down to the Android safe-bottom inset, rather than leaving a blank strip. Hidden controls do not receive taps or screen-reader focus. Screen-reader users retain the menu while scrolling; the keyboard temporarily hides it. Dragging the journey handle resizes the panel continuously and settles at peek, compact or expanded height. A 48 dp handle also supports accessible tap expansion/collapse. Panel dragging is separate from content scrolling and does not request hiding the menu. Start navigation stays in the panel footer outside its scrollable content. Map camera padding updates at settled panel sizes, not on every drag frame.
 
 ## Contribution flow
 
