@@ -27,3 +27,14 @@ test("landmark mode fails clearly for missing proxy or a backend configured for 
   const provider = createGeoapifyPlacesProvider({ proxyUrl: "https://api.example.com/v1/places/search", fetchImpl: fetcher });
   await expect(provider.autocomplete("Test", [-0.187, 5.6037])).rejects.toThrow(/not configured for Geoapify/);
 });
+
+test('runtime search timeout can allow proxy and mobile-network overhead without waiting indefinitely',async()=>{
+ jest.useFakeTimers();let signal!:AbortSignal;
+ const fetcher=jest.fn((_url:unknown,options?:RequestInit)=>new Promise<Response>((_resolve,reject)=>{signal=options!.signal!;signal.addEventListener('abort',()=>reject(new Error('Request aborted')),{once:true});}));
+ const provider=createGeoapifyPlacesProvider({proxyUrl:'https://api.example.com/v1/places/search',requestTimeoutMs:12000,fetchImpl:fetcher as typeof fetch});
+ try{
+  const result=expect(provider.autocomplete('Test',[-.2,5.6])).rejects.toThrow('Search timed out');
+  await jest.advanceTimersByTimeAsync(8001);expect(signal.aborted).toBe(false);
+  await jest.advanceTimersByTimeAsync(4000);await result;expect(signal.aborted).toBe(true);
+ }finally{jest.useRealTimers();}
+});

@@ -9,4 +9,6 @@ export const placesProvider = (landmarkSearchEnabled ? createGeoapifyPlacesProvi
   accessToken: process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN || Constants.expoConfig?.extra?.mapboxAccessToken,
   proxyUrl: process.env.EXPO_PUBLIC_PLACES_PROXY_URL || tunnelProxy,
   permanentStorage: process.env.EXPO_PUBLIC_PLACES_PERMANENT_STORAGE === "true",
+  // The proxy allows 8 seconds upstream; leave room for mobile-network and cold-start latency.
+  requestTimeoutMs: 12000,
 });

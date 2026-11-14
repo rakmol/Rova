@@ -5,6 +5,9 @@ import {ThemeProvider} from '../theme/ThemeProvider';
 import {myContributions,submitContribution} from '../contributions/client';
 import {submitIncident,nearbyIncidents} from '../incidents/client';
 import * as Location from 'expo-location';
+import {placesProvider} from '../places/runtime';
+jest.mock('../places/runtime',()=>({placesProvider:{autocomplete:jest.fn()}}));
+const mockMapProps=jest.fn();
 jest.mock('../incidents/NearbyHazards',()=>({NearbyHazards:()=>null}));
 jest.mock('../incidents/client',()=>({submitIncident:jest.fn(),nearbyIncidents:jest.fn(),voteIncident:jest.fn(),canInteract:jest.fn(()=>true)}));
 jest.mock('expo-location',()=>({getForegroundPermissionsAsync:jest.fn(),hasServicesEnabledAsync:jest.fn(),requestForegroundPermissionsAsync:jest.fn(),getCurrentPositionAsync:jest.fn(),Accuracy:{High:4}}));
@@ -15,7 +18,7 @@ jest.mock('../map/mapboxProvider',()=>({accraDevelopmentCenter:[-.2,5.6],mapboxP
 jest.mock('../map/MapboxMap',()=>{
  // eslint-disable-next-line @typescript-eslint/no-require-imports
  const {View,Pressable,Text}=require('react-native');
- return {MapboxMap:({onPickCoordinate}:{onPickCoordinate:(p:[number,number])=>void})=><View><Pressable accessibilityRole="button" accessibilityLabel="Pick fixture point" onPress={()=>onPickCoordinate([-.21,5.61])}><Text>Fixture map only</Text></Pressable></View>};});
+ return {MapboxMap:(props:{center:[number,number];onPickCoordinate:(p:[number,number])=>void})=>{mockMapProps(props);return <View><Pressable accessibilityRole="button" accessibilityLabel="Pick fixture point" onPress={()=>props.onPickCoordinate([-.21,5.61])}><Text>Fixture map only</Text></Pressable></View>;}};});
 jest.mock('../contributions/client',()=>({myContributions:jest.fn(),submitContribution:jest.fn()}));
 beforeEach(()=>{jest.clearAllMocks();jest.spyOn(AppState,'addEventListener').mockImplementation(()=>({remove:jest.fn()}));jest.mocked(Location.getForegroundPermissionsAsync).mockResolvedValue({granted:true} as never);jest.mocked(Location.hasServicesEnabledAsync).mockResolvedValue(true);jest.mocked(myContributions).mockResolvedValue([]);jest.mocked(submitContribution).mockResolvedValue({id:'test-only',duplicate:false,authorityVerified:false} as never);});
 test('a guest chooses an explicit map point and parked mode before sending a pending place proposal',async()=>{
@@ -139,5 +142,23 @@ test('a failed submission keeps the draft and a saved submission is not describe
   jest.mocked(myContributions).mockRejectedValueOnce(new Error('History request unavailable'));
   await fireEvent.press(view.getByRole('button',{name:'Send for review'}));await waitFor(()=>expect(view.getByText('Sent for review. Your contributions list could not refresh; do not send again.')).toBeTruthy());
   expect(view.getByText('Thank you for contributing')).toBeTruthy();expect(submitContribution).toHaveBeenCalledTimes(2);
+ }finally{await view.unmount();}
+});
+
+test('choosing a road suggestion moves the report map and requires an observed pin instead of publishing the area centroid as a camera',async()=>{
+ const place={id:'synthetic-area',name:'TEST ONLY Legon area',detail:'Synthetic provider fixture',coordinate:[-.18,5.65] as [number,number],attribution:'Geoapify | OpenStreetMap contributors'};
+ jest.mocked(placesProvider.autocomplete).mockResolvedValue([place]);
+ const view=await render(<ThemeProvider><ContributeScreen/></ThemeProvider>);
+ try{
+  await fireEvent.press(view.getByRole('button',{name:'Report fixed enforcement equipment'}));await fireEvent.press(view.getByRole('button',{name:"I'm safely parked"}));
+  await fireEvent.press(view.getByRole('button',{name:'Pick fixture point'}));
+  await fireEvent(view.getByLabelText('Contribution name'),'focus');await fireEvent.changeText(view.getByLabelText('Contribution name'),'Legon');
+  const suggestion=await view.findByRole('button',{name:'Use area TEST ONLY Legon area'},{timeout:5000});await fireEvent.press(suggestion);
+  expect(view.getByLabelText('Contribution name').props.value).toBe(place.name);
+  expect(mockMapProps.mock.calls.at(-1)![0].center).toEqual(place.coordinate);expect(mockMapProps.mock.calls.at(-1)![0].destination).toBeUndefined();
+  expect(view.getByRole('button',{name:'Send for review'}).props.accessibilityState.disabled).toBe(true);
+  expect(view.getByText(/Area found. Tap the exact observed location/)).toBeTruthy();
+  await fireEvent.press(view.getByRole('button',{name:'Pick fixture point'}));expect(view.getByRole('button',{name:'Send for review'}).props.accessibilityState.disabled).toBe(false);
+  expect(submitContribution).not.toHaveBeenCalled();
  }finally{await view.unmount();}
 });
