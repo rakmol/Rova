@@ -18,11 +18,17 @@ import { useHazardFeed } from '../incidents/useHazardFeed';
 import { CongestionAlertEngine, type CongestionAlert } from './congestion-alerts';
 import {pilotRuntime} from '../pilot/runtime';
 import { TravelBearing } from './travelBearing';
+import {useApprovedContributionFeed} from '../contributions/useCommunityPins';
+import {ApprovedContributionAlertEngine,type ContributionAlert} from './approved-contribution-alerts';
 
 const fromLocation = (location: Location.LocationObject): Fix => ({ coordinate: [location.coords.longitude, location.coords.latitude], accuracy: location.coords.accuracy, timestamp: location.timestamp, speed: location.coords.speed, heading: location.coords.heading });
 
 export function useNavigationSession(destination: RoutingCoordinate | undefined, selected: RoutingOption | null, vehicleType: VehicleClass = "private_car") {
   const [snapshot, setSnapshot] = useState(() => new NavigationMachine().snapshot);
+  const approvedContributions=useApprovedContributionFeed(snapshot.progress?.coordinate??[0,0],snapshot.gpsReliable&&snapshot.state==='navigating',15000);
+  const contributionsRef=useRef(approvedContributions);
+  useEffect(()=>{contributionsRef.current=approvedContributions;},[approvedContributions]);
+  const [contributionAlert,setContributionAlert]=useState<ContributionAlert|null>(null);
   const communityHazards = useHazardFeed(snapshot.gpsReliable && snapshot.state === 'navigating' ? snapshot.progress?.coordinate : undefined);
   const hazardsRef = useRef(communityHazards);
   useEffect(() => { hazardsRef.current = communityHazards; }, [communityHazards]);
@@ -53,6 +59,7 @@ export function useNavigationSession(destination: RoutingCoordinate | undefined,
     const alerts = new SmartAlertEngine();
     const reportedAlerts=new ReportedRoadAlertEngine();
     const congestion = new CongestionAlertEngine();
+    const contributions=new ApprovedContributionAlertEngine();
     let safetyContext: BoundComplianceContext | null = null;
     let safetyRequest: AbortController | null = null;
     let lastSafetyRequest = -Infinity;
@@ -114,15 +121,18 @@ export function useNavigationSession(destination: RoutingCoordinate | undefined,
         suppressPrompt: !!navigationPrompt || now - lastVoiceAt < 12000 || (next.progress?.turnMeters !== null && next.progress?.turnMeters !== undefined && next.progress.turnMeters < 80) });
       setSmartAlerts(alert);
       if (alert.alert && alertAudioRef.current && !mutedRef.current) { lastVoiceAt = now; void voice.speak(alert.alert.text,{kind:'safety',id:alert.alert.id}); }
+      const contribution=contributions.update({feed:contributionsRef.current,fix:lastFix,path:next.route?.geometry.coordinates??[],progress:next.progress?.along??0,now,navigating:safetyActive,
+        audioEnabled:alertAudioRef.current&&!mutedRef.current,suppressPrompt:!!navigationPrompt||!!alert.alert||now-lastVoiceAt<12000||(next.progress?.turnMeters!==null&&next.progress?.turnMeters!==undefined&&next.progress.turnMeters<80)});
+      setContributionAlert(contribution.nearby);
+      if(contribution.speak){lastVoiceAt=now;void voice.speak(contribution.speak,{kind:'community',id:`approved-contribution:${contribution.nearby?.id}`});}
       const report=reportedAlerts.update({context:safetyContext,fix:lastFix,progressMeters:next.progress?.along??0,reliable:next.gpsReliable,navigating:safetyActive,
         enabled:smartAlertFlags.enabled&&reportedRoadAlertsEnabled,now,suppressPrompt:!!navigationPrompt||!!alert.alert||now-lastVoiceAt<12000||(next.progress?.turnMeters!==null&&next.progress?.turnMeters!==undefined&&next.progress.turnMeters<80)});
       setReportedRoadAlert(report);
       if(report.alert&&alertAudioRef.current&&!mutedRef.current){lastVoiceAt=now;void voice.speak(report.alert.text,{kind:'community',id:report.alert.id});}
       const traffic = congestion.update({ feed: hazardsRef.current, fix: lastFix, path: next.route?.geometry.coordinates ?? [], progress: next.progress?.along ?? 0, now,
-        navigating: safetyActive, audioEnabled: alertAudioRef.current && !mutedRef.current,
+        navigating: safetyActive, audioEnabled: false, // Approved-contribution engine owns hazard speech; keep this engine's visual summary only.
         suppressPrompt: !!navigationPrompt || !!alert.alert || !!report.alert || now-lastVoiceAt<12000 || (next.progress?.turnMeters !== null && next.progress?.turnMeters !== undefined && next.progress.turnMeters<80) });
       setCongestionAlert(traffic.nearby);
-      if (traffic.speak) { lastVoiceAt=now; void voice.speak(traffic.speak,{kind:'community',id:`congestion:${traffic.nearby?.id}`}); }
       if (next.state === "arrived") { watchGeneration++; watch?.remove(); watch = undefined; rerouteAbort?.abort(); }
     };
     const recalculate = async () => {
@@ -224,7 +234,7 @@ export function useNavigationSession(destination: RoutingCoordinate | undefined,
     return () => { if(!outcome)pilotRuntime.record('nav_cancelled');navigationInteraction(false); active = false; controller.abort(); rerouteAbort?.abort(); safetyRequest?.abort(); watchGeneration++; watch?.remove(); voice.stop(); appState.remove(); clearInterval(timer); control.current = null; };
   }, [lon, lat, selected, retry, vehicleType]);
 
-  return { snapshot, mapFix, mapBearing, voiceError, muted, updatedAt, smartAlerts, alertAudio,reportedRoadAlert,communityHazards,congestionAlert,
+  return { snapshot, mapFix, mapBearing, voiceError, muted, updatedAt, smartAlerts, alertAudio,reportedRoadAlert,communityHazards,congestionAlert,approvedContributions,contributionAlert,
     toggleAlertAudio: () => { alertAudioRef.current = !alertAudioRef.current; setAlertAudio(alertAudioRef.current); if (!alertAudioRef.current) control.current?.silence(); },
     toggleMuted: () => { mutedRef.current = !mutedRef.current; setMuted(mutedRef.current); if (mutedRef.current) control.current?.silence(); },
     pause: () => control.current?.pause(), resume: () => control.current?.resume(), stop: () => control.current?.stop(), retry: () => setRetry((value) => value + 1) };

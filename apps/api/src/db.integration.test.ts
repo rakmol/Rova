@@ -312,7 +312,7 @@ test("real PostGIS migrations, constraints, synthetic isolation, review guards a
         assert.equal((await mine()).json().rows[0].status,'reviewed');
         assert.equal((await nearby()).some((p:any)=>p.id===id),false);
         assert.equal((await review(2,'approved')).statusCode,200);
-        const pin=(await nearby()).find((p:any)=>p.id===id);assert.deepEqual(pin.coordinate,[-.2,5.6]);assert.equal(pin.authorityVerified,false);assert.equal(pin.evidence,'community');assert.equal(pin.kind,'fixed_camera');assert.equal('note' in pin,false);assert.equal('device_id' in pin,false);
+        const pin=(await nearby()).find((p:any)=>p.id===id);assert.deepEqual(pin.coordinate,[-.2,5.6]);assert.equal(pin.authorityVerified,false);assert.equal(pin.rovaVerified,true);assert.equal(pin.revision,3);assert.equal(pin.approximateRadiusMeters,null);assert.equal(pin.evidence,'community');assert.equal(pin.kind,'fixed_camera');assert.equal('note' in pin,false);assert.equal('device_id' in pin,false);
         assert.equal((await app.inject('/v1/incidents/contributions/nearby?lon=0&lat=10')).json().pins.some((p:any)=>p.id===id),false);
         assert.equal((await review(3,'rejected')).statusCode,200);assert.equal((await nearby()).some((p:any)=>p.id===id),false);
         assert.equal((await review(4,'approved')).statusCode,200);
