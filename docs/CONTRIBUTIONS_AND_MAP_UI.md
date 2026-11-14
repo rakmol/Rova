@@ -28,6 +28,14 @@ Suggestions expire after 90 days, are excluded from reads/reviews after expiry a
 
 Search uses a 200 ms debounce, cancellation of superseded requests, and the existing provider-permitted five-minute memory cache. Its cache key tolerates roughly 100 m GPS bias jitter without changing returned place coordinates. Initial uncached requests still depend on upstream/network latency. Two production probes on 2026-11-14 took 5,886 ms uncached and 284 ms repeated, respectively; these are individual measurements, not a latency guarantee.
 
+## Current-position draft regression
+
+Android permission and improved-location activities can produce a background AppState event. Contributor forms keep their selected reporting mode while their own position request is pending. On a genuine later background transition the interaction mode can require confirmation, but the opened form, text and chosen pin remain visible; editing/sending is disabled until reconfirmed. Already granted permission is checked without requesting it again. The one-shot GPS read does not launch the Android improved-accuracy settings activity; disabled location services produce an inline instruction instead.
+
+Current-position pins must be finite Ghana coordinates with a fresh timestamp and positive accuracy of at most 50 m. Permission denial, disabled services, a 12-second timeout, stale/imprecise fixes and out-of-country positions retain the prior manual pin and draft. Position feedback appears beside its button. Leaving a form invalidates its pending asynchronous result so a late fix cannot populate another contribution. A successful submission remains a success even if its subsequent history refresh fails. No draft coordinates are written to disk by this form.
+
+Before packaging, regression tests cover the permission/background sequence, draft retention, blocked sending after real background, permission refusal, GPS quality/timeout/bounds, late callbacks after leaving, submission failure and history failure after successful submission. These tests simulate native services; a physical-device check is still required after packaging.
+
 ## Validation and limits
 
 Automated coverage includes bounded payloads, anonymous/admin authorization, concurrent duplicates, ownership isolation, review conflicts, expiry, quota and deletion against disposable local PostGIS, contributor UI, keyboard/settings Back behaviour, and admin browser review/RBAC. Browser map/GPS previews use clearly labelled fixtures. Native map gestures, symbol orientation, camera padding and road performance must be checked on the Android device; browser previews do not establish those results.
