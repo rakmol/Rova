@@ -19,6 +19,7 @@ export type PlacesOptions = {
   permanentStorage?: boolean;
   fetchImpl?: typeof fetch;
   now?: () => number;
+  requestTimeoutMs?: number;
 };
 
 const record = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
@@ -108,7 +109,7 @@ export function createMapboxPlacesProvider(options: PlacesOptions): PlacesProvid
       const controller = new AbortController();
       const cancel = () => controller.abort();
       signal?.addEventListener("abort", cancel, { once: true });
-      const timeout = setTimeout(cancel, 8000);
+      const timeout = setTimeout(cancel, Math.max(1000,Math.min(15000,options.requestTimeoutMs??8000)));
       calls.push(now());
       try {
         const response = await fetcher(url.toString(), { signal: controller.signal });

@@ -38,6 +38,14 @@ Current-position pins must be finite Ghana coordinates with a fresh timestamp an
 
 Before packaging, regression tests cover the permission/background sequence, draft retention, blocked sending after real background, permission refusal, GPS quality/timeout/bounds, late callbacks after leaving, submission failure and history failure after successful submission. These tests simulate native services; a physical-device check is still required after packaging.
 
+## Contributor place autocomplete
+
+The contribution name/nearby-road field searches the existing configured PlacesProvider after 200 ms while focused. It uses the same licensed proxy, cache and rate limits as destination search. Show at most six real provider matches with attribution; requests are cancelled when edited, disabled or unfocused. Empty/error states keep the driver's entered name and allow manual observations; no landmark is invented. Suggestions use a bounded scroll area with keyboard-persistent taps, and the field is brought above the keyboard.
+
+The app permits 12 seconds for place-search transport (the server's upstream timeout remains 8 seconds), allowing mobile-network/cold-start overhead. The library's default remains 8 seconds; explicit runtime configuration supplies the grace period. A production Legon probe on 2026-11-14 returned HTTP 200 with one actual Legon match in 7,371 ms. This is one measurement, not an instant-search guarantee.
+
+Selecting a match fills the editable name and centres the map on that area. It clears any previous observed pin and does **not** turn a suburb centroid into an enforcement location. The reporter must deliberately tap the observed place/equipment point or use a fresh current position before sending. Search coordinates remain transient view state and do not automatically become a published community record. Review/publication requirements are unchanged.
+
 ## Validation and limits
 
 Automated coverage includes bounded payloads, anonymous/admin authorization, concurrent duplicates, ownership isolation, review conflicts, expiry, quota and deletion against disposable local PostGIS, contributor UI, keyboard/settings Back behaviour, and admin browser review/RBAC. Browser map/GPS previews use clearly labelled fixtures. Native map gestures, symbol orientation, camera padding and road performance must be checked on the Android device; browser previews do not establish those results.

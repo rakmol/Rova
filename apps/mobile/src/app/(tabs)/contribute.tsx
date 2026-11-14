@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ComponentRef } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { AppState, BackHandler, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { AppState, BackHandler, Dimensions, Keyboard, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions, type ScrollViewInstance } from 'react-native';
 import {isContributionPoint,reportPosition} from '../../contributions/location';
 import { ActionButton, ContentFrame, Page, PageHeader, Pill, Surface } from '../../components/ui';
 import { RovaIcon, type RovaIconName } from '../../components/RovaIcon';
@@ -10,6 +10,7 @@ import { accraDevelopmentCenter, mapboxProvider } from '../../map/mapboxProvider
 import type { MapCoordinate } from '../../map/types';
 import { myContributions, submitContribution, type Contribution, type ContributionKind } from '../../contributions/client';
 
+import {ContributionPlaceSearch} from '../../contributions/ContributionPlaceSearch';
 import { IncidentReports } from '../../incidents/IncidentReports';
 
 const categories={place:[['landmark','Landmark'],['market','Market'],['business','Business'],['junction','Junction'],['other','Other place']],fixed_camera:[['fixed_speed','Fixed speed camera'],['red_light','Red-light camera'],['unknown','Equipment type unknown']]} as const;
@@ -18,10 +19,15 @@ export default function ContributeScreen(){
  const [kind,setKind]=useState<ContributionKind|'road'|null>(null),[mode,setMode]=useState<'parked'|'passenger'|null>(null),[formOpened,setFormOpened]=useState(false);
  const [name,setName]=useState(''),[category,setCategory]=useState('landmark'),[note,setNote]=useState(''),[direction,setDirection]=useState('');
  const [point,setPoint]=useState<MapCoordinate|null>(null),[mapReady,setMapReady]=useState(false),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[rows,setRows]=useState<Contribution[]|null>(null),[submitted,setSubmitted]=useState(false);
+ const [searchCenter,setSearchCenter]=useState<MapCoordinate|null>(null),[keyboardHeight,setKeyboardHeight]=useState(0);
+ const page=useRef<ScrollViewInstance>(null),searchAnchor=useRef<ComponentRef<typeof View>>(null),scrollOffset=useRef(0),searchFocused=useRef(false);
+ const {height:windowHeight}=useWindowDimensions();
+ const revealSearch=useCallback(()=>{searchAnchor.current?.measureInWindow((_x,y)=>{if(y>96)page.current?.scrollTo({y:Math.max(0,scrollOffset.current+y-96),animated:true});});},[]);
+ useEffect(()=>{const show=Keyboard.addListener('keyboardDidShow',event=>{setKeyboardHeight(event.endCoordinates.height);if(searchFocused.current)revealSearch();}),hide=Keyboard.addListener('keyboardDidHide',()=>setKeyboardHeight(0));return()=>{show.remove();hide.remove();};},[revealSearch]);
  const working=useRef(false),mounted=useRef(true),operation=useRef(0);
  const [locationMessage,setLocationMessage]=useState(''),[locating,setLocating]=useState(false);
  useEffect(()=>{mounted.current=true;void mapboxProvider.initialize().then(()=>{if(mounted.current)setMapReady(true);}).catch(()=>{});const sub=AppState.addEventListener('change',s=>{if(s==='background'&&!working.current)setMode(null);});return()=>{mounted.current=false;sub.remove();};},[]);
- const close=useCallback(()=>{operation.current++;working.current=false;setBusy(false);setKind(null);setSubmitted(false);setFormOpened(false);setLocationMessage('');setLocating(false);setName('');setNote('');setDirection('');setPoint(null);setMessage('');},[]);
+ const close=useCallback(()=>{searchFocused.current=false;Keyboard.dismiss();operation.current++;working.current=false;setBusy(false);setKind(null);setSubmitted(false);setFormOpened(false);setSearchCenter(null);setLocationMessage('');setLocating(false);setName('');setNote('');setDirection('');setPoint(null);setMessage('');},[]);
  useFocusEffect(useCallback(()=>{const sub=BackHandler.addEventListener('hardwareBackPress',()=>{if(Keyboard.isVisible()){Keyboard.dismiss();return true;}if(kind){close();return true;}return false;});return()=>sub.remove();},[kind,close]));
  async function run(work:(current:()=>boolean)=>Promise<void>){
   if(working.current)return;const id=++operation.current;const current=()=>mounted.current&&id===operation.current;
@@ -35,7 +41,7 @@ export default function ContributeScreen(){
 
  const choose=(next:ContributionKind|'road')=>{close();setKind(next);setFormOpened(!!mode);setCategory(next==='place'?'landmark':'unknown');};
  const refresh=async()=>{const result=await myContributions();if(mounted.current)setRows(result);};
- return <Page><ContentFrame>
+ return <Page scrollRef={page} onScroll={event=>{scrollOffset.current=event.nativeEvent.contentOffset.y;}}><ContentFrame>
   {kind&&<ActionButton title="All contributions" secondary onPress={close}/>}
   <PageHeader eyebrow="Community" title={kind==='place'?'Add a missing place':kind==='fixed_camera'?'Report fixed equipment':kind==='road'?'Road reports':'Contribute'} subtitle={kind?'Help improve the map with a specific, first-hand observation.':'Local knowledge makes better journeys.'}/>
   {!kind?<>
@@ -46,16 +52,16 @@ export default function ContributeScreen(){
    <View style={styles.section}><Text style={[styles.title,ink]}>Your contributions</Text><ActionButton title={busy?'Loading…':'Refresh my contributions'} secondary disabled={busy} onPress={()=>void run(refresh)}/></View>
    {rows?.length===0&&<Text style={muted}>No active place or equipment suggestions from this phone. Road hazards are managed in Road reports.</Text>}
    {rows?.map(row=><Surface key={row.id} style={styles.history}><Text style={[styles.rowTitle,ink]}>{row.name}</Text><Pill tone={row.status==='pending'?'warning':'neutral'}>{row.status==='pending'?'PENDING REVIEW':row.status==='approved'?'APPROVED ON MAP':row.status==='reviewed'?'REVIEWED SUGGESTION':'NOT ACCEPTED'}</Pill><Text style={muted}>Community suggestion · not authority verified</Text></Surface>)}
-  </>:kind==='road'?<IncidentReports/>:submitted?<Surface style={styles.form}><Pill tone="warning">PENDING REVIEW</Pill><Text accessibilityRole="header" style={[styles.title,ink]}>Thank you for contributing</Text><Text style={muted}>Your suggestion is in the admin review queue. Approved community suggestions appear on the map with a community label.</Text><ActionButton title="Report another" onPress={()=>{setSubmitted(false);setName('');setNote('');setDirection('');setPoint(null);setMessage('');}}/><ActionButton title="View my contributions" secondary onPress={()=>{close();void run(refresh);}}/></Surface>:<Surface style={styles.form}>
+  </>:kind==='road'?<IncidentReports/>:submitted?<Surface style={styles.form}><Pill tone="warning">PENDING REVIEW</Pill><Text accessibilityRole="header" style={[styles.title,ink]}>Thank you for contributing</Text><Text style={muted}>Your suggestion is in the admin review queue. Approved community suggestions appear on the map with a community label.</Text><ActionButton title="Report another" onPress={()=>{setSubmitted(false);setName('');setNote('');setDirection('');setPoint(null);setSearchCenter(null);setLocationMessage('');setMessage('');}}/><ActionButton title="View my contributions" secondary onPress={()=>{close();void run(refresh);}}/></Surface>:<Surface style={styles.form}>
    <Pill tone="warning">COMMUNITY SUGGESTION · NOT VERIFIED</Pill>
    <Text style={muted}>Use this form only when safely parked or as a passenger.</Text>
    <View style={styles.wrap}>{(!mode?['parked','passenger']:[]) .map(value=><View key={value} style={{flex:1,minWidth:130}}><ActionButton title={value==='parked'?(mode===value?'Parked selected':"I'm safely parked"):(mode===value?'Passenger selected':"I'm a passenger")} secondary onPress={()=>{setMode(value as 'parked'|'passenger');setFormOpened(true);}} disabled={busy}/></View>)}</View>
    {formOpened&&<><Text style={muted}>{mode==='parked'?'Safely parked':mode==='passenger'?'Reporting as a passenger':'Your draft is kept. Confirm parked or passenger before editing or sending.'}</Text><ActionButton title="Change reporting mode" secondary disabled={busy} onPress={()=>setMode(null)}/>
     <Text style={[styles.rowTitle,ink]}>{kind==='place'?'Place name':'Road or landmark near the equipment'}</Text>
-    <TextInput accessibilityLabel="Contribution name" value={name} onChangeText={setName} maxLength={120} placeholder={kind==='place'?'Name used locally':'Road or junction name'} placeholderTextColor={theme.colors.inkSubtle} style={[styles.input,ink,{borderColor:theme.colors.border}]} editable={!busy&&!!mode}/>
+    <View ref={searchAnchor} collapsable={false}><ContributionPlaceSearch value={name} onChange={setName} disabled={busy||!mode} bias={point??searchCenter??accraDevelopmentCenter} maxHeight={Math.min(240,Math.max(96,Math.min(windowHeight,Dimensions.get('screen').height-keyboardHeight)-160))} onFocus={()=>{searchFocused.current=true;revealSearch();}} onBlur={()=>{searchFocused.current=false;}} onSelect={place=>{if(!isContributionPoint(place.coordinate)){setLocationMessage('Choose a location in Ghana. Your existing pin has been kept.');return;}setName(place.name.slice(0,120));setSearchCenter(place.coordinate);setPoint(null);setLocationMessage('Area found. Tap the exact observed location on the map, or use your position there, before sending.');}}/></View>
     <View accessibilityRole="radiogroup" accessibilityLabel="Contribution category" style={styles.wrap}>{categories[kind].map(([value,label])=><Pressable key={value} accessibilityRole="radio" accessibilityLabel={label} accessibilityState={{checked:category===value}} onPress={()=>setCategory(value)} disabled={busy||!mode} style={[styles.chip,{backgroundColor:category===value?theme.colors.brandTint:theme.colors.surfaceRaised,borderColor:category===value?theme.colors.brandStrong:theme.colors.divider}]}><Text style={ink}>{label}</Text></Pressable>)}</View>
     <Text style={[styles.rowTitle,ink]}>Choose the place on the map</Text><Text style={muted}>Tap the observed location. We send this one selected point, not your route or travel history.</Text>
-    {mapReady?<MapboxMap center={point??accraDevelopmentCenter} destination={point??undefined} locationEnabled={false} onPickCoordinate={coordinate=>{if(busy||!mode)return;if(!isContributionPoint(coordinate)){setLocationMessage('Choose a location in Ghana. Your existing pin has been kept.');return;}setPoint(coordinate);setLocationMessage('Pin selected. Check the observed position before sending.');}} onMapLoaded={()=>{}} onMapError={()=>setMessage('Map unavailable. Try again when connected.')}/>:<Text style={muted}>Map preview unavailable. Reconnect to choose a point.</Text>}
+    {mapReady?<MapboxMap center={point??searchCenter??accraDevelopmentCenter} destination={point??undefined} locationEnabled={false} onPickCoordinate={coordinate=>{if(busy||!mode)return;if(!isContributionPoint(coordinate)){setLocationMessage('Choose a location in Ghana. Your existing pin has been kept.');return;}setPoint(coordinate);setLocationMessage('Pin selected. Check the observed position before sending.');}} onMapLoaded={()=>{}} onMapError={()=>setMessage('Map unavailable. Try again when connected.')}/>:<Text style={muted}>Map preview unavailable. Reconnect to choose a point.</Text>}
     <ActionButton title={locating?'Finding position...':'Use my current position as the pin'} secondary disabled={busy||!mode} onPress={()=>void handlePosition()}/>
     {!!locationMessage&&<Text accessibilityLiveRegion="polite" style={muted}>{locationMessage}</Text>}
     <Text style={muted}>{point?'Selected pin: '+point[1].toFixed(5)+', '+point[0].toFixed(5):'Select a pin before submitting.'}</Text>
