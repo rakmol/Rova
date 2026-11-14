@@ -3,6 +3,11 @@ import {BackHandler,Keyboard} from 'react-native';
 import ContributeScreen from '../app/(tabs)/contribute';
 import {ThemeProvider} from '../theme/ThemeProvider';
 import {myContributions,submitContribution} from '../contributions/client';
+import {submitIncident,nearbyIncidents} from '../incidents/client';
+import * as Location from 'expo-location';
+jest.mock('../incidents/NearbyHazards',()=>({NearbyHazards:()=>null}));
+jest.mock('../incidents/client',()=>({submitIncident:jest.fn(),nearbyIncidents:jest.fn(),voteIncident:jest.fn(),canInteract:jest.fn(()=>true)}));
+jest.mock('expo-location',()=>({requestForegroundPermissionsAsync:jest.fn(),getCurrentPositionAsync:jest.fn(),Accuracy:{High:4}}));
 jest.mock('expo-router',()=>({router:{push:jest.fn()},
  // eslint-disable-next-line @typescript-eslint/no-require-imports
  useFocusEffect:(callback:()=>void)=>require('react').useEffect(callback,[callback])}));
@@ -26,6 +31,27 @@ test('a guest chooses an explicit map point and parked mode before sending a pen
   await fireEvent.press(view.getByRole('button',{name:'Send for review'}));
   await waitFor(()=>expect(submitContribution).toHaveBeenCalledWith({kind:'place',name:'TEST ONLY market',category:'market',lon:-.21,lat:5.61,note:'',direction:'',interaction:'parked'}));
   await waitFor(()=>expect(view.getByText('Sent for review. Thank you for helping improve ROVA.')).toBeTruthy());
+  expect(view.getByText('Thank you for contributing')).toBeTruthy();
+  await fireEvent.press(view.getByRole('button',{name:'Report another'}));
+  expect(view.getByLabelText('Contribution name')).toBeTruthy();
+  expect(view.queryByRole('button',{name:"I'm safely parked"})).toBeNull();
+ }finally{await view.unmount();}
+});
+
+test('road-problem submission stays inside Contribute with the selected interaction mode',async()=>{
+ jest.mocked(Location.requestForegroundPermissionsAsync).mockResolvedValue({status:'granted'} as never);
+ jest.mocked(Location.getCurrentPositionAsync).mockImplementation(async()=>({coords:{longitude:-.2,latitude:5.6,accuracy:8,speed:0},timestamp:Date.now()}) as never);
+ jest.mocked(submitIncident).mockResolvedValue({id:'test-only',duplicate:false});jest.mocked(nearbyIncidents).mockResolvedValue([]);
+ const view=await render(<ThemeProvider><ContributeScreen/></ThemeProvider>);
+ try{
+  await fireEvent.press(view.getByRole('button',{name:'Report a road problem'}));
+  expect(view.getByText('Road reports')).toBeTruthy();
+  await fireEvent.press(view.getByRole('button',{name:"I'm safely parked"}));
+  await fireEvent.press(view.getByRole('button',{name:'Pothole'}));
+  await waitFor(()=>expect(view.getByText('Report submitted for review. Thank you.')).toBeTruthy());
+  expect(view.getByRole('button',{name:'Parked selected'})).toBeTruthy();
+  expect(view.getByRole('button',{name:'Pothole'})).toBeTruthy();
+  expect(view.queryByRole('button',{name:'Add a place'})).toBeNull();
  }finally{await view.unmount();}
 });
 test('equipment reports offer unknown type, never mobile cameras; Back closes the form and leaves navigation to tab history',async()=>{

@@ -27,7 +27,7 @@ export function IncidentReports(){
   const [checkedArea,setCheckedArea]=useState<[number,number]>();
   const [manualCheck,setManualCheck]=useState<number|null>(null);
   useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),30000);return()=>clearInterval(timer);},[]);
-  useEffect(()=>{mounted.current=true;const sub=AppState.addEventListener('change',s=>{if(s!=='active'){modeRef.current=null;setMode(null);setNote('');}});return()=>{mounted.current=false;modeRef.current=null;sub.remove();};},[]);
+  useEffect(()=>{mounted.current=true;const sub=AppState.addEventListener('change',s=>{if(s==='background'&&!working.current){modeRef.current=null;setMode(null);setNote('');}});return()=>{mounted.current=false;modeRef.current=null;sub.remove();};},[]);
   const chooseMode=(next:SafeInteraction)=>{modeRef.current=next;setMode(next);};
   async function run(action:(f:IncidentFix,m:SafeInteraction)=>Promise<string>){
     if(working.current||!modeRef.current)return;working.current=true;setBusy(true);setMessage('Getting a fresh location...');

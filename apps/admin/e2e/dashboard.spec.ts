@@ -47,11 +47,14 @@ test('community suggestions require reviewer access and reviewed suggestions do 
   const sent=await admin.context.request.post('http://127.0.0.1:4101/v1/incidents/contributions',{headers,data:{kind:'fixed_camera',name:'ISOLATED BROWSER EQUIPMENT',category:'unknown',lon:-.2,lat:5.6,interaction:'passenger'}});expect(sent.status()).toBe(201);
   await admin.page.getByRole('link',{name:'Community contributions',exact:true}).click();
   await expect(admin.page.getByRole('heading',{name:'ISOLATED BROWSER EQUIPMENT',exact:true})).toBeVisible();
-  await expect(admin.page.getByRole('button',{name:'Mark suggestion reviewed',exact:true})).toBeDisabled();
+  await expect(admin.page.getByRole('button',{name:'Approve on map',exact:true})).toBeDisabled();
   await admin.page.getByLabel('Review comment (at least 10 characters)').fill('ISOLATED fixture review; not verified enforcement');
-  await admin.page.getByRole('button',{name:'Mark suggestion reviewed',exact:true}).click();
-  await expect(admin.page.locator('p[role=alert]')).toContainText('Suggestion review saved');
-  const mine=await admin.context.request.get('http://127.0.0.1:4101/v1/incidents/contributions/mine',{headers});expect((await mine.json()).rows[0].status).toBe('reviewed');expect((await mine.json()).authorityVerified).toBe(false);
+  await admin.page.getByRole('button',{name:'Approve on map',exact:true}).click();
+  await expect(admin.page.locator('p[role=alert]')).toContainText('Contribution decision saved');
+  const mine=await admin.context.request.get('http://127.0.0.1:4101/v1/incidents/contributions/mine',{headers});expect((await mine.json()).rows[0].status).toBe('approved');expect((await mine.json()).authorityVerified).toBe(false);
+  const pins=await admin.context.request.get('http://127.0.0.1:4101/v1/incidents/contributions/nearby?lon=-.2&lat=5.6');const pin=(await pins.json()).pins.find((p:{name:string})=>p.name==='ISOLATED BROWSER EQUIPMENT');expect(pin.authorityVerified).toBe(false);expect(pin.evidence).toBe('community');
+  await admin.page.getByRole('button',{name:'Withdraw from map',exact:true}).click();await expect(admin.page.locator('p[role=alert]')).toContainText('Contribution decision saved');
+  const withdrawn=await admin.context.request.get('http://127.0.0.1:4101/v1/incidents/contributions/nearby?lon=-.2&lat=5.6');expect((await withdrawn.json()).pins.some((p:{id:string})=>p.id===pin.id)).toBe(false);
  }finally{
   if(token)await admin.context.request.post('http://127.0.0.1:4101/v1/incidents/erase-device',{headers:{Authorization:'Bearer '+token},data:{}});
   await admin.context.close();

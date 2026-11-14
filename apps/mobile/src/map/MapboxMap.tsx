@@ -14,6 +14,7 @@ import { useRovaTheme } from "../theme/ThemeProvider";
 import { NavigationLocationPuck, NavigationMarkerImages } from "./NavigationLocationPuck";
 import type { Fix } from '../navigation/session';
 import { splitRouteAtProgress } from './routeProgress';
+import {useCommunityPins} from '../contributions/useCommunityPins';
 
 type MapboxMapProps = {
   fill?: boolean;
@@ -49,6 +50,9 @@ export function MapboxMap({
   onMapError,
 }: MapboxMapProps) {
   const { theme } = useRovaTheme();
+  const [viewArea,setViewArea]=useState<[number,number]|null>(null);
+  const communityPins=useCommunityPins(navigationMode?center:viewArea??center,!onPickCoordinate);
+  const communityShape=useMemo(()=>({type:'FeatureCollection' as const,features:communityPins.map(pin=>({type:'Feature' as const,id:pin.id,properties:{label:pin.name+' | Community'+(pin.kind==='fixed_camera'?' - unverified equipment':''),kind:pin.kind},geometry:{type:'Point' as const,coordinates:pin.coordinate}}))}),[communityPins]);
   const camera = useRef<Camera>(null);
   const currentZoom = useRef(navigationMode ? 16 : 12);
   const [following, setFollowing] = useState(true);
@@ -90,6 +94,7 @@ export function MapboxMap({
         onPress={event => { const geometry=event.geometry; if(onPickCoordinate&&geometry.type==='Point') onPickCoordinate(geometry.coordinates as MapCoordinate); }}
         gestureSettings={{ pinchZoomEnabled: true, doubleTapToZoomInEnabled: true }}
         onCameraChanged={(state) => { currentZoom.current = state.properties.zoom; }}
+        onMapIdle={state=>{const point=state.properties.center;const lon=Math.round(point[0]*100)/100,lat=Math.round(point[1]*100)/100;setViewArea(previous=>previous?.[0]===lon&&previous[1]===lat?previous:[lon,lat]);}}
         styleURL={
           theme.mode === "dark" ? Mapbox.StyleURL.Dark : Mapbox.StyleURL.Light
         }
@@ -104,6 +109,10 @@ export function MapboxMap({
         <Camera ref={camera} padding={mapBottomInset>0?{paddingTop:controlsTopInset,paddingBottom:mapBottomInset+16,paddingLeft:16,paddingRight:16}:undefined} centerCoordinate={!navigationMode || following ? center : undefined} heading={navigationMode && following ? bearing ?? undefined : undefined} animationDuration={navigationMode ? 300 : undefined} animationMode={navigationMode ? 'linearTo' : undefined} defaultSettings={{ zoomLevel: navigationMode ? 16 : 12 }} />
         {navigationMode && <CameraGestureObserver onCameraChanged={event => { if (event.nativeEvent.properties.isUserInteraction) setFollowing(false); }} />}
         <NavigationMarkerImages />
+        {!!communityPins.length&&<ShapeSource id="rova-community-pins" shape={communityShape}>
+          <CircleLayer id="rova-community-pin-dots" style={{circleRadius:7,circleColor:theme.colors.warning,circleStrokeColor:theme.colors.surface,circleStrokeWidth:2}}/>
+          <SymbolLayer id="rova-community-pin-labels" style={{textField:['get','label'],textSize:12,textOffset:[0,1.5],textAnchor:'top',textMaxWidth:15,textColor:theme.colors.ink,textHaloColor:theme.colors.surface,textHaloWidth:2}}/>
+        </ShapeSource>}
         {completedShape && <ShapeSource id="rova-route-completed" shape={completedShape}>
           <LineLayer id="rova-route-completed-line" style={{ lineColor: theme.mode === 'dark' ? '#A1ABB2' : '#89949A', lineWidth: 6, lineCap: 'round', lineJoin: 'round' }} />
         </ShapeSource>}

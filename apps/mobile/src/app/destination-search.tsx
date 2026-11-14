@@ -45,7 +45,7 @@ export default function DestinationSearchScreen() {
       }).catch((caught: unknown) => {
         if (!controller.signal.aborted && generation.current === id) { setError(caught instanceof Error ? caught.message : "Search failed. Try again."); setStatus("error"); }
       });
-    }, 400);
+    }, 200);
     return () => { clearTimeout(timer); controller.abort(); };
   }, [query, selected, retry]);
 
@@ -106,13 +106,13 @@ export default function DestinationSearchScreen() {
         <Text style={muted}>Geoapify searches streets, addresses, suburbs and named amenities in Ghana, biased toward Accra. Mapped markets, hospitals, malls and landmarks can appear; missing or informal names may return no match. No matches are invented.</Text>
         <Text style={muted}>Search text and the Accra bias go through ROVA’s backend to Geoapify. The key stays on the server. Maps and navigation continue to use Mapbox.</Text>
         <Text style={muted}>Free plan checked 7 Nov 2026: 3,000 credits/day, no credit card required, up to 5 requests/second. One autocomplete request uses one credit. Paid plans are optional; the first monthly tier is $59. Usage across the account shares the quota.</Text>
-        <Text style={muted}>400 ms debounce, 6 results, 30 searches/minute per device and per IP. Licensed results are cached for 5 minutes, up to 40 queries. The backend defaults to 1,000 new upstream requests/day per process. Account quotas still apply.</Text>
+        <Text style={muted}>200 ms debounce, 6 results, 30 searches/minute per device and per IP. Licensed results are cached for 5 minutes, up to 40 queries. The backend defaults to 1,000 new upstream requests/day per process. Account quotas still apply.</Text>
         <ActionButton title="Powered by Geoapify" secondary onPress={() => { void Linking.openURL("https://www.geoapify.com/").catch(() => setError("Visit geoapify.com for provider information.")); }} />
         <ActionButton title="© OpenStreetMap contributors" secondary onPress={() => { void Linking.openURL("https://www.openstreetmap.org/copyright").catch(() => setError("Visit openstreetmap.org/copyright for attribution.")); }} />
         <ActionButton title="View Geoapify pricing" secondary onPress={() => { void Linking.openURL("https://www.geoapify.com/pricing/").catch(() => setError("Visit geoapify.com/pricing for current prices.")); }} />
       </> : <>
       <Text style={muted}>© Mapbox Geocoding. Ghana-filtered, biased toward Accra. Street, suburb and address coverage varies. Business, market, landmark and junction names may be missing; no results are invented. Opening hours, reviews and phone numbers are not supplied.</Text>
-      <Text style={muted}>Search text and the Accra search bias go to Mapbox. Each autocomplete request can count toward usage and charges; map views and navigation are billed separately. Up to 6 results, 400 ms debounce and 30 searches/minute per device.</Text>
+      <Text style={muted}>Search text and the Accra search bias go to Mapbox. Each autocomplete request can count toward usage and charges; map views and navigation are billed separately. Up to 6 results, 200 ms debounce and 30 searches/minute per device.</Text>
       <Text style={muted}>Published temporary-geocoding pricing checked 7 Nov 2026: first 100,000 requests/month free, then $0.75 per 1,000 in the next tier. Account usage, permanent storage and contract terms can change the cost. Check current pricing before enabling paid usage.</Text>
       <Text style={muted}>Result caching is off for temporary geocoding. Licensed permanent mode enables a 5-minute cache of up to 40 queries. Recent history contains only text you typed.</Text>
       <ActionButton title="View Mapbox pricing" secondary onPress={() => { void Linking.openURL("https://www.mapbox.com/pricing").catch(() => setError("Could not open pricing. Visit mapbox.com/pricing.")); }} />

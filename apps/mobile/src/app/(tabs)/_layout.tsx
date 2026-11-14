@@ -13,6 +13,7 @@ const tabItems = {
   contribute: { title: 'Contribute', icon: 'contribute' },
   settings: { title: tx('tab.settings'), icon: "settings" },
 } as const;
+export const unstable_settings={initialRouteName:'map'};
 
 export default function TabLayout() {
   const { theme } = useRovaTheme();
@@ -23,7 +24,7 @@ export default function TabLayout() {
 
   return (
     <ScrollMenuProvider height={barHeight}><Tabs
-      backBehavior="history"
+      backBehavior="firstRoute"
       tabBar={props => <ScrollTabBar {...props} />}
       screenOptions={({ route }) => {
         const item = tabItems[route.name as keyof typeof tabItems] ?? tabItems.map;

@@ -8,6 +8,7 @@ import { FeedbackMessage } from "../components/ui";
 import { isMapboxConfigured, mapboxProvider } from "../map/mapboxProvider";
 import { RouteProvider, useRoutePreview } from "../map/RouteProvider";
 import { ThemeProvider } from "../theme/ThemeProvider";
+import {ScrollMenuContext} from '../components/ScrollMenuContext';
 
 jest.mock("expo-router", () => ({
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -55,6 +56,22 @@ beforeEach(() => {
 });
 
 describe("mobile screen foundation", () => {
+  it('restores the journey panel when search closes and scrolling the panel never hides the menu',async()=>{
+    jest.mocked(isMapboxConfigured).mockReturnValue(true);
+    const setHidden=jest.fn();
+    const view=await renderWithTheme(<ScrollMenuContext.Provider value={{height:80,setHidden}}><MapScreen/></ScrollMenuContext.Provider>);
+    try{
+      await fireEvent(view.getByLabelText('Search destinations in Ghana'),'focus');
+      expect(view.queryByTestId('explore-journey-content')).toBeNull();
+      await fireEvent.press(view.getByRole('button',{name:'Close destination search'}));
+      expect(view.getByTestId('explore-journey-content')).toBeTruthy();
+      await fireEvent.scroll(view.getByTestId('explore-journey-content'),{nativeEvent:{contentOffset:{y:150}}});
+      expect(setHidden).not.toHaveBeenCalledWith(true);
+      await fireEvent.press(view.getByRole('button',{name:'Expand journey panel'}));
+      expect(view.getByRole('button',{name:'Collapse journey panel'})).toBeTruthy();
+      expect(setHidden).not.toHaveBeenCalledWith(true);
+    }finally{await view.unmount();}
+  });
   it("accepts a destination from the dedicated search screen and previews its route", async () => {
     // Explicitly flush the deferred destination handoff before querying. An async
     // findByText scope can otherwise overlap the animation-frame act scope.
@@ -82,12 +99,12 @@ describe("mobile screen foundation", () => {
       expect(view.getByLabelText("Search destinations in Ghana").props.value).toBe("Test suburb");
     } finally { await view.unmount(); frame.mockRestore(); }
   });
-  it("clearly labels map setup and verified speed-limit information as unavailable", async () => {
+  it("shows map setup without the homepage unavailable-speed card", async () => {
     const view = await renderWithTheme(<MapScreen />);
 
     expect(view.getByText("Mapbox token required")).toBeTruthy();
-    expect(view.getByText("Speed limit unavailable")).toBeTruthy();
-    expect(view.getByText(/No approved ROVA speed-limit record/)).toBeTruthy();
+    expect(view.queryByText("Speed limit unavailable")).toBeNull();
+    expect(view.queryByText(/No approved ROVA speed-limit record/)).toBeNull();
     expect(view.getByLabelText("Search destinations in Ghana").props.editable).toBe(false);
   });
 

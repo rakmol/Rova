@@ -78,7 +78,9 @@ export function createMapboxPlacesProvider(options: PlacesOptions): PlacesProvid
       if (query.length > 256) throw new Error("Use a shorter search (up to 256 characters).");
       if (!proximity.every(Number.isFinite) || Math.abs(proximity[0]) > 180 || Math.abs(proximity[1]) > 90) throw new Error("Invalid search location.");
       if (signal?.aborted) { const aborted = new Error("Search cancelled."); aborted.name = "AbortError"; throw aborted; }
-      const key = JSON.stringify([query.toLowerCase(), proximity]);
+      // A ~100m bias cell reuses licensed results across minor GPS jitter. Result coordinates stay exact.
+      const bias=proximity.map(v=>Math.round(v*1000)/1000);
+      const key = JSON.stringify([query.toLowerCase(), bias]);
       const cached = cache.get(key);
       if (cached && cached.expires > now()) return cached.places;
       calls = calls.filter((t) => t > now() - 60_000);
