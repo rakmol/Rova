@@ -43,3 +43,35 @@ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION rova_speed_limit_candidates(double precision,double precision,double precision,text) FROM PUBLIC;
 DO $$ BEGIN IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='rova_reader') THEN GRANT EXECUTE ON FUNCTION rova_speed_limit_candidates(double precision,double precision,double precision,text) TO rova_reader; END IF; END $$;
+
+-- Preserve corridor reviews and Accra bounds. A fully audited road classification
+-- can establish a national default without fabricating a per-road numeric rule.
+CREATE OR REPLACE FUNCTION pilot_members_current(ids uuid[]) RETURNS boolean LANGUAGE sql STABLE SET search_path=public,pg_temp AS $$
+ SELECT cardinality(ids)>0 AND NOT EXISTS(SELECT 1 FROM unnest(ids) member WHERE NOT EXISTS(
+  SELECT 1 FROM published_road_segments road JOIN road_segments detail ON detail.id=road.id
+  WHERE road.id=member AND road.confidence>=.9 AND road.accuracy_meters<=10 AND detail.road_kind<>'unknown'
+   AND ST_CoveredBy(road.geometry,ST_MakeEnvelope(-.5,5.4,.35,6.1,4326))
+   AND (
+    EXISTS(SELECT 1 FROM published_speed_limit_rules rule JOIN data_sources source ON source.id=rule.source_id
+     WHERE rule.road_segment_id=road.id AND rule.units='km/h' AND rule.confidence>=.9 AND rule.last_reviewed_at>=now()-interval '180 days'
+      AND source.kind IN ('official','field_audit') AND source.published_at>=now()-interval '365 days')
+    OR (
+     detail.road_kind='road' AND detail.speed_context IN ('human_activity','built_up','outside_built_up','motorway')
+     AND detail.default_conditions_confirmed AND length(trim(detail.speed_context_reference))>0
+     AND detail.last_reviewed_at>=now()-interval '180 days'
+     AND NOT EXISTS(SELECT 1 FROM speed_limit_rules r WHERE r.road_segment_id=road.id AND r.rule_role='road_limit' AND NOT r.is_synthetic)
+     AND EXISTS(SELECT 1 FROM data_sources source WHERE source.id=detail.source_id AND source.kind IN ('official','field_audit')
+      AND source.approval_status IN ('approved','published') AND NOT source.is_synthetic
+      AND source.valid_from<=now() AND source.expires_at>now() AND source.approved_at>=now()-interval '365 days'
+      AND source.published_at BETWEEN now()-interval '365 days' AND now())
+     AND EXISTS(SELECT 1 FROM admin_revisions revision WHERE revision.entity='road' AND revision.entity_id=road.id AND revision.sequence=detail.admin_revision_seq
+      AND revision.after_json=admin_content(to_jsonb(detail))
+      AND (SELECT count(DISTINCT review.reviewer) FROM admin_reviews review WHERE review.revision_id=revision.id AND review.decision='approve'
+       AND review.reviewer<>revision.author AND review.reviewer<>detail.created_by AND review.created_at>now()-interval '180 days')>=2
+      AND NOT EXISTS(SELECT 1 FROM admin_reviews review WHERE review.revision_id=revision.id AND review.decision='reject'))
+     AND EXISTS(SELECT 1 FROM admin_action_logs log WHERE log.entity='road' AND log.entity_id=road.id::text AND log.action='publish'
+      AND (log.after_json->>'admin_revision_seq')::integer=detail.admin_revision_seq)
+    )
+   )
+ ));
+$$;
