@@ -35,19 +35,19 @@ test('browser supports password-only login with RBAC and full independently revi
  const costs=viewer.page.waitForResponse(r=>r.url().endsWith('/api/ops/provider-costs'));await viewer.page.getByRole('link',{name:'Provider costs & audit',exact:true}).click();expect((await costs).status()).toBe(200);await expect(viewer.page.getByText('Daily and monthly ROVA API request limits use shared database counters.',{exact:false})).toBeVisible();await viewer.page.getByLabel('Monthly Mapbox/Legacy maps active users').fill('26000');await expect(viewer.page.getByText('Partial USD illustration: 4.00.',{exact:false})).toBeVisible();
  await viewer.page.setViewportSize({width:390,height:844});await viewer.page.getByRole('link',{name:'Overview',exact:true}).click();await expect(viewer.page.getByRole('heading',{name:'Overview',exact:true})).toBeVisible();expect(await viewer.page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)).toBe(true);
  await admin.page.getByRole('link',{name:'Audit trail',exact:true}).click();await expect(admin.page.getByRole('cell',{name:'revert',exact:true}).first()).toBeVisible();
+ await checkRoadClassification(editor.page);
  for(const c of [editor.context,r1.context,r2.context,admin.context,viewer.context])await c.close();
 });
 
-test('road category control changes a draft only after explicit category and signage confirmation',async({browser})=>{
- const editor=await login(browser,'editor');try{
-  await editor.page.getByRole('link',{name:'Road segments',exact:true}).click();await editor.page.getByRole('button',{name:'New draft',exact:true}).click();
-  const apply=editor.page.getByRole('button',{name:'Apply classification to draft',exact:true});await expect(apply).toBeDisabled();
-  await editor.page.getByLabel(/Road category/).selectOption('motorway');await editor.page.getByLabel('Classification and signed-exception evidence',{exact:true}).fill('TEST ONLY reviewed section boundaries and signage');
-  await expect(apply).toBeDisabled();await editor.page.getByRole('checkbox').check();await apply.click();
-  const fields=JSON.parse(await editor.page.getByLabel('Record fields (JSON)',{exact:true}).inputValue());expect(fields.speed_context).toBe('motorway');expect(fields.default_conditions_confirmed).toBe(true);
-  await expect(editor.page.locator('p[role=alert]')).toContainText('Save and obtain independent reviews');
- }finally{await editor.context.close();}
-});
+async function checkRoadClassification(page:Page){
+ await page.getByRole('link',{name:'Road segments',exact:true}).click();await page.getByRole('button',{name:'New draft',exact:true}).click();
+ const apply=page.getByRole('button',{name:'Apply classification to draft',exact:true});await expect(apply).toBeDisabled();
+ await page.getByLabel('Road category',{exact:true}).selectOption('motorway');await page.getByLabel('Classification and signed-exception evidence',{exact:true}).fill('TEST ONLY reviewed section boundaries and signage');
+ await expect(apply).toBeDisabled();await page.getByRole('checkbox').check();await apply.click();
+ const json=page.getByLabel('Record fields (JSON)',{exact:true});await expect(json).toHaveValue(/"speed_context": "motorway"/);
+ const fields=JSON.parse(await json.inputValue());expect(fields.speed_context).toBe('motorway');expect(fields.default_conditions_confirmed).toBe(true);
+ await expect(page.locator('p[role=alert]')).toContainText('Save and obtain independent reviews');
+}
 test('community suggestions require reviewer access and reviewed suggestions do not become confirmed safety records',async({browser})=>{
  const admin=await login(browser,'administrator');
  let token='';
