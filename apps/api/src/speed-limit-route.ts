@@ -1,3 +1,4 @@
+import {vehicleClasses} from '@rova/shared';
 import {pilotSegmentEnabled} from './pilot.js';
 import type { FastifyInstance } from "fastify";
 import type { Pool } from "pg";
@@ -5,7 +6,7 @@ import { z } from "zod";
 import { evaluateSpeedLimit, gpsProblem, unknownSpeedLimit, type RoadCandidate } from "./speed-limit.js";
 import { validateInput } from "./validation.js";
 const number = z.string().regex(/^-?\d+(\.\d+)?$/).transform(Number).pipe(z.number().finite());
-export const speedLimitQuerySchema = z.object({ lat: number.pipe(z.number().min(-90).max(90)), lon: number.pipe(z.number().min(-180).max(180)), heading: number.pipe(z.number().min(0).lt(360)).optional(), accuracy: number.pipe(z.number().min(0).max(10000)), timestamp: z.string().regex(/^\d{1,16}$/).transform(Number).pipe(z.number().int().safe()).optional(), vehicleType: z.enum(["private_car", "taxi", "motorcycle", "commercial_vehicle", "bus", "heavy_vehicle"]) }).strict();
+export const speedLimitQuerySchema = z.object({ lat: number.pipe(z.number().min(-90).max(90)), lon: number.pipe(z.number().min(-180).max(180)), heading: number.pipe(z.number().min(0).lt(360)).optional(), accuracy: number.pipe(z.number().min(0).max(10000)), timestamp: z.string().regex(/^\d{1,16}$/).transform(Number).pipe(z.number().int().safe()).optional(), vehicleType: z.enum(vehicleClasses) }).strict();
 export function registerSpeedLimitRoute(app: FastifyInstance, database: Pool, clock: () => number = Date.now,coverageEnabled=false,pilotRestricted=false) {
   app.get("/safety/speed-limit", { logLevel: "silent", config: { rateLimit: { max: 60, timeWindow: 60000 } } }, async (request, reply) => {
     validateInput(speedLimitQuerySchema, request.query);

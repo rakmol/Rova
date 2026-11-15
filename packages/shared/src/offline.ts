@@ -1,4 +1,4 @@
-import type {VehicleClass} from './index';
+import {vehicleClasses,type VehicleClass} from './index';
 import {evaluateSpeedLimit,unknownSpeedLimit,type RoadCandidate,type SafetyFix} from './speed-limit';
 import {metres,projectOnPath,type ComplianceCoordinate} from './compliance';
 export interface OfflineSafetyPack {
@@ -11,7 +11,7 @@ export const OFFLINE_SAFETY_TTL=6*3600000;
 export function validateSafetyPack(raw:unknown):OfflineSafetyPack {
  const p=raw as OfflineSafetyPack;
  if(!p||p.schema!==1||p.complete!==true||!/^sha256:[a-f0-9]{64}$/.test(p.version)||!Number.isFinite(p.createdAt)||!Number.isFinite(p.expiresAt)||p.expiresAt<=p.createdAt||p.expiresAt-p.createdAt>OFFLINE_SAFETY_TTL
-  ||!['private_car','taxi','motorcycle','commercial_vehicle','bus','heavy_vehicle'].includes(p.vehicleType)||typeof p.attribution!=='string'
+  ||!(vehicleClasses as readonly string[]).includes(p.vehicleType)||typeof p.attribution!=='string'
   ||!Array.isArray(p.bounds)||p.bounds.length!==4||!p.bounds.every(Number.isFinite)||p.bounds[0]>=p.bounds[2]||p.bounds[1]>=p.bounds[3]||p.bounds[0]<-4||p.bounds[2]>2||p.bounds[1]<4||p.bounds[3]>12
   ||p.bounds[2]-p.bounds[0]>.021||p.bounds[3]-p.bounds[1]>.021||!Array.isArray(p.roads)||p.roads.length>64)throw new Error('Incomplete or incompatible offline safety download.');
  let vertices=0;

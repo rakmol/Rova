@@ -9,10 +9,18 @@ const input = (second: number, speedKmh: number | null = 60, notices: Compliance
   const data: ComplianceContext = { fixTimestamp: now, checkedAt: now, validUntil: now + 3000, coordinate: [0, 0], validForMeters: 20, limit: { status: "verified", speedLimitKmh: 50, segmentId: "TEST ROAD", confidence: 0.99, units: "km/h" }, notices, enforcementStatus: "unavailable/unverified" };
   return { fix: { coordinate: [0, 0] as [number, number], accuracy: 5, heading: 90, timestamp: now, speed: speedKmh === null ? null : speedKmh / 3.6 }, speedKmh, reliable: true, navigating: true, progressMeters: 0, context: { data, progressMeters: 0, heading: 90 }, now, flags };
 };
+test('current verified limits speak after stable fixes, respect turn priority and do not repeat on equal-limit road changes',()=>{
+ const engine=new SmartAlertEngine();for(let t=0;t<3;t++)expect(engine.update(input(t,40)).alert).toBeNull();
+ expect(engine.update({...input(3,40),suppressPrompt:true}).alert).toBeNull();
+ expect(engine.update(input(4,40)).alert).toMatchObject({kind:'limit',text:'Speed limit: 50 kilometres per hour'});
+ for(let t=5;t<20;t++){const v=input(t,40);if(v.context.data.limit.status==='verified')v.context.data.limit.segmentId='NEXT SAME-LIMIT ROAD';expect(engine.update(v).alert).toBeNull();}
+ const changed=(t:number)=>{const v=input(t,40);if(v.context.data.limit.status==='verified')v.context.data.limit.speedLimitKmh=80;return v;};
+ for(let t=20;t<23;t++)expect(engine.update(changed(t)).alert).toBeNull();expect(engine.update(changed(23)).alert?.text).toBe('Speed limit: 80 kilometres per hour');
+});
 test("sustained overspeed needs distinct consistent fixes; hysteresis and cooldown prevent alert spam", () => {
   const engine = new SmartAlertEngine();
   for (let t = 0; t < 5; t++) expect(engine.update(input(t)).state).toBe("pending");
-  const first = engine.update(input(5)); expect(first.state).toBe("overspeed"); expect(first.alert?.text).toBe("Please slow down safely");
+  const first = engine.update(input(5)); expect(first.state).toBe("overspeed"); expect(first.alert?.text).toBe("Speed limit: 50 kilometres per hour. Please slow down safely");
   expect(engine.update(input(5)).alert).toBeNull();
   expect(engine.update(input(6, 52)).state).toBe("overspeed");
   expect(engine.update(input(7, 51)).state).toBe("monitoring");

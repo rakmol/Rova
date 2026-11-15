@@ -4,6 +4,7 @@ import { useFocusEffect } from 'expo-router';
 import { ActionButton, ContentFrame, Page, PageHeader, Surface } from '../../components/ui';
 import { RovaIcon } from '../../components/RovaIcon';
 import { VehicleSelector } from '../../components/VehicleSelector';
+import { OfficialSpeedGuide } from '../../components/OfficialSpeedGuide';
 import { useRovaTheme } from '../../theme/ThemeProvider';
 import type { ThemeMode } from '../../theme/theme';
 import { useRoutePreview } from '../../map/RouteProvider';
@@ -52,7 +53,7 @@ export default function SettingsScreen() {
         <RovaIcon name="chevron" color={theme.colors.inkSubtle} size={18} />
       </Pressable>)}
     </Surface>}
-    {section === 'navigation' && <><Surface style={styles.card}><VehicleSelector value={vehicleType} onChange={setVehicleType} /></Surface><DriverSettings section="navigation" /></>}
+    {section === 'navigation' && <><Surface style={styles.card}><VehicleSelector value={vehicleType} onChange={setVehicleType} /></Surface><DriverSettings section="navigation" /><OfficialSpeedGuide/></>}
     {section === 'privacy' && <DriverSettings section="privacy" />}
     {section === 'account' && <AccountControls />}
     {section === 'offline' && <OfflineSettings />}

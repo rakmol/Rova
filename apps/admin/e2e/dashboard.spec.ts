@@ -38,6 +38,16 @@ test('browser supports password-only login with RBAC and full independently revi
  for(const c of [editor.context,r1.context,r2.context,admin.context,viewer.context])await c.close();
 });
 
+test('road category control changes a draft only after explicit category and signage confirmation',async({browser})=>{
+ const editor=await login(browser,'editor');try{
+  await editor.page.getByRole('link',{name:'Road segments',exact:true}).click();await editor.page.getByRole('button',{name:'New draft',exact:true}).click();
+  const apply=editor.page.getByRole('button',{name:'Apply classification to draft',exact:true});await expect(apply).toBeDisabled();
+  await editor.page.getByLabel(/Road category/).selectOption('motorway');await editor.page.getByLabel('Classification and signed-exception evidence',{exact:true}).fill('TEST ONLY reviewed section boundaries and signage');
+  await expect(apply).toBeDisabled();await editor.page.getByRole('checkbox').check();await apply.click();
+  const fields=JSON.parse(await editor.page.getByLabel('Record fields (JSON)',{exact:true}).inputValue());expect(fields.speed_context).toBe('motorway');expect(fields.default_conditions_confirmed).toBe(true);
+  await expect(editor.page.locator('p[role=alert]')).toContainText('Save and obtain independent reviews');
+ }finally{await editor.context.close();}
+});
 test('community suggestions require reviewer access and reviewed suggestions do not become confirmed safety records',async({browser})=>{
  const admin=await login(browser,'administrator');
  let token='';

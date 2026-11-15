@@ -1,3 +1,4 @@
+import {vehicleClasses} from '@rova/shared';
 import {pilotSegmentEnabled} from './pilot.js';
 import type { FastifyInstance } from "fastify";
 import type { Pool } from "pg";
@@ -9,7 +10,7 @@ import { validateInput } from "./validation.js";
 import { reportedRoadContext } from "./reported-roads.js";
 const coordinate = z.tuple([z.number().finite().min(-180).max(180), z.number().finite().min(-90).max(90)]);
 export const complianceBody = z.object({
-  fix: z.object({ lat: z.number().finite().min(-90).max(90), lon: z.number().finite().min(-180).max(180), accuracy: z.number().finite().min(0).max(10000), heading: z.number().finite().min(0).lt(360).optional(), timestamp: z.number().int().safe(), vehicleType: z.enum(["private_car", "taxi", "motorcycle", "commercial_vehicle", "bus", "heavy_vehicle"]) }).strict(),
+  fix: z.object({ lat: z.number().finite().min(-90).max(90), lon: z.number().finite().min(-180).max(180), accuracy: z.number().finite().min(0).max(10000), heading: z.number().finite().min(0).lt(360).optional(), timestamp: z.number().int().safe(), vehicleType: z.enum(vehicleClasses) }).strict(),
   path: z.array(coordinate).min(2).max(128),
 }).strict();
 export interface ComplianceCandidate {
@@ -76,7 +77,7 @@ export function registerComplianceRoute(app: FastifyInstance, database: Pool, fl
           const targetRoad = targetRoads.find((r) => r.id === proof.segmentId)!;
           const expirations = [notice.expiresAt, targetRoad.expiresAt, targetRoad.source?.expiresAt, ...targetRoad.rules.flatMap((r) => [r.expiresAt, r.source?.expiresAt, r.effectiveFrom])]
             .map((date) => date ? Date.parse(date) : NaN).filter((date) => Number.isFinite(date) && date > checkedAt);
-          notice.expiresAt = new Date(Math.min(checkedAt + 3000, ...expirations)).toISOString();
+          notice.expiresAt = new Date(Math.min(checkedAt + 3000,proof.evidenceValidUntil, ...expirations)).toISOString();
         }
         notices.push(notice);
       }
@@ -88,7 +89,7 @@ export function registerComplianceRoute(app: FastifyInstance, database: Pool, fl
       const checkedAt = clock();
       const deadlines = [matched.expiresAt, matched.source?.expiresAt, ...matched.rules.flatMap((r) => [r.expiresAt, r.source?.expiresAt, r.effectiveFrom])]
         .map((date) => date ? Date.parse(date) : NaN).filter((date) => Number.isFinite(date) && date > checkedAt);
-      const validUntil = Math.min(checkedAt + 3000, ...deadlines);
+      const validUntil = Math.min(checkedAt + 3000,finalLimit.evidenceValidUntil, ...deadlines);
       return { fixTimestamp: fix.timestamp, checkedAt, validUntil, coordinate: [fix.lon, fix.lat], validForMeters, limit, notices, reportedRoads,
         enforcementStatus: notices.some((e) => e.kind === "corridor") ? "verified_corridor" : "unavailable/unverified" } satisfies ComplianceContext;
     } catch { app.log.warn({ dependency: "compliance-data", requestId: request.id }, "Compliance data unavailable"); return reply.code(503).send(empty("service_unavailable")); }

@@ -1,3 +1,4 @@
+import {vehicleClasses} from '@rova/shared';
 import {createHash} from 'node:crypto';
 import type {FastifyInstance} from 'fastify';
 import type {Pool} from 'pg';
@@ -9,7 +10,7 @@ export function registerOfflineSafety(app:FastifyInstance,db:Pool,config:ApiConf
  app.get('/safety/offline-pack',{config:{rateLimit:{max:6,timeWindow:60000}}},async(request,reply)=>{
   if(config.PILOT_REGION_GATING_ENABLED==='true')return reply.code(503).send({error:'Pilot safety requires a current online corridor check. Offline safety export is disabled during the pilot.'});
   if(config.OFFLINE_SAFETY_ENABLED!=='true'||!licensed.size)return reply.code(503).send({error:'No preapproved offline safety dataset is available.'});
-  const q=z.object({lon:z.coerce.number().finite().min(-3.98).max(1.98),lat:z.coerce.number().finite().min(4.02).max(11.98),vehicleType:z.enum(['private_car','taxi','motorcycle','commercial_vehicle','bus','heavy_vehicle'])}).strict().parse(request.query);
+  const q=z.object({lon:z.coerce.number().finite().min(-3.98).max(1.98),lat:z.coerce.number().finite().min(4.02).max(11.98),vehicleType:z.enum(vehicleClasses)}).strict().parse(request.query);
   const now=Date.now(),bounds:[number,number,number,number]=[q.lon-.01,q.lat-.01,q.lon+.01,q.lat+.01];
   // All physical candidates are retained, including unapproved parallel roads/ramps.
   // Their numeric rules are excluded unless the complete road evidence passes serving checks.

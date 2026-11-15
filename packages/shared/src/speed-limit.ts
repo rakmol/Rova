@@ -1,9 +1,14 @@
 import type { VehicleClass } from "./index";
+import {ghanaSpeedRules,ghanaRulesCurrent,statutoryVehicleCap,vehicleRuleApplies,type GhanaSpeedContext} from './ghana-speed-rules';
+export interface RoadSpeedContext {category:GhanaSpeedContext|'unknown';reference:string|null;defaultConfirmed:boolean;independentApprovals:number;oldestApprovalAt:string|null;auditLogId:string|null;revisionId:string|null}
 export interface SafetyFix { lat: number; lon: number; heading?: number; accuracy: number; vehicleType: VehicleClass; timestamp?: number }
 export interface SafetySource { id: string; kind: string; status: string; synthetic: boolean; reviewedAt: string | null; validFrom: string | null; expiresAt: string | null; document: string; url: string | null }
 export interface SafetyRule { id: string; speedLimitKmh: number | null; units: string; vehicleClass: string; direction: string; role: string; evidenceType: string; legalApplicability: string; status: string; synthetic: boolean; confidence: number | null; effectiveFrom: string | null; expiresAt: string | null; lastReviewedAt: string | null; revision: number; supersedesId: string | null; reference: string | null; source: SafetySource | null; approvals: number; oldestApprovalAt: string | null; auditLogId: string | null }
-export interface RoadCandidate { id: string; distanceMeters: number; roadKind: string; gradeLevel: number | null; roadWidthMeters: number | null; direction: string; bearing: number | null; endpointMeters: number; confidence: number | null; accuracyMeters: number | null; status: string; synthetic: boolean; validFrom: string | null; expiresAt: string | null; lastReviewedAt: string | null; source: SafetySource | null; rules: SafetyRule[] }
+export interface RoadCandidate { id: string; distanceMeters: number; roadKind: string; gradeLevel: number | null; roadWidthMeters: number | null; direction: string; bearing: number | null; endpointMeters: number; confidence: number | null; accuracyMeters: number | null; status: string; synthetic: boolean; validFrom: string | null; expiresAt: string | null; lastReviewedAt: string | null; source: SafetySource | null; rules: SafetyRule[];speedContext?:RoadSpeedContext }
 const reasons = {
+  vehicle_profile_required:'Choose a specific vehicle use or loaded/unloaded heavy-goods profile to establish its applicable limit.',
+  statutory_review_due:'The statutory speed-limit reference needs review before it can be applied.',
+  unverified_road_category:'The road category, signed exceptions or current independent reviews have not been established.',
   pilot_corridor_unavailable: "No currently activated independently reviewed pilot corridor covers this road.",
   timestamp_required: "Supply the GPS fix timestamp in Unix milliseconds.", stale_gps: "The GPS reading is older than ten seconds.", future_gps: "The GPS timestamp is in the future.", poor_gps_accuracy: "GPS uncertainty is too large for a reliable road match.", heading_required: "A reliable travel heading is required.", no_road_match: "No mapped road is sufficiently close.", ambiguous_parallel_roads: "GPS uncertainty overlaps parallel roads or a nearby ramp.", ambiguous_junction: "The position is ambiguous near a junction or crossing.", ambiguous_levels: "GPS cannot distinguish nearby roads on different levels.", near_segment_boundary: "The position is too close to a segment boundary to establish applicability.", heading_mismatch: "Travel heading does not match the closest road.", unverified_segment: "The matched road geometry has not been sufficiently verified.", low_confidence_segment: "Road geometry confidence or accuracy is insufficient.", stale_segment: "The road geometry needs a current review.", no_applicable_rule: "No current rule applies to this road, direction and vehicle.", unverified_rule: "The rule lacks current independent verification or applicability evidence.", low_confidence_rule: "The rule confidence is below the serving threshold.", stale_rule: "The rule or its independent reviews need renewal.", unverified_source: "The authoritative source is unverified or does not support this evidence type.", stale_source: "The source is expired, future-dated or needs review.", conflicting_rules: "Equally applicable current records disagree.", pending_supersession: "A proposed replacement rule has not been sufficiently verified.", unsupported_units: "Only explicitly recorded km/h limits are supported.", too_many_candidates: "Too many nearby roads to establish a reliable match.", too_many_rules: "Too many applicable records to evaluate safely.", service_unavailable: "Verified speed-limit data is temporarily unavailable.",
 } as const;
@@ -62,8 +67,7 @@ export function evaluateSpeedLimit(fix: SafetyFix, candidates: RoadCandidate[], 
   if (!fresh(road.lastReviewedAt, 365, now)) return unknownSpeedLimit("stale_segment");
   const roadSource = sourceProblem(road.source, now); if (roadSource) return unknownSpeedLimit(roadSource);
   if (road.rules.length >= 17) return unknownSpeedLimit("too_many_rules");
-  let rules = road.rules.filter((r) => !r.synthetic && (r.vehicleClass === fix.vehicleType || r.vehicleClass === "all") && (r.direction === "both" || r.direction === direction) && r.effectiveFrom !== null && current(r.effectiveFrom, r.expiresAt, now));
-  if (!rules.length) return unknownSpeedLimit("no_applicable_rule");
+  let rules = road.rules.filter((r) => !r.synthetic && vehicleRuleApplies(r.vehicleClass,fix.vehicleType) && (r.direction === "both" || r.direction === direction) && r.effectiveFrom !== null && current(r.effectiveFrom, r.expiresAt, now));
   for (const replacement of rules) if (replacement.supersedesId && rules.some((r) => r.id === replacement.supersedesId) && ruleProblem(replacement, now)) return unknownSpeedLimit("pending_supersession");
   const superseded = new Set(rules.filter((r) => !ruleProblem(r, now)).map((r) => r.supersedesId));
   rules = rules.filter((r) => !superseded.has(r.id));
@@ -72,14 +76,30 @@ export function evaluateSpeedLimit(fix: SafetyFix, candidates: RoadCandidate[], 
   const rank = (r: SafetyRule) => (tier[r.evidenceType] ?? 0) * 2 + (r.vehicleClass === fix.vehicleType ? 1 : 0);
   const highest = Math.max(...roadRules.map(rank));
   const top = roadRules.filter((r) => rank(r) === highest);
-  if (!top.length) return unknownSpeedLimit("no_applicable_rule");
+  const context=road.speedContext;
+  let generalDefault:{category:GhanaSpeedContext;speedLimitKmh:number;classification:RoadSpeedContext;source:typeof ghanaSpeedRules.roadSource;catalogVersion:string}|null=null;
+  if(!top.length){
+   if(road.rules.some(r=>!r.synthetic&&r.role==='road_limit'&&vehicleRuleApplies(r.vehicleClass,fix.vehicleType)&&(r.direction==='both'||r.direction===direction)))return unknownSpeedLimit('no_applicable_rule');
+   if(!context||context.category==='unknown')return unknownSpeedLimit('no_applicable_rule');
+   if(!ghanaRulesCurrent(now))return unknownSpeedLimit('statutory_review_due');
+   if(!Object.hasOwn(ghanaSpeedRules.roadLimits,context.category)||road.roadKind!=='road'||!['official','field_audit'].includes(road.source!.kind)||!context.reference?.trim()||context.defaultConfirmed!==true||!Number.isInteger(context.independentApprovals)||context.independentApprovals<2||!fresh(context.oldestApprovalAt,180,now)||!context.auditLogId||!context.revisionId)return unknownSpeedLimit('unverified_road_category');
+   generalDefault={category:context.category,speedLimitKmh:ghanaSpeedRules.roadLimits[context.category],classification:context,source:ghanaSpeedRules.roadSource,catalogVersion:ghanaSpeedRules.version};
+  }
   for (const rule of top) { const issue = ruleProblem(rule, now); if (issue) return unknownSpeedLimit(issue); }
-  if (new Set(top.map((r) => r.speedLimitKmh)).size !== 1) return unknownSpeedLimit("conflicting_rules");
+  if (top.length&&new Set(top.map((r) => r.speedLimitKmh)).size !== 1) return unknownSpeedLimit("conflicting_rules");
   top.sort((a, b) => parsed(b.lastReviewedAt) - parsed(a.lastReviewedAt) || a.id.localeCompare(b.id));
   const caps = rules.filter((r) => r.role === "vehicle_cap");
   for (const cap of caps) { const issue = ruleProblem(cap, now); if (issue) return unknownSpeedLimit(issue); }
-  const contributing = [top[0], ...caps];
-  return { status: "verified" as const, speedLimitKmh: Math.min(...contributing.map((r) => r.speedLimitKmh!)), units: "km/h" as const, segmentId: road.id, vehicleType: fix.vehicleType,
+  const contributing = [...top.slice(0,1), ...caps];
+  const roadLimit=Math.min(...contributing.map(r=>r.speedLimitKmh!),generalDefault?.speedLimitKmh??Infinity);
+  const vehicle=statutoryVehicleCap(fix.vehicleType);
+  if(!vehicle.known&&roadLimit>(fix.vehicleType==='heavy_vehicle'?75:30))return unknownSpeedLimit('vehicle_profile_required');
+  if(!ghanaRulesCurrent(now))return unknownSpeedLimit('statutory_review_due');
+  const evidenceDeadlines=[parsed(ghanaSpeedRules.reviewBy),parsed(road.expiresAt),parsed(road.lastReviewedAt)+365*day,parsed(road.source!.expiresAt),parsed(road.source!.reviewedAt)+365*day,
+    ...(generalDefault?[parsed(context!.oldestApprovalAt)+180*day]:[]),...contributing.flatMap(r=>[parsed(r.expiresAt),parsed(r.lastReviewedAt)+180*day,parsed(r.oldestApprovalAt)+180*day,parsed(r.source!.expiresAt),parsed(r.source!.reviewedAt)+365*day])].filter(Number.isFinite);
+  return { status: "verified" as const, speedLimitKmh: Math.min(roadLimit,vehicle.speedLimitKmh??Infinity), roadLimitKmh:generalDefault?.speedLimitKmh??top[0].speedLimitKmh!,generalDefault,
+    evidenceValidUntil:Math.min(...evidenceDeadlines),
+    statutoryVehicleLimit:{...vehicle,source:ghanaSpeedRules.vehicleSource,catalogVersion:ghanaSpeedRules.version,checkedAt:ghanaSpeedRules.checkedAt,reviewBy:ghanaSpeedRules.reviewBy},units: "km/h" as const, segmentId: road.id, vehicleType: fix.vehicleType,
     confidence: Math.min(road.confidence, ...contributing.map((r) => r.confidence!)), matchedDistanceMeters: road.distanceMeters,
     rules: contributing.map((r) => ({ ruleId: r.id, revision: r.revision, speedLimitKmh: r.speedLimitKmh, role: r.role, evidenceType: r.evidenceType, effectiveFrom: r.effectiveFrom, expiresAt: r.expiresAt, lastReviewedAt: r.lastReviewedAt, oldestIndependentReviewAt: r.oldestApprovalAt, independentApprovals: r.approvals, auditLogId: r.auditLogId, source: { id: r.source!.id, document: r.source!.document, reference: r.reference, url: publicSourceUrl(r.source!.url) } })) };
 }

@@ -40,13 +40,9 @@ export interface SpeedLimitLookup {
 
 export type RoadDirection = "forward" | "reverse" | "both";
 
-export type VehicleClass =
-  | "private_car"
-  | "taxi"
-  | "motorcycle"
-  | "commercial_vehicle"
-  | "bus"
-  | "heavy_vehicle";
+export const vehicleClasses=['private_car','taxi','motorcycle','commercial_vehicle','bus','heavy_vehicle','loaded_heavy_vehicle','unloaded_heavy_vehicle','agricultural_vehicle','passenger_for_reward','light_vehicle'] as const;
+export type VehicleClass = typeof vehicleClasses[number];
+export {ghanaSpeedRules,ghanaRulesCurrent,statutoryVehicleCap,selectableVehicleClasses,vehicleRuleApplies,type GhanaSpeedContext} from './ghana-speed-rules';
 
 export interface OfficialSpeedRuleCsvRow {
   source_reference: string;

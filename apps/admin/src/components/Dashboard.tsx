@@ -6,6 +6,7 @@ import {PilotQuality} from './PilotQuality';
 import {ProviderCosts} from './ProviderCosts';
 import {SponsorshipPlan} from './SponsorshipPlan';
 import {Contributions} from './Contributions';
+import {RoadSpeedContext} from './RoadSpeedContext';
 import {GeometryMap}from'./GeometryMap';
 type Entity='source'|'road'|'rule'|'zone'|'hazard'|'policy'|'sponsor';
 type Session={role:'viewer'|'reviewer'|'editor'|'administrator';subject:string;aal:string};
@@ -54,6 +55,7 @@ export function Dashboard(){
  {detail&&<section className="panel"><h2>{screen==='candidate'?'Unapproved mapping evidence':selected?'Record review':'Create draft'}</h2>
   {screen==='candidate'?<><p>Mapping proposals are unverified. They never become official limits automatically.</p><pre>{pretty(detail.candidate)}</pre><p>Create a road draft in Road segments using this geometry and documented source evidence. Record a rule separately only after verifying the applicable limit.</p></>:<>
    <p className="subtle">Current state: {detail.status??'new draft'}. {screen==='sponsor'?'Sponsored: not a safety endorsement. Delivery and tracking are disabled. ':''}Required fields follow the record schema. Dates use ISO8601 UTC; geometry uses WGS84 longitude, latitude. No private reporter identifiers are shown.</p>
+   {screen==='road'&&canEdit&&<RoadSpeedContext disabled={busy} apply={fields=>void run(async()=>{setDraft(pretty({...JSON.parse(draft),...fields}));setMessage('Classification added to draft. Save and obtain independent reviews before publishing.');})}/>}
    <label>Record fields (JSON)<textarea rows={16} value={draft} onChange={e=>setDraft(e.target.value)} readOnly={!canEdit} spellCheck={false}/></label>
    <label>Review comment / evidence reference<textarea rows={3} value={comment} onChange={e=>setComment(e.target.value)} maxLength={2000}/></label>
    <div className="actions">{canEdit&&<button disabled={busy||comment.trim().length<10} onClick={()=>{void run(async()=>{const result=await api('revise',{entity:screen,id:selected,expected:selected?expected:undefined,data:JSON.parse(draft),comment});await load();await select(result.id);setMessage('New revision saved in review; not published.');});}}>Save new revision for review</button>}
