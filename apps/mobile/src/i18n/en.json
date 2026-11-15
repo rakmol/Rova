@@ -94,5 +94,11 @@
   "nav.state.rerouting": "Updating route",
   "nav.state.arrived": "Arrived",
   "nav.state.paused": "UPDATING GPS",
-  "nav.state.error": "Navigation unavailable"
+  "nav.state.error": "Navigation unavailable",
+  "vehicle.loaded_heavy_vehicle": "Heavy goods — loaded",
+  "vehicle.unloaded_heavy_vehicle": "Heavy goods — unloaded",
+  "vehicle.agricultural_vehicle": "Agricultural / slow-moving",
+  "vehicle.passenger_for_reward": "Passenger service — for reward",
+  "vehicle.light_vehicle": "Light goods / light vehicle",
+  "voice.limitHere": "Speed limit: {speed} kilometres per hour"
 }

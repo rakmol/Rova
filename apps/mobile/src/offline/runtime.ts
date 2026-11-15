@@ -26,7 +26,7 @@ export async function downloadSafetyPack(lon:number,lat:number,vehicleType:Vehic
 }
 export function offlineCompliance(fix:Fix,vehicleType:VehicleClass):ComplianceContext{
  const now=Date.now();const result=offlineSpeedLimit(process.env.EXPO_PUBLIC_PILOT_MODE==='true'?null:offlineData().safety,{lon:fix.coordinate[0],lat:fix.coordinate[1],accuracy:fix.accuracy??10000,heading:fix.heading??undefined,timestamp:fix.timestamp,vehicleType},now);
- return{fixTimestamp:fix.timestamp,checkedAt:now,validUntil:now+2000,coordinate:fix.coordinate,validForMeters:10,
+ return{fixTimestamp:fix.timestamp,checkedAt:now,validUntil:result.status==='verified'?Math.min(now+2000,result.evidenceValidUntil,offlineData().safety?.expiresAt??now):now,coordinate:fix.coordinate,validForMeters:10,
   limit:result.status==='verified'?{status:'verified',speedLimitKmh:result.speedLimitKmh,segmentId:result.segmentId,confidence:result.confidence,units:'km/h'}:{status:'unknown',speedLimitKmh:null,reason:result.reason},
   notices:[],enforcementStatus:'unavailable/unverified'};
 }

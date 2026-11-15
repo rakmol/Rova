@@ -12,7 +12,7 @@ export type BoundComplianceContext = { data: ComplianceContext; progressMeters: 
 export interface SmartAlertSnapshot {
   state: "unavailable" | "monitoring" | "pending" | "overspeed"; limitKmh: number | null;
   enforcementStatus: ComplianceContext["enforcementStatus"]; upcoming: ComplianceNotice | null;
-  alert: { id: string; kind: "overspeed" | "transition" | "corridor"; text: string } | null;
+  alert: { id: string; kind: "overspeed" | "transition" | "corridor" | "limit"; text: string } | null;
 }
 export const emptySmartAlert = (): SmartAlertSnapshot => ({ state: "unavailable", limitKmh: null, enforcementStatus: "unavailable/unverified", upcoming: null, alert: null });
 export class SmartAlertEngine {
@@ -24,6 +24,10 @@ export class SmartAlertEngine {
   private limitKey = "";
   private lastOverspeed = -Infinity;
   private lastAlert = -Infinity;
+  private lastAnnouncedLimit:number|null=null;
+  private stableLimit:number|null=null;
+  private limitFixes=0;
+  private limitSince=0;
   private zones = new Map<string, { phase: "ahead" | "inside" | "passed"; alerted: boolean }>();
   private resetSpeed() { this.since = null; this.samples = 0; this.over = false; this.limitKey = ""; this.lastSample = -Infinity; }
   update(input: { fix: Fix | null; speedKmh: number | null; reliable: boolean; navigating: boolean; progressMeters: number; context: BoundComplianceContext | null; now: number; flags: SmartAlertFlags; suppressPrompt?: boolean }): SmartAlertSnapshot {
@@ -44,12 +48,13 @@ export class SmartAlertEngine {
         && fix.heading !== null && Number.isFinite(fix.heading) && headingDifference(fix.heading, context!.heading) <= 15
         && speedKmh !== null && Number.isFinite(speedKmh) && speedKmh >= 0 && speedKmh <= 216
         && data.checkedAt <= now + 1000 && now - data.checkedAt <= 3000 && data.validUntil > now && now - this.lastSample <= 2500;
-      if (!awaitingProof) this.resetSpeed();
+      if (!awaitingProof){this.resetSpeed();this.stableLimit=null;this.limitFixes=0;}
       return unavailable;
     }
     const limit = data.limit.speedLimitKmh;
     const result: SmartAlertSnapshot = { ...unavailable, state: "monitoring", limitKmh: limit };
     const fresh = fix.timestamp > this.lastTimestamp;
+    if(fresh){if(this.stableLimit!==limit||fix.timestamp-this.lastTimestamp>2500){this.stableLimit=limit;this.limitFixes=1;this.limitSince=fix.timestamp;}else this.limitFixes++;}
     if (fresh) {
       const key = `${data.limit.segmentId}:${limit}`;
       if (key !== this.limitKey || fix.timestamp - this.lastSample > 2500) this.resetSpeed();
@@ -71,7 +76,7 @@ export class SmartAlertEngine {
       if (!fresh || input.suppressPrompt || now - this.lastAlert < 12000) return false;
       result.alert = { id, kind, text }; this.lastAlert = now; return true;
     };
-    if (this.over && now - this.lastOverspeed >= 30000 && emit(`overspeed:${this.limitKey}:${fix.timestamp}`, "overspeed", tx('voice.slowDown'))) this.lastOverspeed = now;
+    if (this.over && now - this.lastOverspeed >= 30000 && emit(`overspeed:${this.limitKey}:${fix.timestamp}`, "overspeed", tx('voice.limitHere',{speed:limit})+'. '+tx('voice.slowDown'))) {this.lastOverspeed = now;this.lastAnnouncedLimit=limit;}
     for (const n of eligible) {
       const key = `${n.kind}:${n.id}:${n.revision}`;
       const prior = this.zones.get(key);
@@ -85,6 +90,10 @@ export class SmartAlertEngine {
       const text = n.kind === "transition" ? tx('voice.limitAhead',{speed:n.speedLimitKmh!}) : tx('voice.corridor');
       if (emit(key, n.kind, text)) memory.alerted = true;
     }
+    // Announce the current applicable limit after stable proof; directions and sustained overspeed take priority.
+    if(!result.alert&&result.state==='monitoring'&&speedKmh!==null&&Number.isFinite(speedKmh)&&speedKmh>=0&&this.limitFixes>=2&&fix.timestamp-this.limitSince>=3000&&this.lastAnnouncedLimit!==limit
+      &&!eligible.some(n=>n.exitDistanceMeters>=-20&&n.distanceMeters<=400)
+      &&emit(`limit:${limit}:${fix.timestamp}`,'limit',tx('voice.limitHere',{speed:limit})))this.lastAnnouncedLimit=limit;
     // Bound session-only memory. No positions or alert history are persisted.
     if (this.zones.size > 512) { const oldest = this.zones.keys().next().value; if (oldest) this.zones.delete(oldest); }
     return result;

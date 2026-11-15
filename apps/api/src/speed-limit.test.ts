@@ -6,7 +6,7 @@ import { readConfig } from "./config.js";
 import Fastify from "fastify";
 import { registerSpeedLimitRoute } from "./speed-limit-route.js";
 import { evaluateSpeedLimit, type RoadCandidate, type SafetyFix, type SafetyRule, type SafetySource } from "./speed-limit.js";
-const now = Date.parse("2026-11-08T00:00:00Z");
+const now = Date.parse("2026-11-15T12:00:00Z");
 const iso = (days = 0) => new Date(now - days * 86400000).toISOString();
 const source: SafetySource = { id: "test-source", kind: "official", status: "approved", synthetic: false, reviewedAt: iso(), validFrom: iso(10), expiresAt: null, document: "ISOLATED TEST DOCUMENT, NOT REAL DATA", url: "https://example.com/test-document" };
 const rule: SafetyRule = { id: "test-rule", speedLimitKmh: 50, units: "km/h", vehicleClass: "all", direction: "both", role: "road_limit", evidenceType: "official_record", legalApplicability: "confirmed", status: "published", synthetic: false, confidence: 0.98, effectiveFrom: iso(10), expiresAt: null, lastReviewedAt: iso(), revision: 1, supersedesId: null, reference: "Test item", source, approvals: 2, oldestApprovalAt: iso(), auditLogId: "1" };

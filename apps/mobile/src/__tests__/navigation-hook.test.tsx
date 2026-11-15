@@ -66,9 +66,9 @@ test("alert audio opt-out preserves visual compliance and never replays a muted 
   await act(async () => hook.result.current.toggleAlertAudio());
   for (let i = 0; i < 14; i++) { now += 1000; await act(async () => callback(sample())); }
   expect(hook.result.current.smartAlerts.state).toBe("overspeed");
-  expect(mockSpeak).not.toHaveBeenCalledWith("Please slow down safely");
+  expect(mockSpeak.mock.calls.some(([text])=>String(text).includes('Please slow down safely'))).toBe(false);
   await act(async () => hook.result.current.toggleAlertAudio()); now += 1000; await act(async () => callback(sample()));
-  expect(mockSpeak).not.toHaveBeenCalledWith("Please slow down safely");
+  expect(mockSpeak.mock.calls.some(([text])=>String(text).includes('Please slow down safely'))).toBe(false);
   await hook.unmount();
 });
 test("a permission activity can background startup without cancelling guidance; startup waits for foreground", async () => {

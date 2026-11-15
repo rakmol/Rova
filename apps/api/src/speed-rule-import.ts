@@ -13,6 +13,7 @@ const vehicleClasses = new Set<VehicleClass>([
   "commercial_vehicle",
   "bus",
   "heavy_vehicle",
+  "loaded_heavy_vehicle", "unloaded_heavy_vehicle", "agricultural_vehicle", "passenger_for_reward", "light_vehicle",
 ]);
 
 function isRoadDirection(value: string): value is RoadDirection {
@@ -190,7 +191,7 @@ export function prepareOfficialSpeedRuleImport(
     const vehicleClass = isVehicleClass(vehicleClassText) ? vehicleClassText : null;
     if (!vehicleClass) {
       issues.push(
-        `Row ${rowNumber}: vehicle_class must be private_car, taxi, motorcycle, commercial_vehicle, bus, or heavy_vehicle.`,
+        `Row ${rowNumber}: vehicle_class must be a supported ROVA vehicle profile, including explicit loaded/unloaded heavy goods.`,
       );
     }
 

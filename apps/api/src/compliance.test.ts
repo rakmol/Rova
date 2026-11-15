@@ -6,7 +6,7 @@ import { readConfig } from "./config.js";
 import { noticeOnRoute, type ComplianceCandidate } from "./compliance.js";
 import { projectOnPath } from "./compliance-geometry.js";
 import type { RoadCandidate, SafetySource, SafetyRule } from "./speed-limit.js";
-const now = Date.parse("2026-11-08T00:00:00Z"); const iso = new Date(now - 1000).toISOString();
+const now = Date.parse("2026-11-15T12:00:00Z"); const iso = new Date(now - 1000).toISOString();
 const event: ComplianceCandidate = { id: "TEST EVENT, NOT REAL DATA", revision: 1, kind: "transition", geometry: { coordinates: [[4.006, 4], [4.009, 4]] }, targetSegmentId: "target", targetRuleId: "target-rule", targetRuleRevision: 1, enforcementType: "unknown", confidence: 0.99, accuracyMeters: 2, effectiveFrom: iso, expiresAt: new Date(now + 86400000).toISOString(), reviewedAt: iso, sourceReference: "ISOLATED FIXTURE", probe: [4.0075, 4], probeHeading: 90 };
 const fix = { lat: 4, lon: 4.004, heading: 90, accuracy: 5, timestamp: now, vehicleType: "private_car" as const };
 const path: [number, number][] = [[4.003, 4], [4.01, 4]];

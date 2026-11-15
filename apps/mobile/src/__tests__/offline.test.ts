@@ -4,7 +4,7 @@ import {validateSavedRoute} from '../offline/data';
 import {offlinePackState,offlineSpeedLimit,validateSafetyPack,type OfflineSafetyPack,type RoadCandidate} from '@rova/shared';
 import * as savedData from '../offline/data';
 import {offlineCompliance,downloadSafetyPack} from '../offline/runtime';
-const now=Date.parse('2026-11-10T12:00:00Z'),past=new Date(now-86400000).toISOString(),future=new Date(now+86400000).toISOString();
+const now=Date.parse('2026-11-15T12:00:00Z'),past=new Date(now-86400000).toISOString(),future=new Date(now+86400000).toISOString();
 const source={id:'test-source',kind:'official',status:'published',synthetic:false,reviewedAt:past,validFrom:past,expiresAt:future,document:'ISOLATED TEST EVIDENCE',url:null};
 const road:RoadCandidate={id:'ISOLATED ROAD',distanceMeters:0,roadKind:'road',gradeLevel:0,roadWidthMeters:8,direction:'both',bearing:90,endpointMeters:500,confidence:.99,accuracyMeters:2,status:'published',synthetic:false,validFrom:past,expiresAt:future,lastReviewedAt:past,source,rules:[{id:'ISOLATED RULE',speedLimitKmh:50,units:'km/h',vehicleClass:'all',direction:'both',role:'road_limit',evidenceType:'official_record',legalApplicability:'confirmed',status:'published',synthetic:false,confidence:.99,effectiveFrom:past,expiresAt:future,lastReviewedAt:past,revision:1,supersedesId:null,reference:'TEST ONLY',source,approvals:2,oldestApprovalAt:past,auditLogId:'test-audit'}]};
 const pack=():OfflineSafetyPack=>({schema:1,complete:true,version:'sha256:'+'a'.repeat(64),createdAt:now-1000,expiresAt:now+10000,bounds:[-.21,5.59,-.19,5.61],vehicleType:'private_car',attribution:'ISOLATED AUTOMATED TEST',roads:[{geometry:[[-.209,5.6],[-.191,5.6]],record:structuredClone(road)}]});
