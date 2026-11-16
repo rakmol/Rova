@@ -13,7 +13,7 @@ jest.mock('../navigation/useNavigationSession',()=>({useNavigationSession:(desti
  return {snapshot:{state:'navigating'},stop:mockStop};
 }}));
 jest.mock('../theme/ThemeProvider',()=>({useRovaTheme:()=>({theme:jest.requireActual('../theme/theme').resolveTheme('light','light')})}));
-jest.mock('expo-router',()=>({router:{replace:jest.fn(),push:jest.fn()},usePathname:()=>'/navigation',useRootNavigationState:()=>({key:'test-root'})}));
+jest.mock('expo-router',()=>({router:{replace:jest.fn(),push:jest.fn()},useFocusEffect:(fn:()=>void)=>{jest.requireActual('react').useEffect(fn,[fn]);},usePathname:()=>'/navigation',useRootNavigationState:()=>({key:'test-root'})}));
 jest.mock('../routing/runtime',()=>({routingProvider:{routes:jest.fn()}}));
 jest.mock('expo-location',()=>({Accuracy:{BestForNavigation:6},getForegroundPermissionsAsync:jest.fn(),getCurrentPositionAsync:jest.fn()}));
 const option:RoutingOption={id:'ISOLATED TEST ROUTE',label:'TEST',isSample:false,trafficAware:false,etaKind:'static_estimate',attribution:'TEST ONLY',geometry:{type:'LineString',coordinates:[[0,0],[.01,0]]},distanceMeters:1000,durationSeconds:300,tolls:'unknown',maneuvers:[{instruction:'TEST TURN',geometryIndex:1,distanceMeters:1000,durationSeconds:300}]};
@@ -55,4 +55,10 @@ test('End during route recovery prevents a late response from restarting navigat
  await waitFor(()=>expect(routingProvider.routes).toHaveBeenCalled());
  await act(async()=>eraseActiveJourney());await act(async()=>resolve({routes:[option]} as never));
  expect(mockStart).not.toHaveBeenCalled();expect(await loadJourneyCheckpoint()).toBeNull();await view.unmount();
+});
+test('a changed preview does not restart the already activated navigation screen',async()=>{
+ function PreviewControls(){const {setRoute}=useRoutePreview();return <Button title="Preview another destination" onPress={()=>setRoute({origin:[0,0],destination:[.02,0],geometry:option.geometry,distanceMeters:1000,durationSeconds:300,trafficAware:false,originIsLive:true,originLabel:'TEST',destinationLabel:'OTHER TEST DESTINATION',release:()=>{},startGuidance:async()=>{throw new Error('TEST');}})}/>;}
+ const view=await render(<RouteProvider><ActiveNavigationProvider><Consumer/><PreviewControls/></ActiveNavigationProvider></RouteProvider>);
+ await waitFor(()=>expect(mockStart).toHaveBeenCalledTimes(1));await fireEvent.press(screen.getByRole('button',{name:'Preview another destination'}));
+ expect(mockStart).toHaveBeenCalledTimes(1);expect((await loadJourneyCheckpoint())?.destination).toEqual([.01,0]);await view.unmount();
 });
