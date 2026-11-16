@@ -5,7 +5,7 @@ import {SmartAlertPanel} from '../navigation/SmartAlertPanel';
 import {SmartAlertEngine,emptySmartAlert} from '../navigation/smart-alerts';
 jest.mock('../theme/ThemeProvider',()=>({useRovaTheme:()=>({theme:jest.requireActual('../theme/theme').resolveTheme('light','light')})}));
 const now=Date.parse('2026-11-16T12:00:00Z');
-const report:ReportedSpeedLimit={id:'TEST-REPORT',roadName:'TEST ONLY',verification:'reported',speedLimitKmh:80,reportedAt:'2026-11-16T00:00:00Z',expiresAt:'2026-12-16T00:00:00Z',sourceReference:'TEST owner report',sourceUrl:'https://example.com/test',validUntil:now+3000,geometry:{type:'LineString',coordinates:[[0,0],[.01,0]]}};
+const report:ReportedSpeedLimit={id:'TEST-REPORT',roadName:'TEST ONLY',verification:'reported',speedLimitKmh:80,reportedAt:'2026-11-16T00:00:00Z',expiresAt:'2026-12-16T00:00:00Z',sourceReference:'TEST owner report',sourceUrl:'https://example.com/test',validUntil:now+15000,geometry:{type:'LineString',coordinates:[[0,0],[.01,0]]}};
 const data:ComplianceContext={fixTimestamp:now,checkedAt:now,validUntil:now,validForMeters:0,coordinate:[.003,0],limit:{status:'unknown',speedLimitKmh:null,reason:'no_road_match'},notices:[],enforcementStatus:'unavailable/unverified',reportedSpeedLimit:report};
 const context={data,progressMeters:0,heading:90};
 const fix={coordinate:[.003,0]as[number,number],heading:90,accuracy:5,timestamp:now,speed:30};
@@ -15,6 +15,8 @@ test('display reports require fresh aligned GPS and disappear off-road, paused o
  expect(currentReportedSpeed(context,{...fix,coordinate:[.003,.0004]},now,true)).toBeNull();
  expect(currentReportedSpeed(context,{...fix,accuracy:60},now,true)).toBeNull();
  expect(currentReportedSpeed(context,fix,now+3001,true)).toBeNull();
+ expect(currentReportedSpeed(context,{...fix,timestamp:now+8000,coordinate:[.0035,0]},now+8000,true)?.speedLimitKmh).toBe(80);
+ expect(currentReportedSpeed(context,{...fix,timestamp:now+15001},now+15001,true)).toBeNull();
  expect(currentReportedSpeed({...context,data:{...data,limit:{status:'verified',speedLimitKmh:50,segmentId:'TEST',confidence:.99,units:'km/h'}}},fix,now,true)).toBeNull();
 });
 test('reported 80 never becomes a verified number or triggers a verified overspeed warning',()=>{

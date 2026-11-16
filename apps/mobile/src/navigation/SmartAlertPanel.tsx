@@ -7,15 +7,15 @@ import type {ReportedRoadAlertSnapshot} from './reported-road-alerts';
 import {tx} from '../i18n';
 export const vehicleLabels:Record<VehicleClass,string>={private_car:tx('vehicle.private_car'),taxi:tx('vehicle.taxi'),motorcycle:tx('vehicle.motorcycle'),commercial_vehicle:tx('vehicle.commercial_vehicle'),bus:tx('vehicle.bus'),heavy_vehicle:tx('vehicle.heavy_vehicle'),loaded_heavy_vehicle:tx('vehicle.loaded_heavy_vehicle'),unloaded_heavy_vehicle:tx('vehicle.unloaded_heavy_vehicle'),agricultural_vehicle:tx('vehicle.agricultural_vehicle'),passenger_for_reward:tx('vehicle.passenger_for_reward'),light_vehicle:tx('vehicle.light_vehicle')};
 const types={fixed_speed:tx('enforcement.fixed_speed'),average_speed:tx('enforcement.average_speed'),red_light:tx('enforcement.red_light'),combined:tx('enforcement.combined'),checkpoint:tx('enforcement.checkpoint'),unknown:tx('enforcement.unknown')};
-export function SmartAlertPanel({snapshot:s,vehicleType,audioEnabled,onToggleAudio,reportedRoadAlert,reportedSpeed,compact=false}:{snapshot:SmartAlertSnapshot;vehicleType:VehicleClass;audioEnabled:boolean;onToggleAudio():void;reportedRoadAlert?:ReportedRoadAlertSnapshot;reportedSpeed?:ReportedSpeedLimit|null;compact?:boolean}){
+export function SmartAlertPanel({snapshot:s,vehicleType,audioEnabled,onToggleAudio,reportedRoadAlert,reportedSpeed,compact=false,showAudioControl=true}:{snapshot:SmartAlertSnapshot;vehicleType:VehicleClass;audioEnabled:boolean;onToggleAudio():void;reportedRoadAlert?:ReportedRoadAlertSnapshot;reportedSpeed?:ReportedSpeedLimit|null;compact?:boolean;showAudioControl?:boolean}){
  const{theme}=useRovaTheme(),note={color:theme.colors.inkMuted,fontSize:14,lineHeight:20};
  const reported=s.limitKmh===null?reportedSpeed:null;
  const limitLabel=s.limitKmh!==null?tx('alert.limit',{speed:s.limitKmh}):reported?tx('alert.reportedLimit',{speed:reported.speedLimitKmh}):tx('alert.limitUnknown');
  return <View style={{gap:8}}>
   {!compact&&<Text style={note}>{tx('alert.title')} | {vehicleLabels[vehicleType]}</Text>}
   <View style={{flexDirection:'row',alignItems:'center',gap:8,flexWrap:'wrap'}}>
-   <Text accessibilityLabel={limitLabel} style={{flexGrow:1,flexShrink:1,color:reported?theme.colors.warning:theme.colors.ink,fontSize:s.limitKmh===null&&!reported?16:24,lineHeight:s.limitKmh===null&&!reported?24:30,fontWeight:'800'}}>{limitLabel}</Text>
-   {smartAlertFlags.enabled&&<ActionButton title={audioEnabled?tx('alert.audioOn'):tx('alert.audioOff')} secondary onPress={onToggleAudio}/>}
+   <Text accessibilityLabel={limitLabel} style={{flexGrow:1,flexShrink:1,color:reported?theme.colors.warning:theme.colors.ink,fontSize:compact?16:s.limitKmh===null&&!reported?16:24,lineHeight:compact?22:s.limitKmh===null&&!reported?24:30,fontWeight:'800'}}>{limitLabel}</Text>
+   {smartAlertFlags.enabled&&showAudioControl&&<ActionButton title={audioEnabled?tx('alert.audioOn'):tx('alert.audioOff')} secondary onPress={onToggleAudio}/>}
   </View>
   {reported&&<Text style={[note,{color:theme.colors.warning}]}>{tx('alert.reportedLimitCaution')}</Text>}
   {s.state==='overspeed'&&<View style={{padding:12,borderWidth:2,borderColor:theme.colors.warning,backgroundColor:theme.colors.warningTint,borderRadius:12}}>

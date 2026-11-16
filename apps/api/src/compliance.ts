@@ -13,6 +13,7 @@ const coordinate = z.tuple([z.number().finite().min(-180).max(180), z.number().f
 export const complianceBody = z.object({
   fix: z.object({ lat: z.number().finite().min(-90).max(90), lon: z.number().finite().min(-180).max(180), accuracy: z.number().finite().min(0).max(10000), heading: z.number().finite().min(0).lt(360).optional(), timestamp: z.number().int().safe(), vehicleType: z.enum(vehicleClasses) }).strict(),
   path: z.array(coordinate).min(2).max(128),
+  reportedSpeedSchema: z.literal(2).optional(),
 }).strict();
 export interface ComplianceCandidate {
   id: string; revision: number; kind: "transition" | "corridor"; geometry: { coordinates: ComplianceCoordinate[] };
@@ -47,7 +48,7 @@ export function noticeOnRoute(event: ComplianceCandidate, path: ComplianceCoordi
 }
 export function registerComplianceRoute(app: FastifyInstance, database: Pool, flags: { enabled: boolean; transitions: boolean; corridors: boolean; reportedRoads?: boolean;pilotRestricted?:boolean }, clock: () => number = Date.now) {
   app.post("/safety/alert-context", { logLevel: "silent", bodyLimit: 32768, config: { rateLimit: { max: 40, timeWindow: 60000 } } }, async (request, reply) => {
-    validateInput(complianceBody, request.body); const { fix, path } = complianceBody.parse(request.body);
+    validateInput(complianceBody, request.body); const { fix, path, reportedSpeedSchema } = complianceBody.parse(request.body);
     const empty = (reason: string): ComplianceContext => ({ fixTimestamp: fix.timestamp, checkedAt: clock(), validUntil: clock(), coordinate: [fix.lon, fix.lat], validForMeters: 0, limit: { status: "unknown", speedLimitKmh: null, reason }, notices: [], enforcementStatus: "unavailable/unverified" });
     if (!flags.enabled) return empty("feature_disabled");
     const issue = gpsProblem(fix, clock()); if (issue) return empty(issue);
@@ -55,7 +56,7 @@ export function registerComplianceRoute(app: FastifyInstance, database: Pool, fl
     const length = path.slice(1).reduce((sum, point, i) => sum + metres(path[i], point), 0);
     if (!position || position.ambiguous || position.distance > Math.min(15, fix.accuracy * 2) || headingDifference(position.heading, fix.heading!) > 30 || length > 1500) return empty("route_alignment_unknown");
     const reportedRoads = await reportedRoadContext(database, fix, path, position.along, clock(), flags.reportedRoads === true&&!flags.pilotRestricted);
-    const reportedSpeed = flags.reportedRoads===true ? reportedSpeedLimit(fix,path,clock()) : null;
+    const reportedSpeed = flags.reportedRoads===true ? reportedSpeedLimit(fix,path,clock(),reportedSpeedSchema===2?15000:3000) : null;
     const lookup = async (point: SafetyFix) => { const rows = await database.query<{ candidate: RoadCandidate }>("SELECT candidate FROM public.rova_speed_limit_candidates($1,$2,$3,$4) AS candidates(candidate)", [point.lon, point.lat, 100, point.vehicleType]); return rows.rows.map((r) => r.candidate); };
     try {
       const roads = await lookup(fix); const limit = evaluateSpeedLimit(fix, roads, clock());

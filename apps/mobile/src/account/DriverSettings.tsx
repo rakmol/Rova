@@ -10,6 +10,7 @@ import { readHistory, writeHistory, useHistory } from '../places/history';
 import { placesProvider } from '../places/runtime';
 import { eraseReportingData } from '../incidents/client';
 import { useRoutePreview } from '../map/RouteProvider';
+import {BackgroundNavigationSettings} from '../navigation/BackgroundNavigationSettings';
 export function DriverSettings({section='all'}:{section?:'all'|'navigation'|'privacy'}){
   const data=useDriverData();const {theme}=useRovaTheme();const ink={color:theme.colors.ink};const muted={color:theme.colors.inkMuted};
   const {setRoute,setPickedDestination,setSelectedRoutingOption}=useRoutePreview();
@@ -17,6 +18,7 @@ export function DriverSettings({section='all'}:{section?:'all'|'navigation'|'pri
   useEffect(()=>{let active=true;const check=()=>{void Location.getForegroundPermissionsAsync().then(p=>{if(active)setPermission(p.granted?'Allowed':p.canAskAgain?'Not allowed':'Not allowed — change in phone settings');}).catch(()=>{if(active)setPermission('Unavailable');});};check();const listener=AppState.addEventListener('change',s=>{if(s==='active')check();});return()=>{active=false;listener.remove();};},[]);
   async function run(work:()=>Promise<void>){if(busy)return;setBusy(true);try{await work();setMessage('Saved.');}catch(e){setMessage(e instanceof Error?e.message:'Could not save.');}finally{setBusy(false);}}
   return <>
+    {section!=='privacy'&&<BackgroundNavigationSettings/>}
     {section!=='privacy'&&<Surface style={{gap:12,marginBottom:18}}><Text style={[ink,{fontSize:18,fontWeight:'800'}]}>{tx('language.title')}</Text><Text style={ink}>{tx('language.english')}</Text><Text style={muted}>{tx('language.pending')}</Text><Text style={muted}>{tx('language.voice')}</Text></Surface>}
     {section!=='privacy'&&<Surface style={{gap:12,marginBottom:18}}>
       <Text style={[ink,{fontSize:18,fontWeight:'800'}]}>Voice and units</Text>
@@ -28,7 +30,7 @@ export function DriverSettings({section='all'}:{section?:'all'|'navigation'|'pri
     </Surface>}
     {section!=='navigation'&&<Surface style={{gap:12,marginBottom:18}}>
       <Text style={[ink,{fontSize:18,fontWeight:'800'}]}>Location and privacy</Text>{!!driverStorageStatus().error&&<Text style={muted}>{driverStorageStatus().error}</Text>}<Text style={muted}>Location permission: {permission}</Text>
-      <Text style={muted}>ROVA asks for foreground location when locating you, navigating or reporting. With permission, foreground movement checks also defer forms while moving. It does not record continuous location history. A route is saved only when you explicitly choose offline saving. Search and routing send necessary queries/coordinates to the configured providers. Saved places are stored only when you choose to save them. Saved places and optional search history are encrypted on this phone.</Text>
+      <Text style={muted}>ROVA asks for foreground location when locating you, navigating or reporting. With permission, foreground movement checks also defer forms while moving. It does not record continuous location history. Background location, when allowed, is used only during active navigation and stops when you end it. An encrypted active destination is kept for up to six hours to recover a restarted journey, then cleared on End or arrival. No travelled route or continuous location history is saved. Route geometry is saved only when you explicitly choose offline saving. Search and routing send necessary queries/coordinates to the configured providers. Saved places are stored only when you choose to save them. Saved places and optional search history are encrypted on this phone.</Text>
       <ActionButton title="Open phone permission settings" secondary onPress={()=>{void Linking.openSettings().catch(()=>setMessage('Open ROVA permissions in your phone settings.'));}}/>
       <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}><Text style={ink}>Remember recent searches on this phone</Text><Switch accessibilityLabel="Remember recent searches" value={history.enabled} disabled={busy} onValueChange={enabled=>{void run(async()=>{const next={enabled,queries:enabled?history.queries:[]};await writeHistory(next);});}}/></View>
       <ActionButton title="Clear search history" secondary disabled={busy} onPress={()=>{void run(async()=>{const next={enabled:readHistory().enabled,queries:[]};await writeHistory(next);placesProvider.clearCache();});}}/>

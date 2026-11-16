@@ -35,9 +35,9 @@ authority approval, independent review or exact camera positions.
 The existing `/safety/alert-context` endpoint has an optional
 `reportedSpeedLimit` field. Old clients ignore it. New clients show it only
 when actively navigating with fresh precise GPS, aligned selected-route
-traversal and an exact nearby mapped piece. Both travel directions are
+traversal and an exact nearby mapped carriageway. Both travel directions are
 included as a **report**, not a claim of confirmed signed applicability.
-No report is returned when the reported-road feature is disabled.
+Adjacent pieces can be joined at identical endpoints. Schema 2 clients may keep the display for up to 15 seconds while fresh GPS still matches that geometry; older clients keep three-second validity. No report is returned when the reported-road feature is disabled.
 Verified pilot publication gates remain unchanged; an owner report does not
 activate a verified safety corridor. Missing/expired/offline/out-of-corridor reports hide.
 Any verified applicable speed limit takes precedence. The report is never
