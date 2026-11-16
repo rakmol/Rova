@@ -6,6 +6,8 @@ import type { RoutingOption, RoutingResponse } from "@rova/shared";
 import { useNavigationSession } from "../navigation/useNavigationSession";
 import { routingProvider } from "../routing/runtime";
 import { fetchComplianceContext } from "../navigation/compliance-client";
+import {startBackgroundNavigation} from '../navigation/background-location';
+jest.mock('../navigation/background-location',()=>({startBackgroundNavigation:jest.fn(async()=>null),backgroundPermission:jest.fn(async()=>true)}));
 jest.mock('../contributions/useCommunityPins',()=>({useApprovedContributionFeed:()=>mockApproved}));
 const mockHazards = { reports: [] as import('@rova/shared').CommunityIncident[], checkedAt: null as number|null, stale: true, transport: 'stream' as const, truncated: false };
 const mockApproved:import('../contributions/mapPins').ApprovedContributionFeed={pins:[],checkedAt:null,stale:true};
@@ -24,6 +26,7 @@ let changeAppState: (state: AppStateStatus) => void;
 beforeEach(() => {
   networkObservation({isConnected:true,isInternetReachable:true});
   jest.clearAllMocks(); now = 1000000; jest.spyOn(Date, "now").mockImplementation(() => now);
+  jest.mocked(startBackgroundNavigation).mockResolvedValue(null);
   mockHazards.reports=[];mockHazards.checkedAt=null;mockHazards.stale=true;
   mockApproved.pins=[];mockApproved.checkedAt=null;mockApproved.stale=true;
   Object.defineProperty(AppState, "currentState", { value: "active", configurable: true, writable: true });
@@ -94,7 +97,7 @@ test("a permission activity can background startup without cancelling guidance; 
   await waitFor(() => expect(hook.result.current.snapshot.state).toBe("navigating"));
   expect(Location.watchPositionAsync).toHaveBeenCalledTimes(1);
   await act(async () => changeAppState("background"));
-  expect(hook.result.current.snapshot.state).toBe("paused"); expect(remove).toHaveBeenCalled();
+  expect(hook.result.current.snapshot.state).toBe("navigating"); expect(remove).toHaveBeenCalled();
   await act(async () => changeAppState("inactive"));
   await act(async () => changeAppState("active"));
   expect(hook.result.current.snapshot.state).toBe("navigating");
@@ -103,6 +106,20 @@ test("a permission activity can background startup without cancelling guidance; 
   now += 3000; await act(async () => callback(sample()));
   expect(hook.result.current.snapshot.gpsReliable).toBe(true);
   await hook.unmount();
+});
+
+test('permitted background GPS preserves progress and voice when Home is pressed; End stops the service',async()=>{
+ const serviceRemove=jest.fn();let backgroundFix!:(location:Location.LocationObject)=>void;
+ jest.mocked(startBackgroundNavigation).mockImplementation(async listener=>{backgroundFix=listener;return {remove:serviceRemove};});
+ const hook=await renderHook(()=>useNavigationSession([.005,.005],route));await waitFor(()=>expect(startBackgroundNavigation).toHaveBeenCalled());
+ expect(Location.watchPositionAsync).not.toHaveBeenCalled();
+ const original=hook.result.current.snapshot.route;
+ await act(async()=>changeAppState('background'));
+ expect(hook.result.current.snapshot.state).toBe('navigating');expect(serviceRemove).not.toHaveBeenCalled();
+ now+=1000;await act(async()=>backgroundFix({...sample(),coords:{...sample().coords,longitude:.0032}}));
+ expect(hook.result.current.snapshot.gpsReliable).toBe(true);expect(hook.result.current.snapshot.route).toBe(original);expect(hook.result.current.snapshot.progress!.along).toBeGreaterThan(350);
+ await act(async()=>changeAppState('active'));expect(startBackgroundNavigation).toHaveBeenCalledTimes(1);
+ await act(async()=>hook.result.current.stop());expect(serviceRemove).toHaveBeenCalled();expect(hook.result.current.snapshot.state).toBe('idle');await hook.unmount();
 });
 test("ending while startup waits for foreground prevents late foreground events from starting guidance", async () => {
   Object.defineProperty(AppState, "currentState", { value: "background", configurable: true, writable: true });

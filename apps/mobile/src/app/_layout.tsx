@@ -1,3 +1,4 @@
+import '../navigation/background-location';
 import {loadDriverData} from '../account/local';
 import {loadHistory} from '../places/history';
 import {startNotificationLifecycle} from "../notifications/runtime";
@@ -10,13 +11,16 @@ import { StatusBar } from "expo-status-bar";
 import { ThemeProvider, useRovaTheme } from "../theme/ThemeProvider";
 import { RouteProvider } from "../map/RouteProvider";
 import {startPilotLifecycle} from '../pilot/runtime';
+import {ActiveNavigationProvider} from '../navigation/ActiveNavigationProvider';
 
 export default function RootLayout() {
   useEffect(()=>{void loadOfflineData();void loadDriverData().catch(()=>{});void loadHistory().catch(()=>{});const network=startNetworkMonitor(),driving=startDrivingMonitor(),notifications=startNotificationLifecycle(),pilot=startPilotLifecycle();return()=>{network();driving();notifications();pilot();};},[]);
   return (
     <ThemeProvider>
       <RouteProvider>
+       <ActiveNavigationProvider>
         <RootNavigator />
+       </ActiveNavigationProvider>
       </RouteProvider>
     </ThemeProvider>
   );

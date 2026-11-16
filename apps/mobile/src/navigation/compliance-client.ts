@@ -9,7 +9,7 @@ export async function fetchComplianceContext(fix: Fix, path: ComplianceCoordinat
   const url = new URL(endpoint);
   if (url.protocol !== "https:" && !["localhost", "127.0.0.1"].includes(url.hostname)) throw new Error("Compliance endpoint requires HTTPS");
   const response = await fetch(url.toString(), { method: "POST", headers: { "Content-Type": "application/json" }, signal,
-    body: JSON.stringify({ fix: { lon: fix.coordinate[0], lat: fix.coordinate[1], accuracy: fix.accuracy, heading: fix.heading ?? undefined, timestamp: fix.timestamp, vehicleType }, path }) });
+    body: JSON.stringify({ fix: { lon: fix.coordinate[0], lat: fix.coordinate[1], accuracy: fix.accuracy, heading: fix.heading ?? undefined, timestamp: fix.timestamp, vehicleType }, path, reportedSpeedSchema:2 }) });
   if (!response.ok) throw new Error("Compliance data unavailable/unverified");
   const data = await response.json() as ComplianceContext;
   if (data.fixTimestamp !== fix.timestamp || !Number.isFinite(data.checkedAt) || !Number.isFinite(data.validUntil) || data.validUntil > data.checkedAt + 3000 || !Array.isArray(data.coordinate) || data.coordinate.length !== 2 || data.coordinate.some((n, i) => n !== fix.coordinate[i])
@@ -24,7 +24,7 @@ export async function fetchComplianceContext(fix: Fix, path: ComplianceCoordinat
   const reports=data.reportedRoads;
   const speedReport=data.reportedSpeedLimit;
   if(speedReport&&(speedReport.verification!=='reported'||typeof speedReport.id!=='string'||!speedReport.id||typeof speedReport.roadName!=='string'||speedReport.roadName.length>200||!Number.isInteger(speedReport.speedLimitKmh)||speedReport.speedLimitKmh<1||speedReport.speedLimitKmh>200
-    ||!Number.isFinite(speedReport.validUntil)||speedReport.validUntil>data.checkedAt+3000||![speedReport.reportedAt,speedReport.expiresAt].every(d=>typeof d==='string'&&Number.isFinite(Date.parse(d)))||Date.parse(speedReport.expiresAt)<=Date.parse(speedReport.reportedAt)
+    ||!Number.isFinite(speedReport.validUntil)||speedReport.validUntil>data.checkedAt+15000||![speedReport.reportedAt,speedReport.expiresAt].every(d=>typeof d==='string'&&Number.isFinite(Date.parse(d)))||Date.parse(speedReport.expiresAt)<=Date.parse(speedReport.reportedAt)
     ||typeof speedReport.sourceReference!=='string'||!speedReport.sourceReference.trim()||typeof speedReport.sourceUrl!=='string'||!speedReport.sourceUrl.startsWith('https://')||speedReport.geometry?.type!=='LineString'||!Array.isArray(speedReport.geometry.coordinates)||speedReport.geometry.coordinates.length<2||speedReport.geometry.coordinates.length>512
     ||speedReport.geometry.coordinates.some(p=>!Array.isArray(p)||p.length!==2||!p.every(Number.isFinite)||Math.abs(p[0])>180||Math.abs(p[1])>90)))throw new Error('Invalid reported speed advisory');
   if(reports){

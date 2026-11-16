@@ -21,6 +21,7 @@ import {pilotRuntime} from '../pilot/runtime';
 import { TravelBearing } from './travelBearing';
 import {useApprovedContributionFeed} from '../contributions/useCommunityPins';
 import {ApprovedContributionAlertEngine,type ContributionAlert} from './approved-contribution-alerts';
+import {backgroundPermission,startBackgroundNavigation} from './background-location';
 
 const fromLocation = (location: Location.LocationObject): Fix => ({ coordinate: [location.coords.longitude, location.coords.latitude], accuracy: location.coords.accuracy, timestamp: location.timestamp, speed: location.coords.speed, heading: location.coords.heading });
 
@@ -63,6 +64,7 @@ export function useNavigationSession(destination: RoutingCoordinate | undefined,
     const congestion = new CongestionAlertEngine();
     const contributions=new ApprovedContributionAlertEngine();
     let safetyContext: BoundComplianceContext | null = null;
+    let reportedSpeedContext: BoundComplianceContext | null = null;
     let safetyRequest: AbortController | null = null;
     let lastSafetyRequest = -Infinity;
     let safetyFailures=0;
@@ -71,6 +73,7 @@ export function useNavigationSession(destination: RoutingCoordinate | undefined,
     const controller = new AbortController();
     let rerouteAbort: AbortController | null = null;
     let active = true; let watch: Location.LocationSubscription | undefined;
+    let backgroundReady=false;
     let watchGeneration = 0;
     let lastFix: Fix | null = null;
     let foregroundState = AppState.currentState;
@@ -96,8 +99,8 @@ export function useNavigationSession(destination: RoutingCoordinate | undefined,
       setMapBearing(travelBearing.update(machine.locationFix, Date.now()));
       setUpdatedAt(Date.now());
       const now = Date.now();
-      const safetyActive = foregroundState === "active" && next.state === "navigating" && next.gpsReliable && !!lastFix && !!next.progress;
-      if (!safetyActive || safetyRoute !== next.route?.id) { safetyContext = null; safetyRequest?.abort(); safetyRequest = null; safetyRoute = next.route?.id; }
+      const safetyActive = (foregroundState === "active"||backgroundReady) && next.state === "navigating" && next.gpsReliable && !!lastFix && !!next.progress;
+      if (!safetyActive || safetyRoute !== next.route?.id) { safetyContext = null; reportedSpeedContext=null; safetyRequest?.abort(); safetyRequest = null; safetyRoute = next.route?.id; }
       const network=networkSnapshot();
       if(safetyActive&&lastFix&&(network.status==='offline'||safetyFailures>0||(network.lowData&&(!safetyContext||now>=safetyContext.data.validUntil))))safetyContext={data:offlineCompliance(lastFix,vehicleType),progressMeters:next.progress!.along,heading:lastFix.heading??-1};
       const safetyInterval=Math.max(network.lowData?15000:2000,Math.min(30000,2000*2**Math.min(4,safetyFailures)));
@@ -108,7 +111,7 @@ export function useNavigationSession(destination: RoutingCoordinate | undefined,
           const fix = lastFix!; const progressMeters = next.progress!.along;
           const timeout = setTimeout(() => request.abort(), 4500);
           void fetchComplianceContext(fix, path, request.signal, vehicleType).then((data) => {
-            if (active && !request.signal.aborted && safetyRequest === request) {safetyFailures=0;requestOutcome(true);pilotRuntime.safety(data.limit.status==='verified',data.limit.status==='unknown'&&/stale|expired/.test(data.limit.reason));safetyContext = { data, progressMeters, heading: fix.heading ?? -1 };}
+            if (active && !request.signal.aborted && safetyRequest === request) {safetyFailures=0;requestOutcome(true);pilotRuntime.safety(data.limit.status==='verified',data.limit.status==='unknown'&&/stale|expired/.test(data.limit.reason));safetyContext = { data, progressMeters, heading: fix.heading ?? -1 };reportedSpeedContext=safetyContext;}
           }).catch(() => { if (safetyRequest === request) {safetyFailures++;requestOutcome(false);pilotRuntime.safety(false);safetyContext = null;} }).finally(() => {
             clearTimeout(timeout);
             if (active && safetyRequest === request) { safetyRequest = null; publish(); }
@@ -122,7 +125,7 @@ export function useNavigationSession(destination: RoutingCoordinate | undefined,
         progressMeters: next.progress?.along ?? 0, context: safetyContext, now, flags: smartAlertFlags,
         suppressPrompt: !!navigationPrompt || now - lastVoiceAt < 12000 || (next.progress?.turnMeters !== null && next.progress?.turnMeters !== undefined && next.progress.turnMeters < 80) });
       setSmartAlerts(alert);
-      setReportedSpeed(currentReportedSpeed(safetyContext,lastFix,now,safetyActive&&smartAlertFlags.enabled&&reportedRoadAlertsEnabled));
+      setReportedSpeed(currentReportedSpeed(reportedSpeedContext,lastFix,now,safetyActive&&network.status!=='offline'&&smartAlertFlags.enabled&&reportedRoadAlertsEnabled));
       if (alert.alert && alertAudioRef.current && !mutedRef.current) { lastVoiceAt = now; void voice.speak(alert.alert.text,{kind:'safety',id:alert.alert.id}); }
       const contribution=contributions.update({feed:contributionsRef.current,fix:lastFix,path:next.route?.geometry.coordinates??[],progress:next.progress?.along??0,now,navigating:safetyActive,
         audioEnabled:alertAudioRef.current&&!mutedRef.current,suppressPrompt:!!navigationPrompt||!!alert.alert||now-lastVoiceAt<12000||(next.progress?.turnMeters!==null&&next.progress?.turnMeters!==undefined&&next.progress.turnMeters<80)});
@@ -157,7 +160,7 @@ export function useNavigationSession(destination: RoutingCoordinate | undefined,
       const generation = ++watchGeneration;
       watch?.remove(); watch = undefined;
       try {
-        const subscription = await Location.watchPositionAsync({ accuracy: Location.Accuracy.BestForNavigation, timeInterval: 1000, distanceInterval: 0 }, (location) => {
+        const onLocation = (location:Location.LocationObject) => {
           if (!active || generation !== watchGeneration) return;
           const fix = fromLocation(location);
           observeMotion({speed:fix.speed,accuracy:fix.accuracy,timestamp:fix.timestamp});
@@ -166,7 +169,11 @@ export function useNavigationSession(destination: RoutingCoordinate | undefined,
           if (machine.snapshot.gpsReliable) lastFix = fix;
           publish();
           if (machine.snapshot.state === "off-route") void recalculate();
-        }, () => {
+        };
+        const background=await startBackgroundNavigation(onLocation);
+        if(!active||generation!==watchGeneration){background?.remove();return;}
+        backgroundReady=!!background;
+        const subscription = background??await Location.watchPositionAsync({ accuracy: Location.Accuracy.BestForNavigation, timeInterval: 1000, distanceInterval: 0 }, onLocation, () => {
           if (!active || generation !== watchGeneration) return;
           machine.fail("GPS location updates stopped. Check location permission, then retry."); publish();
           watchGeneration++; watch?.remove(); watch = undefined;
@@ -177,13 +184,13 @@ export function useNavigationSession(destination: RoutingCoordinate | undefined,
       }
     };
     const pause = () => {
-      machine.pause(); rerouteAbort?.abort(); voice.stop(); watchGeneration++; watch?.remove(); watch = undefined; publish();
+      machine.pause(); rerouteAbort?.abort(); voice.stop(); watchGeneration++; watch?.remove(); watch = undefined; backgroundReady=false; publish();
     };
     control.current = {
       pause: () => { resumeOnForeground = false; pause(); },
       silence: () => voice.stop(),
       resume: () => { if (machine.snapshot.state === "paused" && foregroundState === "active") { machine.resume(); lastFix = null; publish(); void startWatch(); } },
-      stop: () => { machine.stop(); controller.abort(); rerouteAbort?.abort(); voice.stop(); watchGeneration++; watch?.remove(); watch = undefined; publish(); },
+      stop: () => { machine.stop(); controller.abort(); rerouteAbort?.abort(); voice.stop(); watchGeneration++; watch?.remove(); watch = undefined; backgroundReady=false; publish(); },
     };
     async function start() {
       try {
@@ -228,8 +235,13 @@ export function useNavigationSession(destination: RoutingCoordinate | undefined,
         if (resumeOnForeground && machine.snapshot.state === "paused" && !controller.signal.aborted) {
           resumeOnForeground = false; machine.resume(); lastFix = null; publish(); void startWatch();
         }
+        else if(!controller.signal.aborted&&['navigating','off-route','rerouting'].includes(machine.snapshot.state)&&!backgroundReady){lastFix=null;publish();void startWatch();}
+        else if(backgroundReady){void backgroundPermission().then(allowed=>{if(active&&!allowed){backgroundReady=false;lastFix=null;machine.snapshot={...machine.snapshot,gpsReliable:false,speedKmh:null};publish();void startWatch();}});}
       }
-      else if (["navigating", "off-route", "rerouting"].includes(machine.snapshot.state)) { resumeOnForeground = true; pause(); }
+      else if (["navigating", "off-route", "rerouting"].includes(machine.snapshot.state)) {
+        // Home/app switching is not an End or Pause action. Keep the session.
+        if(!backgroundReady){watchGeneration++;watch?.remove();watch=undefined;lastFix=null;machine.snapshot={...machine.snapshot,gpsReliable:false,speedKmh:null};voice.stop();publish();}
+      }
       else voice.stop(); // System permission activities can briefly background startup.
     });
     const timer = setInterval(() => { machine.stale(Date.now());if(foregroundState==='active'&&machine.snapshot.state==='navigating'&&!machine.snapshot.gpsReliable)pilotRuntime.gps('stale');publish(); }, 2000);

@@ -25,6 +25,11 @@ const plugins: ExpoConfig["plugins"] = [
     {
       locationWhenInUsePermission:
         "Allow ROVA to show your location when you choose to locate yourself or navigate.",
+      locationAlwaysAndWhenInUsePermission:
+        "Allow ROVA to continue an active navigation journey when you use another app or lock your phone. Location updates stop when you end navigation; no continuous travel history is saved.",
+      isAndroidBackgroundLocationEnabled: true,
+      isAndroidForegroundServiceEnabled: true,
+      isIosBackgroundLocationEnabled: true,
     },
   ],
   ["expo-splash-screen",{image:"./assets/images/android-icon-foreground.png",imageWidth:160,resizeMode:"contain",backgroundColor:"#F2F7F6",dark:{backgroundColor:"#0F1C1E"}}],

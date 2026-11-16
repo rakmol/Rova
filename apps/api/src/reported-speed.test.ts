@@ -4,10 +4,14 @@ import type {Pool} from 'pg';
 import type {ComplianceCoordinate} from '@rova/shared';
 import {course} from './compliance-geometry.js';
 import {reportedSpeedData} from './reported-speed-data.js';
-import {reportedSpeedLimit} from './reported-speed.js';
+import {joinReportedPieces,reportedSpeedLimit} from './reported-speed.js';
 import {buildApp} from './app.js';
 import {readConfig} from './config.js';
 const now=Date.parse('2026-11-16T12:00:00Z');
+test('mapping way boundaries merge without bridging parallel roads, crossings or real gaps',()=>{
+ const chains=joinReportedPieces([[[0,0],[.001,0]],[[.001,0],[.002,0]],[[.0021,0],[.003,0]],[[0,.0001],[.002,.0001]],[[.002,0],[.002,.001]]]);
+ assert.equal(chains.length,4);assert.deepEqual(chains[0],[[0,0],[.001,0],[.002,0]]);
+});
 function sample(name:string){
  const part=reportedSpeedData.parts.find(p=>p.roadName===name&&p.coordinates.length>5)!;
  const a=part.coordinates[0],b=part.coordinates[1];
@@ -36,5 +40,8 @@ test('HTTP delivers the display report separately while the verified legal limit
   const payload=sample('George Walker Bush Highway');
   const response=await app.inject({method:'POST',url:'/safety/alert-context',payload});
   assert.equal(response.statusCode,200,response.body);assert.equal(response.json().limit.status,'unknown');assert.equal(response.json().reportedSpeedLimit.speedLimitKmh,80);assert.equal(response.json().notices.length,0);
+  assert.equal(response.json().reportedSpeedLimit.validUntil,now+3000);
+  const updated=await app.inject({method:'POST',url:'/safety/alert-context',payload:{...payload,reportedSpeedSchema:2}});
+  assert.equal(updated.json().reportedSpeedLimit.validUntil,now+15000);assert.equal(updated.json().limit.status,'unknown');
  }finally{await app.close();}
 });
