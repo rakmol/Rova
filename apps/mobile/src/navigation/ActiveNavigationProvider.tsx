@@ -1,6 +1,6 @@
 import {createContext,useCallback,useContext,useEffect,useRef,useState,type ReactNode} from 'react';
 import {AppState,Text,View} from 'react-native';
-import {router,usePathname,useRootNavigationState} from 'expo-router';
+import {router,useFocusEffect,usePathname,useRootNavigationState} from 'expo-router';
 import * as Location from 'expo-location';
 import type {RoutingCoordinate,RoutingOption,VehicleClass} from '@rova/shared';
 import {useNavigationSession} from './useNavigationSession';
@@ -62,12 +62,21 @@ export function ActiveNavigationProvider({children}:{children:ReactNode}){
  },[begin,retry,setRoute,setSelectedRoutingOption,setVehicleType]);
  useEffect(()=>{if(openRecovered&&root?.key&&!openedRecovery.current){openedRecovery.current=true;router.replace('/navigation');}},[openRecovered,root?.key]);
  const returnToJourney=request&&pathname!=='/navigation'&&!recovering&&!error&&['navigating','off-route','rerouting'].includes(session.snapshot.state);
- return <Context.Provider value={{...session,stop:end,begin}}>{children}{returnToJourney&&<View style={{position:'absolute',bottom:85,left:20,right:20}}><ActionButton title="Return to navigation" onPress={()=>router.push('/navigation')}/></View>}{(recovering||error)&&<View style={{position:'absolute',top:45,left:12,right:12,padding:12,gap:8,backgroundColor:theme.colors.surface,borderRadius:16}}><Text accessibilityLiveRegion="polite" style={{color:theme.colors.ink}}>{recovering?'Recovering your active journey…':error}</Text>{!recovering&&<><ActionButton title="Resume previous journey" onPress={()=>{loaded.current=false;setError('');setRetry(n=>n+1);}}/><ActionButton title="End previous journey" secondary onPress={end}/></>}</View>}</Context.Provider>;
+ const returnToActive=()=>{
+  const option=session.snapshot.route;
+  if(request&&option){
+   setRoute({origin:session.mapFix?.coordinate??option.geometry.coordinates[0],destination:request.destination,geometry:option.geometry,distanceMeters:option.distanceMeters,durationSeconds:option.durationSeconds,trafficAware:false,originIsLive:true,originLabel:'Current journey',destinationLabel:request.title,release:()=>{},startGuidance:async()=>{throw new Error('Use the ROVA navigation session.');}});
+   setSelectedRoutingOption(request.selected);setVehicleType(request.vehicleType);
+  }
+  router.push('/navigation');
+ };
+ return <Context.Provider value={{...session,stop:end,begin}}>{children}{returnToJourney&&<View style={{position:'absolute',bottom:85,left:20,right:20}}><ActionButton title="Return to navigation" onPress={returnToActive}/></View>}{(recovering||error)&&<View style={{position:'absolute',top:45,left:12,right:12,padding:12,gap:8,backgroundColor:theme.colors.surface,borderRadius:16}}><Text accessibilityLiveRegion="polite" style={{color:theme.colors.ink}}>{recovering?'Recovering your active journey…':error}</Text>{!recovering&&<><ActionButton title="Resume previous journey" onPress={()=>{loaded.current=false;setError('');setRetry(n=>n+1);}}/><ActionButton title="End previous journey" secondary onPress={end}/></>}</View>}</Context.Provider>;
 }
 export function useActiveNavigation(destination:RoutingCoordinate|undefined,selected:RoutingOption|null,vehicleType:VehicleClass){
+ const configured=useRef(false);
  const value=useContext(Context),{route}=useRoutePreview();
  if(!value)throw new Error('ActiveNavigationProvider is required.');
  const begin=value.begin,title=route?.destinationLabel??'Destination',lon=destination?.[0],lat=destination?.[1];
- useEffect(()=>{if(lon!==undefined&&lat!==undefined)begin({destination:[lon,lat],selected,vehicleType,title});},[begin,lon,lat,selected,vehicleType,title]);
+ useFocusEffect(useCallback(()=>{if(!configured.current&&lon!==undefined&&lat!==undefined){configured.current=true;begin({destination:[lon,lat],selected,vehicleType,title});}},[begin,lon,lat,selected,vehicleType,title]));
  return value;
 }

@@ -6,6 +6,13 @@ const data = (): ComplianceContext => ({ fixTimestamp: fix.timestamp, checkedAt:
   limit: { status: "verified", speedLimitKmh: 50, segmentId: "TEST ROAD", confidence: 0.99, units: "km/h" }, notices: [], enforcementStatus: "unavailable/unverified" });
 const originalFetch = global.fetch;
 afterEach(() => { global.fetch = originalFetch; });
+test('an unavailable Android bearing is omitted, never sent as a malformed heading or invented north',async()=>{
+ const fetchMock=jest.fn().mockResolvedValue({ok:true,json:async()=>({...data(),limit:{status:'unknown',speedLimitKmh:null,reason:'heading_unavailable'}})});global.fetch=fetchMock;
+ for(const heading of [-1,NaN,Infinity,360]){
+  await fetchComplianceContext({...fix,heading},path,new AbortController().signal,'private_car','https://example.test/safety/alert-context');
+  const body=JSON.parse(fetchMock.mock.calls.at(-1)![1].body);expect(body.fix).not.toHaveProperty('heading');
+ }
+});
 test("compliance transport sends vehicle class, original fix time and bounded route with abort support", async () => {
   const fetchMock = jest.fn().mockResolvedValue({ ok: true, json: async () => data() }); global.fetch = fetchMock;
   const signal = new AbortController().signal;
