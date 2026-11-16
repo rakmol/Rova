@@ -8,9 +8,9 @@ jobs:
     env:
       ROVA_APP_VARIANT: preview
     params:
-      build_id: fab792c1-da23-4d42-8366-61f177967456
+      build_id: 0b6cb936-2d4b-49ad-ba6c-35edde00a785
       profile: preview
       # Preserve the native build's remotely assigned Android versionCode.
       # Rewriting native metadata would restore the local minimum (4).
       js_bundle_only: true
-      message: "Preview: contribution reporting and approved pins, search back and stable home menu"
+      message: "Preview: compact navigation, background guidance and persistent provider credits"
