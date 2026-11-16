@@ -9,7 +9,7 @@ export async function fetchComplianceContext(fix: Fix, path: ComplianceCoordinat
   const url = new URL(endpoint);
   if (url.protocol !== "https:" && !["localhost", "127.0.0.1"].includes(url.hostname)) throw new Error("Compliance endpoint requires HTTPS");
   const response = await fetch(url.toString(), { method: "POST", headers: { "Content-Type": "application/json" }, signal,
-    body: JSON.stringify({ fix: { lon: fix.coordinate[0], lat: fix.coordinate[1], accuracy: fix.accuracy, heading: fix.heading ?? undefined, timestamp: fix.timestamp, vehicleType }, path, reportedSpeedSchema:2 }) });
+    body: JSON.stringify({ fix: { lon: fix.coordinate[0], lat: fix.coordinate[1], accuracy: fix.accuracy, heading: fix.heading!==null&&Number.isFinite(fix.heading)&&fix.heading>=0&&fix.heading<360?fix.heading:undefined, timestamp: fix.timestamp, vehicleType }, path, reportedSpeedSchema:2 }) });
   if (!response.ok) throw new Error("Compliance data unavailable/unverified");
   const data = await response.json() as ComplianceContext;
   if (data.fixTimestamp !== fix.timestamp || !Number.isFinite(data.checkedAt) || !Number.isFinite(data.validUntil) || data.validUntil > data.checkedAt + 3000 || !Array.isArray(data.coordinate) || data.coordinate.length !== 2 || data.coordinate.some((n, i) => n !== fix.coordinate[i])
