@@ -51,6 +51,7 @@ export default function NavigationScreen(){
     {session.contributionAlert&&<Text accessibilityLiveRegion="polite" style={[styles.note,{color:theme.colors.warning}]}>{session.contributionAlert.text}</Text>}
     {!session.contributionAlert&&session.congestionAlert&&<Text accessibilityLiveRegion="polite" style={[styles.note,{color:theme.colors.warning}]}>! Community congestion report near route | approximately {session.congestionAlert.distanceMeters} m ahead</Text>}
     {(large||details)&&<ScrollView style={!large?{maxHeight:100}:undefined} contentContainerStyle={{gap:8}} nestedScrollEnabled>
+    {!large&&s.progress?.instruction&&<Text style={[styles.note,muted]}>{s.progress.instruction}</Text>}
     <NetworkNotice/>
     <HazardFeedView state={session.communityHazards} compact driving={compact} coordinate={s.gpsReliable&&s.state==='navigating'?s.progress?.coordinate:undefined}/>
     {!s.gpsReliable&&s.route&&<Text style={[styles.note,muted]}>{tx('nav.lastPosition')}</Text>}
@@ -58,7 +59,6 @@ export default function NavigationScreen(){
     {offlinePackState(offlineData().safety,session.updatedAt)==='stale'&&<Text style={[styles.note,muted]}>Data may be outdated. Offline speed warnings are unavailable until refreshed.</Text>}
     {session.voiceError&&<Text accessibilityRole="alert" style={[styles.note,muted]}>{session.voiceError}</Text>}
     {mapError&&<Text accessibilityRole="alert" style={[styles.note,muted]}>{mapError}</Text>}
-    <Text style={[styles.credit,muted]}>Powered by Geoapify | OpenStreetMap contributors</Text>
     {!compact&&<Text style={[styles.credit,muted]}>{tx('nav.experimental')}</Text>}
     </ScrollView>}
    </Surface>;
@@ -69,7 +69,7 @@ export default function NavigationScreen(){
     <View style={{flex:1,minHeight:80}} pointerEvents="box-none"/>
     <ScrollView testID="navigation-accessible-content" onLayout={e=>setBottomInset(e.nativeEvent.layout.height)} style={{maxHeight:height*.34,flexGrow:0}} contentContainerStyle={{paddingBottom:4}} keyboardShouldPersistTaps="handled">{journeyPanel}</ScrollView>
   </View>}
-  <View testID="persistent-navigation-controls" style={[styles.fixedControls,{backgroundColor:theme.colors.surface,borderColor:theme.colors.divider}]}>{controls}</View>
+  <View testID="persistent-navigation-controls" style={[styles.fixedControls,{backgroundColor:theme.colors.surface,borderColor:theme.colors.divider}]}>{controls}<Text style={[styles.credit,muted,{textAlign:'center',marginTop:4}]}>Powered by Geoapify | OpenStreetMap contributors</Text></View>
  </SafeAreaView>;
 }
 

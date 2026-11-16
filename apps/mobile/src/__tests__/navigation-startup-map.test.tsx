@@ -25,5 +25,6 @@ test('navigation paints the existing preview before GPS/session route is ready a
     await waitFor(()=>expect(view.getByText('Preview map mounted')).toBeTruthy());
     expect(mockMap.mock.calls.at(-1)?.[0]).toMatchObject({routeGeometry:geometry,center:preview.origin,locationEnabled:false});
     expect(view.getByText('5 min')).toBeTruthy();
+    expect(view.getByText('Powered by Geoapify | OpenStreetMap contributors')).toBeTruthy();
   }finally{await view.unmount();}
 });
