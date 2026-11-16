@@ -8,6 +8,7 @@ import { course, headingDifference, metres, projectOnPath } from "./compliance-g
 import { evaluateSpeedLimit, gpsProblem, type RoadCandidate, type SafetyFix } from "./speed-limit.js";
 import { validateInput } from "./validation.js";
 import { reportedRoadContext } from "./reported-roads.js";
+import { reportedSpeedLimit } from './reported-speed.js';
 const coordinate = z.tuple([z.number().finite().min(-180).max(180), z.number().finite().min(-90).max(90)]);
 export const complianceBody = z.object({
   fix: z.object({ lat: z.number().finite().min(-90).max(90), lon: z.number().finite().min(-180).max(180), accuracy: z.number().finite().min(0).max(10000), heading: z.number().finite().min(0).lt(360).optional(), timestamp: z.number().int().safe(), vehicleType: z.enum(vehicleClasses) }).strict(),
@@ -54,10 +55,11 @@ export function registerComplianceRoute(app: FastifyInstance, database: Pool, fl
     const length = path.slice(1).reduce((sum, point, i) => sum + metres(path[i], point), 0);
     if (!position || position.ambiguous || position.distance > Math.min(15, fix.accuracy * 2) || headingDifference(position.heading, fix.heading!) > 30 || length > 1500) return empty("route_alignment_unknown");
     const reportedRoads = await reportedRoadContext(database, fix, path, position.along, clock(), flags.reportedRoads === true&&!flags.pilotRestricted);
+    const reportedSpeed = flags.reportedRoads===true ? reportedSpeedLimit(fix,path,clock()) : null;
     const lookup = async (point: SafetyFix) => { const rows = await database.query<{ candidate: RoadCandidate }>("SELECT candidate FROM public.rova_speed_limit_candidates($1,$2,$3,$4) AS candidates(candidate)", [point.lon, point.lat, 100, point.vehicleType]); return rows.rows.map((r) => r.candidate); };
     try {
       const roads = await lookup(fix); const limit = evaluateSpeedLimit(fix, roads, clock());
-      if (limit.status !== "verified") return { ...empty(limit.reason), limit, reportedRoads };
+      if (limit.status !== "verified") return { ...empty(limit.reason), limit, reportedRoads, reportedSpeedLimit: reportedSpeed };
       if(flags.pilotRestricted&&!await pilotSegmentEnabled(database,limit.segmentId))return empty('pilot_corridor_unavailable');
       const rows = await database.query<{ candidate: ComplianceCandidate }>("SELECT candidate FROM public.rova_compliance_candidates($1,$2,$3) AS events(candidate)", [fix.lon, fix.lat, limit.segmentId]);
       const notices: ComplianceNotice[] = [];
@@ -82,7 +84,7 @@ export function registerComplianceRoute(app: FastifyInstance, database: Pool, fl
         notices.push(notice);
       }
       const stale = gpsProblem(fix, clock()); if (stale) return empty(stale);
-      const finalLimit = evaluateSpeedLimit(fix, roads, clock()); if (finalLimit.status !== "verified") return { ...empty(finalLimit.reason), limit: finalLimit, reportedRoads };
+      const finalLimit = evaluateSpeedLimit(fix, roads, clock()); if (finalLimit.status !== "verified") return { ...empty(finalLimit.reason), limit: finalLimit, reportedRoads, reportedSpeedLimit: reportedSpeed };
       if(flags.pilotRestricted&&!await pilotSegmentEnabled(database,limit.segmentId))return empty('pilot_corridor_unavailable');
       const matched = roads.find((r) => r.id === limit.segmentId)!;
       const validForMeters = Math.max(0, Math.min(20, matched.endpointMeters - (2 * fix.accuracy + (matched.accuracyMeters ?? 30) + (matched.roadWidthMeters ?? 60) / 2)));

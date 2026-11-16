@@ -100,5 +100,7 @@
   "vehicle.agricultural_vehicle": "Agricultural / slow-moving",
   "vehicle.passenger_for_reward": "Passenger service — for reward",
   "vehicle.light_vehicle": "Light goods / light vehicle",
-  "voice.limitHere": "Speed limit: {speed} kilometres per hour"
+  "voice.limitHere": "Speed limit: {speed} kilometres per hour",
+  "alert.reportedLimit": "Reported limit: {speed} km/h",
+  "alert.reportedLimitCaution": "Not independently verified. Follow posted signs."
 }
