@@ -6,13 +6,14 @@ import {offlineData} from "../offline/data";
 import { useEffect, useRef, useState } from "react";
 import { AppState } from "react-native";
 import * as Location from "expo-location";
-import type { RoutingCoordinate, RoutingOption, VehicleClass } from "@rova/shared";
+import type { RoutingCoordinate, RoutingOption, VehicleClass, ReportedSpeedLimit } from "@rova/shared";
 import { routingProvider } from "../routing/runtime";
 import { NavigationMachine, VoiceGate, type Fix } from "./session";
 import { createVoicePlayer, speechAvailable } from "./voice";
 import { routeWindow,projectOnPath } from "@rova/shared";
 import { SmartAlertEngine, emptySmartAlert, smartAlertFlags, type BoundComplianceContext } from "./smart-alerts";
 import { fetchComplianceContext } from "./compliance-client";
+import {currentReportedSpeed} from './reported-speed';
 import {ReportedRoadAlertEngine,emptyReportedRoadAlert,reportedRoadAlertsEnabled} from "./reported-road-alerts";
 import { useHazardFeed } from '../incidents/useHazardFeed';
 import { CongestionAlertEngine, type CongestionAlert } from './congestion-alerts';
@@ -39,6 +40,7 @@ export function useNavigationSession(destination: RoutingCoordinate | undefined,
   const [muted, setMuted] = useState(false);
   const mutedRef = useRef(false);
   const [smartAlerts, setSmartAlerts] = useState(emptySmartAlert);
+  const [reportedSpeed,setReportedSpeed]=useState<ReportedSpeedLimit|null>(null);
   const [reportedRoadAlert,setReportedRoadAlert]=useState(emptyReportedRoadAlert);
   const [alertAudio, setAlertAudio] = useState(true);
   const alertAudioRef = useRef(true);
@@ -120,6 +122,7 @@ export function useNavigationSession(destination: RoutingCoordinate | undefined,
         progressMeters: next.progress?.along ?? 0, context: safetyContext, now, flags: smartAlertFlags,
         suppressPrompt: !!navigationPrompt || now - lastVoiceAt < 12000 || (next.progress?.turnMeters !== null && next.progress?.turnMeters !== undefined && next.progress.turnMeters < 80) });
       setSmartAlerts(alert);
+      setReportedSpeed(currentReportedSpeed(safetyContext,lastFix,now,safetyActive&&smartAlertFlags.enabled&&reportedRoadAlertsEnabled));
       if (alert.alert && alertAudioRef.current && !mutedRef.current) { lastVoiceAt = now; void voice.speak(alert.alert.text,{kind:'safety',id:alert.alert.id}); }
       const contribution=contributions.update({feed:contributionsRef.current,fix:lastFix,path:next.route?.geometry.coordinates??[],progress:next.progress?.along??0,now,navigating:safetyActive,
         audioEnabled:alertAudioRef.current&&!mutedRef.current,suppressPrompt:!!navigationPrompt||!!alert.alert||now-lastVoiceAt<12000||(next.progress?.turnMeters!==null&&next.progress?.turnMeters!==undefined&&next.progress.turnMeters<80)});
@@ -234,7 +237,7 @@ export function useNavigationSession(destination: RoutingCoordinate | undefined,
     return () => { if(!outcome)pilotRuntime.record('nav_cancelled');navigationInteraction(false); active = false; controller.abort(); rerouteAbort?.abort(); safetyRequest?.abort(); watchGeneration++; watch?.remove(); voice.stop(); appState.remove(); clearInterval(timer); control.current = null; };
   }, [lon, lat, selected, retry, vehicleType]);
 
-  return { snapshot, mapFix, mapBearing, voiceError, muted, updatedAt, smartAlerts, alertAudio,reportedRoadAlert,communityHazards,congestionAlert,approvedContributions,contributionAlert,
+  return { snapshot, mapFix, mapBearing, voiceError, muted, updatedAt, smartAlerts, reportedSpeed, alertAudio,reportedRoadAlert,communityHazards,congestionAlert,approvedContributions,contributionAlert,
     toggleAlertAudio: () => { alertAudioRef.current = !alertAudioRef.current; setAlertAudio(alertAudioRef.current); if (!alertAudioRef.current) control.current?.silence(); },
     toggleMuted: () => { mutedRef.current = !mutedRef.current; setMuted(mutedRef.current); if (mutedRef.current) control.current?.silence(); },
     pause: () => control.current?.pause(), resume: () => control.current?.resume(), stop: () => control.current?.stop(), retry: () => setRetry((value) => value + 1) };

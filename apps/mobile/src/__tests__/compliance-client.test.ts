@@ -32,3 +32,13 @@ test('transport keeps unverified road advisories separate from an unknown legal 
   const response=await fetchComplianceContext(fix,path,new AbortController().signal,'private_car','https://example.test/');expect(response.limit.status).toBe('unknown');expect(response.reportedRoads?.notices).toHaveLength(1);
   payload.reportedRoads.notices[0].verification='verified';await expect(fetchComplianceContext(fix,path,new AbortController().signal,'private_car','https://example.test/')).rejects.toThrow(/unverified/);
 });
+
+test('transport accepts a separate reported speed but rejects fabricated verification and malformed geometry',async()=>{
+ const report={id:'TEST',roadName:'TEST ONLY',speedLimitKmh:80,verification:'reported',reportedAt:'2026-11-16T00:00:00Z',expiresAt:'2026-12-16T00:00:00Z',sourceReference:'TEST owner report',sourceUrl:'https://example.com/test',validUntil:fix.timestamp+3000,geometry:{type:'LineString',coordinates:[[0,0],[.01,0]]}};
+ const payload={...data(),reportedSpeedLimit:report};global.fetch=jest.fn().mockResolvedValue({ok:true,json:async()=>payload});
+ expect((await fetchComplianceContext(fix,path,new AbortController().signal,'private_car','https://example.test/')).reportedSpeedLimit?.verification).toBe('reported');
+ for(const invalid of [{...report,verification:'verified'},{...report,speedLimitKmh:NaN},{...report,geometry:{type:'LineString',coordinates:[[0,NaN],[.01,0]]}},{...report,validUntil:fix.timestamp+60000}]){
+  global.fetch=jest.fn().mockResolvedValue({ok:true,json:async()=>({...data(),reportedSpeedLimit:invalid})});
+  await expect(fetchComplianceContext(fix,path,new AbortController().signal,'private_car','https://example.test/')).rejects.toThrow(/reported speed/);
+ }
+});

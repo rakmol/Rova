@@ -47,7 +47,7 @@ export default function NavigationScreen(){
    </View>;
  const journeyPanel=<Surface style={styles.card}>
     <JourneyMetrics compact={!large} metrics={[{label:tx('nav.arrivalLabel'),value:eta},{label:tx('nav.remainingLabel'),value:tx('nav.minutes',{minutes:Math.ceil(seconds/60)})},{label:tx('nav.distanceLabel'),value:travelDistance(remaining,preferences.units)},{label:preferences.units==='imperial'?tx('nav.speedMphLabel'):tx('nav.speedLabel'),value:s.speedKmh===null||!s.gpsReliable?'--':String(Math.round(s.speedKmh/(preferences.units==='imperial'?1.609344:1)))}]} />
-    <SmartAlertPanel snapshot={session.smartAlerts} vehicleType={vehicleType} audioEnabled={session.alertAudio} onToggleAudio={session.toggleAlertAudio} reportedRoadAlert={session.reportedRoadAlert} compact/>
+    <SmartAlertPanel snapshot={session.smartAlerts} vehicleType={vehicleType} audioEnabled={session.alertAudio} onToggleAudio={session.toggleAlertAudio} reportedRoadAlert={session.reportedRoadAlert} reportedSpeed={session.reportedSpeed} compact/>
     {session.contributionAlert&&<Text accessibilityLiveRegion="polite" style={[styles.note,{color:theme.colors.warning}]}>{session.contributionAlert.text}</Text>}
     {!session.contributionAlert&&session.congestionAlert&&<Text accessibilityLiveRegion="polite" style={[styles.note,{color:theme.colors.warning}]}>! Community congestion report near route | approximately {session.congestionAlert.distanceMeters} m ahead</Text>}
     <ScrollView style={!large?{maxHeight:100}:undefined} contentContainerStyle={{gap:8}} nestedScrollEnabled>

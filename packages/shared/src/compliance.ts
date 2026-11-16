@@ -1,5 +1,11 @@
 export type ComplianceCoordinate = [number, number];
 export type EnforcementType = "fixed_speed" | "average_speed" | "red_light" | "combined" | "checkpoint" | "unknown";
+/** A reported advisory is never a legal-limit proof or an overspeed threshold. */
+export interface ReportedSpeedLimit {
+  id: string; roadName: string; speedLimitKmh: number; verification: "reported";
+  reportedAt: string; expiresAt: string; sourceReference: string; sourceUrl: string;
+  validUntil: number; geometry: {type: "LineString"; coordinates: ComplianceCoordinate[]};
+}
 export interface ReportedRoadNotice {
   id: string; roadName: string; verification: "unverified"; scope: "named_road_not_camera";
   distanceMeters: number; exitDistanceMeters: number; sourceUrl: string; reportedAt: string;
@@ -18,6 +24,7 @@ export interface ComplianceContext {
   notices: ComplianceNotice[];
   enforcementStatus: "verified_corridor" | "unavailable/unverified";
   reportedRoads?: ReportedRoadContext;
+  reportedSpeedLimit?: ReportedSpeedLimit | null;
 }
 export const metres = (a: ComplianceCoordinate, b: ComplianceCoordinate) => {
   const rad = Math.PI / 180; const dlat = (b[1] - a[1]) * rad; const dlon = (b[0] - a[0]) * rad;

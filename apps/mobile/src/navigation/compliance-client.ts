@@ -22,6 +22,11 @@ export async function fetchComplianceContext(fix: Fix, path: ComplianceCoordinat
     || !Number.isFinite(n.confidence) || typeof n.sourceReference !== "string" || ![n.reviewedAt, n.effectiveFrom, n.expiresAt].every((d) => typeof d === "string" && Number.isFinite(Date.parse(d)))
     || !["fixed_speed", "average_speed", "red_light", "combined", "checkpoint", "unknown"].includes(n.enforcementType)) throw new Error("Invalid compliance notice");
   const reports=data.reportedRoads;
+  const speedReport=data.reportedSpeedLimit;
+  if(speedReport&&(speedReport.verification!=='reported'||typeof speedReport.id!=='string'||!speedReport.id||typeof speedReport.roadName!=='string'||speedReport.roadName.length>200||!Number.isInteger(speedReport.speedLimitKmh)||speedReport.speedLimitKmh<1||speedReport.speedLimitKmh>200
+    ||!Number.isFinite(speedReport.validUntil)||speedReport.validUntil>data.checkedAt+3000||![speedReport.reportedAt,speedReport.expiresAt].every(d=>typeof d==='string'&&Number.isFinite(Date.parse(d)))||Date.parse(speedReport.expiresAt)<=Date.parse(speedReport.reportedAt)
+    ||typeof speedReport.sourceReference!=='string'||!speedReport.sourceReference.trim()||typeof speedReport.sourceUrl!=='string'||!speedReport.sourceUrl.startsWith('https://')||speedReport.geometry?.type!=='LineString'||!Array.isArray(speedReport.geometry.coordinates)||speedReport.geometry.coordinates.length<2||speedReport.geometry.coordinates.length>512
+    ||speedReport.geometry.coordinates.some(p=>!Array.isArray(p)||p.length!==2||!p.every(Number.isFinite)||Math.abs(p[0])>180||Math.abs(p[1])>90)))throw new Error('Invalid reported speed advisory');
   if(reports){
     if(!['available','unavailable','disabled'].includes(reports.status)||!Number.isFinite(reports.validUntil)||reports.validUntil>data.checkedAt+5000||!Array.isArray(reports.notices)||reports.notices.length>8)throw new Error('Invalid reported-road context');
     for(const n of reports.notices)if(!n||typeof n.id!=='string'||!n.id||typeof n.roadName!=='string'||!n.roadName||n.roadName.length>200||n.verification!=='unverified'||n.scope!=='named_road_not_camera'

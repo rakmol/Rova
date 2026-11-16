@@ -35,6 +35,17 @@ beforeEach(() => {
 });
 afterEach(() => jest.restoreAllMocks());
 
+test('a reported numeric limit reaches navigation without becoming verified or speaking an overspeed warning',async()=>{
+ jest.mocked(fetchComplianceContext).mockImplementation(async fix=>({fixTimestamp:fix.timestamp,checkedAt:now,validUntil:now,coordinate:fix.coordinate,validForMeters:0,
+  limit:{status:'unknown',speedLimitKmh:null,reason:'no_road_match'},notices:[],enforcementStatus:'unavailable/unverified',reportedSpeedLimit:{id:'TEST-REPORT',roadName:'TEST ONLY',speedLimitKmh:80,verification:'reported',reportedAt:new Date(now-10000).toISOString(),expiresAt:new Date(now+60000).toISOString(),sourceReference:'TEST owner report',sourceUrl:'https://example.com/test',validUntil:now+3000,geometry:{type:'LineString',coordinates:[[0,0],[.005,0]]}}}));
+ const hook=await renderHook(()=>useNavigationSession([.005,.005],route));await waitFor(()=>expect(Location.watchPositionAsync).toHaveBeenCalledTimes(1));
+ for(let i=0;i<6;i++){now+=1000;await act(async()=>callback(sample()));}
+ expect(hook.result.current.reportedSpeed?.speedLimitKmh).toBe(80);expect(hook.result.current.smartAlerts.limitKmh).toBeNull();
+ expect(mockSpeak.mock.calls.filter(([text])=>/80|slow down/i.test(String(text)))).toHaveLength(0);
+ await act(async()=>hook.result.current.pause());expect(hook.result.current.reportedSpeed).toBeNull();
+ await hook.unmount();
+});
+
 test('navigation speaks community congestion once, without requiring a numeric speed limit',async()=>{
   mockHazards.stale=false;mockHazards.checkedAt=now;
   mockHazards.reports=[{id:'hook-congestion',category:'congestion',status:'verified',coordinate:[.0045,0],approximateRadiusMeters:150,reportedAt:new Date(now-1000).toISOString(),expiresAt:new Date(now+600000).toISOString(),revision:1,confirmations:1,notThere:0,confidence:.5,evidence:'community',authorityVerified:false}];
